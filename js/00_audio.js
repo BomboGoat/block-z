@@ -33,7 +33,10 @@ function gunshot(kind){
   var cfg={
     pistol:{nDur:0.09,nVol:0.62,hp:1600,lp:9000,thump:155*p,tVol:0.42,tDur:0.07,tail:0.16,tailVol:0.22,tailLp:2200},
     shotgun:{nDur:0.16,nVol:0.78,hp:350,lp:4500,thump:68*p,tVol:0.72,tDur:0.14,tail:0.40,tailVol:0.38,tailLp:1400},
-    smg:{nDur:0.05,nVol:0.48,hp:2000,lp:10000,thump:190*p,tVol:0.28,tDur:0.04,tail:0.08,tailVol:0.14,tailLp:2800}
+    smg:{nDur:0.05,nVol:0.48,hp:2000,lp:10000,thump:190*p,tVol:0.28,tDur:0.04,tail:0.08,tailVol:0.14,tailLp:2800},
+    revolver:{nDur:0.14,nVol:0.7,hp:500,lp:3800,thump:78*p,tVol:0.62,tDur:0.12,tail:0.32,tailVol:0.34,tailLp:1500},
+    rifle:{nDur:0.07,nVol:0.58,hp:1400,lp:8000,thump:140*p,tVol:0.4,tDur:0.06,tail:0.14,tailVol:0.2,tailLp:2400},
+    gl:{nDur:0.12,nVol:0.55,hp:250,lp:1800,thump:52*p,tVol:0.7,tDur:0.16,tail:0.28,tailVol:0.3,tailLp:900}
   }[kind];
   if(!cfg){audio.gunVoices--;return;}
   function noise(dur,vol,hp,lp,atk,dec){
@@ -73,6 +76,9 @@ function sfx(name,extra){
     case"shot_pistol":gunshot("pistol");break;
     case"shot_shotgun":gunshot("shotgun");break;
     case"shot_smg":gunshot("smg");break;
+    case"shot_revolver":gunshot("revolver");break;
+    case"shot_rifle":gunshot("rifle");break;
+    case"shot_gl":gunshot("gl");break;
     case"melee":beep(200,0.08,"sawtooth",0.18,80);break;
     case"hit":beep(150,0.05,"triangle",0.1,60);break;
     case"death":beep(120,0.2,"sawtooth",0.14,40);noiseBurst(0.15,0.12);painSfx("death");break;
@@ -141,6 +147,30 @@ function musHat(bus,t,vol){
 function musChoir(bus,t,freqs,dur,vol){
   var i;for(i=0;i<(freqs||[]).length;i++)musOsc(bus,"sine",freqs[i],t,dur,vol||0.028);
 }
+function musWind(bus,t,dur,vol){
+  if(!audio.ctx||!bus)return;
+  var n=Math.max(1,(audio.ctx.sampleRate*dur)|0),buf=audio.ctx.createBuffer(1,n,audio.ctx.sampleRate),d=buf.getChannelData(0),acc=0,i;
+  for(i=0;i<n;i++){acc=acc*0.985+(Math.random()*2-1)*0.015;d[i]=acc;}
+  var src=audio.ctx.createBufferSource();src.buffer=buf;
+  var f=audio.ctx.createBiquadFilter();f.type="lowpass";f.frequency.value=480;
+  var g=audio.ctx.createGain();
+  g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(vol||0.028,t+dur*0.35);g.gain.linearRampToValueAtTime(0.0001,t+dur);
+  src.connect(f);f.connect(g);g.connect(bus);src.start(t);src.stop(t+dur+0.03);
+}
+function musBox(bus,t,freq,dur,vol){
+  if(!freq)return;
+  musOsc(bus,"sine",freq,t,dur,vol);
+  musOsc(bus,"sine",freq*1.007,t,dur*1.1,vol*0.42);
+  musOsc(bus,"triangle",freq*2.005,t,dur*0.4,vol*0.1);
+  musOsc(bus,"sine",freq,t+0.4,dur*0.85,vol*0.26);
+  musOsc(bus,"sine",freq,t+0.8,dur*0.7,vol*0.11);
+}
+function musGroanMus(bus,t){
+  var p=56+Math.random()*30;
+  musOsc(bus,"sawtooth",p,t,0.9,0.03,p*0.6);
+  musOsc(bus,"triangle",p*1.35,t,0.7,0.015,p*0.75);
+  musNoise(bus,t,0.5,0.012,160);
+}
 function fadeOutBus(bus,sec){
   if(!bus||!audio.ctx)return;
   var t=audio.ctx.currentTime;
@@ -162,35 +192,28 @@ function startMusic(mode){
     if(gen!==audio.musicGen||!audio.ctx||!audio.musBus)return;
     var t=audio.ctx.currentTime,s=audio.musicStep++,m=audio.musicMode,wait=0.28,n,bass,mel,ch;
     if(m==="menu"){
-      /* Catchy relaxed hook, ~80 BPM, C–G–Am–F */
-      wait=0.375;
-      bass=[65.41,65.41,65.41,65.41, 49.00,49.00,49.00,49.00, 55.00,55.00,55.00,55.00, 43.65,43.65,43.65,43.65];
-      mel=[523.3,659.3,783.9,659.3, 587.3,392.0,493.9,587.3, 523.3,659.3,880.0,783.9, 698.5,659.3,587.3,523.3];
-      n=s%16;
-      musOsc(bus,"triangle",bass[n],t,0.28,0.11);
-      musOsc(bus,"sine",bass[n]*0.5,t,0.3,0.09);
-      if(n%4===0)musKick(bus,t,0.12);
-      if(n%4===2)musSnare(bus,t,0.05);
-      musHat(bus,t,n%2?0.016:0.028);
-      if(mel[n]){musOsc(bus,"triangle",mel[n],t,0.3,0.07);musOsc(bus,"sine",mel[n]*2,t,0.18,0.02);}
-      /* soft pad on chord changes */
-      if(n%4===0){
-        ch=n<4?[261.6,329.6]:n<8?[196.0,246.9]:n<12?[220.0,261.6]:[174.6,220.0];
-        musChoir(bus,t,ch,0.9,0.03);
-      }
+      /* Dark eerie horror intro, ~66 BPM, D minor, music-box, drones, wind, distant groans */
+      wait=0.455;
+      mel=[587.3,0,440.0,0, 698.5,0,659.3,0,  587.3,0,0,440.0, 523.3,0,440.0,0,
+           698.5,659.3,0,587.3, 0,440.0,0,0,  587.3,0,349.2,0, 329.6,0,293.7,0];
+      n=s%32;
+      if(n%8===0){musOsc(bus,"sine",36.71,t,2.2,0.07);musOsc(bus,"sine",55.00,t,2.2,0.04);musChoir(bus,t,[146.8,174.6],2.0,0.02);}
+      if(n===4||n===20)musWind(bus,t,2.8,0.03);
+      if(n===18||n===30)musGroanMus(bus,t);
+      if(mel[n])musBox(bus,t,mel[n],1.15,0.055);
     }else if(m==="play"){
-      /* Energetic action, ~132 BPM, E minor */
-      wait=0.227;
-      bass=[82.41,82.41,98.00,110.00, 82.41,73.42,61.74,82.41, 82.41,82.41,98.00,123.47, 110.00,98.00,73.42,82.41];
-      mel=[493.9,0,587.3,659.3, 783.9,739.9,659.3,587.3, 493.9,392.0,493.9,587.3, 659.3,0,587.3,493.9];
+      /* Calm horror tension, ~90 BPM, E minor, pulsing low synth, subtle perc, non-fatiguing */
+      wait=0.333;
+      bass=[82.41,82.41,82.41,82.41, 82.41,82.41,73.42,82.41, 82.41,82.41,82.41,61.74, 73.42,73.42,82.41,82.41];
+      mel=[0,0,329.6,0, 0,392.0,0,0, 329.6,0,246.9,0, 0,293.7,0,0];
       n=s%16;
-      musOsc(bus,"sawtooth",bass[n],t,0.18,0.11,bass[n]*0.94);
-      musOsc(bus,"sine",bass[n]*0.5,t,0.16,0.12);
-      musKick(bus,t,n%2===0?0.16:0.08);
-      if(n%4===2)musSnare(bus,t,0.09);
-      musHat(bus,t,0.03);
-      if(mel[n])musOsc(bus,"square",mel[n],t,0.14,0.05);
-      if(n===0)musChoir(bus,t,[164.8,196.0,246.9],0.8,0.02);
+      musOsc(bus,"sine",bass[n],t,0.3,0.09);
+      musOsc(bus,"triangle",bass[n]*0.5,t,0.32,0.08);
+      if(n%8===0)musKick(bus,t,0.05);
+      if(n%8===4)musNoise(bus,t,0.045,0.012,2200);
+      if(n===0)musChoir(bus,t,[164.8,196.0,246.9],2.5,0.02);
+      if(mel[n])musOsc(bus,"triangle",mel[n],t,0.5,0.03);
+      if(n===10)musWind(bus,t,1.6,0.016);
     }else if(m==="colo"||m==="boss"){
       /* Epic Colossus, ~104 BPM, D minor, big drums + brass */
       wait=0.288;

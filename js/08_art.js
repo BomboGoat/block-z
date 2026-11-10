@@ -124,22 +124,24 @@ function drawWalkLegs(look,anim,pose,H,W,fx,fy,waist){
   var aL=Math.sin(ph)*amp+lean, aR=Math.sin(ph+Math.PI)*amp+lean;
   var waistY=H*(waist-(fy!=null?fy:1));
   var groundY=H*(1-(fy!=null?fy:1));
-  var legLen=Math.max(10,groundY-waistY);
-  var hipW=boss?H*0.16:(sham?H*0.11:H*0.12);
-  var thigh=boss?H*0.075:(sham?H*0.055:H*0.062);
+  var overlap=H*0.12; /* hips tuck under the torso crop — no seam/gap */
+  var legLen=Math.max(10,groundY-(waistY-overlap*0.25));
+  var hipW=boss?H*0.18:(sham?H*0.13:H*0.145);
+  var thigh=boss?H*0.08:(sham?H*0.06:H*0.068);
   var shin=thigh*0.82;
   var pants=(look&&(look.pants||look.pantsDark))||(boss?"#1e1814":"#2a2a2a");
   var pantsDark=(look&&look.pantsDark)||pants;
   var shoe=(look&&look.shoe)||"#1a1a1a";
-  /* hip block so the torso crop sits on trousers, not a gap */
+  /* wide pelvis that overlaps the crop line so the hoodie/jacket sits on pants */
   ctx.fillStyle=pants;
-  ctx.beginPath();ctx.ellipse(0,waistY+thigh*0.15,hipW,thigh*0.85,0,0,7);ctx.fill();
+  ctx.beginPath();ctx.ellipse(0,waistY+thigh*0.05,hipW*1.08,overlap*0.85+thigh*0.4,0,0,7);ctx.fill();
+  ctx.fillRect(-hipW*0.95,waistY-overlap,hipW*1.9,overlap+thigh*0.7);
   function limb(a,side,front){
-    var hipX=side*hipW*0.55, hipY=waistY+thigh*0.15;
-    var kneeX=hipX+Math.sin(a*0.65)*legLen*0.42;
-    var kneeY=hipY+Math.cos(a*0.25)*legLen*0.48;
-    var footX=hipX+Math.sin(a)*legLen*0.72;
-    var footY=groundY-Math.max(0,Math.sin(a))*legLen*0.12;
+    var hipX=side*hipW*0.48, hipY=waistY-overlap*0.35;
+    var kneeX=hipX+Math.sin(a*0.65)*legLen*0.38;
+    var kneeY=hipY+Math.cos(a*0.25)*legLen*0.5;
+    var footX=hipX+Math.sin(a)*legLen*0.68;
+    var footY=groundY-Math.max(0,Math.sin(a))*legLen*0.1;
     ctx.strokeStyle=front?pants:pantsDark;ctx.lineCap="round";ctx.lineJoin="round";
     ctx.lineWidth=thigh*2;
     ctx.beginPath();ctx.moveTo(hipX,hipY);ctx.lineTo(kneeX,kneeY);ctx.stroke();
@@ -177,11 +179,11 @@ function tryDrawArt(wx,wy,look,ang,anim,opts){
   if(opts.flash)ctx.filter="brightness(1.7) saturate(0.55)";
   var fx=m.fx!=null?m.fx:0.5, fy=m.fy!=null?m.fy:1;
   var skipLegs=!!(opts.air&&look&&look.kind==="home")||(look&&look.kind==="home")||(look&&look.type==="crawler")||opts.dying||opts.spawnP!=null;
-  var waist=0.66;
-  if(look&&look.kind==="colossus")waist=0.675;
-  else if(look&&look.kind==="final")waist=0.72;
-  else if(look&&look.kind==="zombie")waist=0.66;
-  else if(look&&look.hero==="gompa")waist=0.65;
+  var waist=0.64;
+  if(look&&look.kind==="colossus")waist=0.66;
+  else if(look&&look.kind==="final")waist=0.70;
+  else if(look&&look.kind==="zombie")waist=0.64;
+  else if(look&&look.hero==="gompa")waist=0.63;
 
   if(!skipLegs){
     drawWalkLegs(look,anim,pose,H,W,fx,fy,waist);

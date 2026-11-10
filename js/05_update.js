@@ -551,14 +551,14 @@ function updateBullets(dt){
   var i,b,j,z;
   for(i=game.bullets.length-1;i>=0;i--){
     b=game.bullets[i];b.life-=dt;b.x+=b.vx*dt;b.y+=b.vy*dt;if(b.spinV)b.spinA=(b.spinA||0)+b.spinV*dt;
-    if(b.life<=0||bulletHitsWall(b)){if(b.expl)explodeAt(b.x,b.y,40,b.damage*0.6,{friendly:1});game.bullets.splice(i,1);bulletPool.push(b);continue;}
+    if(b.life<=0||bulletHitsWall(b)){if(b.expl)explodeAt(b.x,b.y,b.explR||40,b.explDmg||b.damage*0.6,{friendly:1});game.bullets.splice(i,1);bulletPool.push(b);continue;}
     for(j=0;j<game.zombies.length;j++){
       z=game.zombies[j];if(z.dead||z.dying||(b.hit&&b.hit.has(z)))continue;
       if(dist(b.x,b.y,z.x,z.y)<z.r+b.r){
         if(b.hit)b.hit.add(z);
         hurtZombie(z,b.damage,b.x);
         if(b.fire)z.burn=1.4;if(b.ice)z.slow=1.6;if(b.poison)z.poison=2;
-        if(b.expl)explodeAt(b.x,b.y,42,b.damage*0.5,{friendly:1});
+        if(b.expl)explodeAt(b.x,b.y,b.explR||42,b.explDmg||b.damage*0.5,{friendly:1});
         if(!b.pierce){game.bullets.splice(i,1);bulletPool.push(b);break;}
       }
     }

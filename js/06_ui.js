@@ -44,7 +44,7 @@ function drawHero(){
   var wpn=p.weapon||"pistol";
   if(p.hasMelee&&p.meleeSwing>0&&wpn!=="knife"&&wpn!=="fist")wpn="machete";
   if(p.weapon==="fist"&&p.meleeSwing>0)wpn="fist";
-  var two=wpn==="shotgun"||wpn==="smg"||wpn==="pistol";
+  var two=wpn==="shotgun"||wpn==="smg"||wpn==="rifle"||wpn==="gl"||wpn==="pistol"||p.twoHand;
   if(p.fireAura){var s=toScreen(p.x,p.y);ctx.fillStyle="rgba(255,87,34,0.18)";fillEllipse(ctx,s.x,s.y,50*layout.scale,36*layout.scale);}
   if(p.hasOrbit){for(var i=0;i<3;i++){var a=p.orbitAngle+i*2.094,ox=p.x+Math.cos(a)*36,oy=p.y+Math.sin(a)*36,os=toScreen(ox,oy);ctx.fillStyle="#eceff1";ctx.beginPath();ctx.arc(os.x,os.y,4*layout.scale,0,7);ctx.fill();}}
   drawChar34(p.x,p.y,p.look,p.faceAng!=null?p.faceAng:(p.facing||p.aimAng),p.anim,{h:40,r:p.r,scale:p.scale||1,moving:Math.abs(p.vx)+Math.abs(p.vy)>20,wpn:wpn,aim:p.aimAng,twoHand:two,muzzle:p.muzzle,flash:p.flash>0,lift:(p.grabbed?26:0)+(p.airH||0)});
@@ -236,9 +236,10 @@ function drawHowTo(){
 function drawPauseUI(){ctx.fillStyle="rgba(0,0,0,0.78)";ctx.fillRect(0,0,SW,SH);ctx.textAlign="center";ctx.fillStyle="#fff";ctx.font="bold 24px system-ui";ctx.fillText("Pausa",SW/2,layout.safe.t+36);layoutMenuButtons();for(var i=0;i<pauseBtns.length;i++){var col=pauseBtns[i].id==="continuar"?"#2ecc71":pauseBtns[i].id==="menu"?"#e67e22":"#5c6bc0";drawUIButton(pauseBtns[i],col);}}
 function drawUpgradeUI(){ctx.fillStyle="rgba(0,0,0,0.78)";ctx.fillRect(0,0,SW,SH);ctx.textAlign="center";ctx.fillStyle="#ffc107";ctx.font=layout.isPortrait?"bold 16px system-ui":"bold 22px system-ui";var titleY=game.upgradeCards[0]?Math.max(28,game.upgradeCards[0].y-16):40;ctx.fillText("¡Ronda superada! Elige una mejora",SW/2,titleY);
   for(var i=0;i<game.upgradeCards.length;i++){var card=game.upgradeCards[i],up=card.upgrade;if(up.rarity>=4){ctx.shadowColor=up.glow;ctx.shadowBlur=16;}ctx.fillStyle="#14141e";ctx.strokeStyle=up.frame;ctx.lineWidth=3;roundRect(ctx,card.x,card.y,card.w,card.h,10);ctx.fill();ctx.stroke();ctx.shadowBlur=0;ctx.fillStyle=up.color;ctx.fillRect(card.x+3,card.y+3,card.stacked?52:card.w-6,card.stacked?card.h-6:22);
+    ctx.strokeStyle=up.frame;ctx.lineWidth=2;roundRect(ctx,card.x+5,card.y+5,card.w-10,card.h-10,7);ctx.stroke();
     ctx.fillStyle="#fff";ctx.font=card.stacked?"bold 16px system-ui":"bold 18px system-ui";ctx.textAlign=card.stacked?"left":"center";
-    if(card.stacked){ctx.fillText(up.icon+"  "+up.name,card.x+64,card.y+28);ctx.font="11px system-ui";ctx.fillStyle=up.color;ctx.fillText(up.rarityName,card.x+64,card.y+46);ctx.fillStyle="#cfd8dc";ctx.font="12px system-ui";ctx.fillText(up.desc,card.x+64,card.y+66);}
-    else{ctx.textAlign="center";ctx.fillText(up.icon,card.x+card.w/2,card.y+58);ctx.font="bold 16px system-ui";ctx.fillText(up.name,card.x+card.w/2,card.y+84);ctx.fillStyle=up.color;ctx.font="11px system-ui";ctx.fillText(up.rarityName,card.x+card.w/2,card.y+104);ctx.fillStyle="#cfd8dc";ctx.font="12px system-ui";wrapText(up.desc,card.x+card.w/2,card.y+128,card.w-16,16);}
+    if(card.stacked){ctx.fillText(up.icon+"  "+up.name,card.x+64,card.y+28);ctx.font="bold 11px system-ui";ctx.fillStyle=up.color;ctx.fillText((up.rarityName||"").toUpperCase(),card.x+64,card.y+46);ctx.fillStyle="#cfd8dc";ctx.font="12px system-ui";ctx.fillText(up.desc,card.x+64,card.y+66);}
+    else{ctx.textAlign="center";ctx.fillText(up.icon,card.x+card.w/2,card.y+52);ctx.font="bold 14px system-ui";ctx.fillStyle="#fff";var ny=wrapTextH(up.name,card.x+card.w/2,card.y+74,card.w-18,16);ctx.fillStyle=up.color;ctx.font="bold 12px system-ui";ctx.fillText((up.rarityName||"").toUpperCase(),card.x+card.w/2,ny+18);ctx.fillStyle="#cfd8dc";ctx.font="12px system-ui";wrapText(up.desc,card.x+card.w/2,ny+38,card.w-16,16);}
     var tr=up.trade,ty=card.stacked?card.y+card.h-16:card.y+card.h-28,t,tw=0,parts=[];ctx.font="11px system-ui";ctx.textAlign="left";
     for(t=0;t<tr.length;t++){parts[t]=tr[t].s+(t<tr.length-1?"  ":"");tw+=ctx.measureText(parts[t]).width;}
     var tx=card.stacked?card.x+64:(card.x+card.w/2-tw/2);
@@ -247,7 +248,8 @@ function drawUpgradeUI(){ctx.fillStyle="rgba(0,0,0,0.78)";ctx.fillRect(0,0,SW,SH
   var rb=game.rerollBtn;if(rb){var on=(game.rerollLeft||0)>0;ctx.fillStyle=on?"#3e2723":"#2a2a2a";ctx.strokeStyle=on?"#ffb74d":"#555";ctx.lineWidth=2;roundRect(ctx,rb.x,rb.y,rb.w,rb.h,10);ctx.fill();ctx.stroke();ctx.fillStyle=on?"#ffe082":"#888";ctx.font="bold 15px system-ui";ctx.textAlign="center";ctx.fillText(on?"🎲  Cambiar cartas  (1)":"Sin más cambios",rb.x+rb.w/2,rb.y+rb.h/2+5);}
   ctx.textAlign="left";
 }
-function wrapText(text,x,y,max,lh){var words=String(text).split(" "),line="",i;ctx.textAlign="center";for(i=0;i<words.length;i++){var t=line+words[i]+" ";if(ctx.measureText(t).width>max&&line){ctx.fillText(line,x,y);y+=lh;line=words[i]+" ";}else line=t;}ctx.fillText(line,x,y);}
+function wrapText(text,x,y,max,lh){return wrapTextH(text,x,y,max,lh);}
+function wrapTextH(text,x,y,max,lh){var words=String(text).split(" "),line="",i;ctx.textAlign="center";for(i=0;i<words.length;i++){var t=line+words[i]+" ";if(ctx.measureText(t).width>max&&line){ctx.fillText(line,x,y);y+=lh;line=words[i]+" ";}else line=t;}ctx.fillText(line,x,y);return y;}
 function drawEndScreen(won){ctx.fillStyle="rgba(0,0,0,0.78)";ctx.fillRect(0,0,SW,SH);ctx.textAlign="center";var cx=SW/2,top=layout.isPortrait?layout.gameY+layout.gameDrawH*0.32:SH*0.26;ctx.fillStyle=won?"#2ecc71":"#e74c3c";ctx.font="bold 32px system-ui";ctx.fillText(won?"¡VICTORIA!":"HAS MUERTO",cx,top);ctx.fillStyle="#ecf0f1";ctx.font="15px system-ui";ctx.fillText("Puntos "+game.score+" · Bajas "+game.kills,cx,top+34);ctx.fillText("Ronda "+(game.wave+1)+"/10 · Nv "+game.player.runLevel,cx,top+56);ctx.fillStyle="#ffc107";ctx.fillText("Cuenta Nv "+account.level,cx,top+78);layoutMenuButtons();for(var i=0;i<menuBtns.length;i++)drawUIButton(menuBtns[i],"#3498db");}
 function drawCountdownOverlay(){
   var n=Math.max(1,Math.ceil(game.countdown||0));

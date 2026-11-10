@@ -7,7 +7,7 @@ function applyHero(p,id){
   if(id==="trueno"){p.weapon="bolt";p.fireCooldown=0.42;p.maxHp=90;p.hp=90;p.speedMul=1.05;p.damageMul=1.1;}
   else if(id==="mr"){p.weapon="knife";p.hasMelee=1;p.meleeRange=88;p.meleeDmg=14;p.fireCooldown=0.42;p.maxHp=120;p.hp=120;p.speedMul=1.15;p.armorMul=0.92;}
   else if(id==="gompa"){p.weapon="fist";p.meleeRange=86;p.meleeDmg=16;p.fireCooldown=0.5;p.maxHp=140;p.hp=140;p.speedMul=0.88;p.damageMul=1;}
-  else {p.weapon="pistol";p.fireCooldown=CFG.FIRE_COOLDOWN;}
+  else {p.weapon="pistol";p.fireCooldown=CFG.FIRE_COOLDOWN;if(typeof applyEricWeapon==="function")applyEricWeapon(p,"pistol");}
 }
 function spawnZombie(type,x,y,wave){
   var t=ZT[type]||ZT.normal,sc=1+(wave||0)*0.12;
@@ -92,6 +92,29 @@ function fireMeleeHero(p,n){
   game.slashes.push({x:p.x,y:p.y,ang:p.aimAng,r:range*0.7,life:0.18,maxLife:0.18});
   sfx("slash");
 }
+var ERIC_WPN={
+  pistol:{cd:0.38,dmg:12,spd:624,r:2.2,kind:"pistol"},
+  smg:{cd:0.16,dmg:6.5,spd:720,r:2.0,spread:0.09,kind:"smg"},
+  shotgun:{cd:0.58,dmg:9,spd:470,r:2.8,pellets:5,spread:0.34,kind:"shotgun"},
+  revolver:{cd:0.50,dmg:32,spd:560,r:3.6,kind:"revolver"},
+  rifle:{cd:0.20,dmg:13,spd:800,r:2.5,spread:0.035,kind:"rifle"},
+  gl:{cd:0.68,dmg:48,spd:400,r:6,splash:32,rad:72,kind:"gl"}
+};
+function applyEricWeapon(p,id){
+  var w=ERIC_WPN[id];if(!w)return;
+  p.weapon=id;p.wpnLv=p.wpnLv||{};if(!p.wpnLv[id])p.wpnLv[id]=1;
+  var lv=p.wpnLv[id],mul=Math.pow(1.14,lv-1);
+  p.fireCooldown=Math.max(0.08,w.cd*Math.pow(0.96,lv-1));
+  p.wpnBaseDmg=w.dmg*mul;p.wpnSpd=w.spd;p.wpnR=w.r;p.wpnSpread=w.spread||0;
+  p.pellets=(w.pellets||0)?(w.pellets+Math.max(0,lv-1)):0;
+  p.wpnSplash=w.splash?w.splash*mul:0;p.wpnRad=w.rad||0;
+  p.twoHand=id==="shotgun"||id==="smg"||id==="rifle"||id==="gl";
+}
+function applyEricWeaponUp(p){
+  var id=p.weapon;if(!ERIC_WPN[id])return;
+  p.wpnLv=p.wpnLv||{};p.wpnLv[id]=Math.min(5,(p.wpnLv[id]||1)+1);
+  applyEricWeapon(p,id);
+}
 function fireWeapon(p){
   var nearest=findNearestZombie(p,heroRange(p));
   if(p.weapon==="bolt"){if(!nearest)return;fireLightning(p,nearest);return;}
@@ -102,21 +125,35 @@ function fireWeapon(p){
   if(!nearest)return;
   var dx=nearest.x-p.x,dy=nearest.y-p.y;p.aimAng=Math.atan2(dy,dx);p.recoil=1;p.muzzle=0.08;if(typeof ejectShell==="function")ejectShell(p);
   var originX=p.x+Math.cos(p.aimAng)*(p.r+10),originY=p.y+Math.sin(p.aimAng)*(p.r+10);
-  var dmg=CFG.BULLET_DAMAGE*p.damageMul,shots=1+(p.extraShots|0),spread=0,spd=CFG.BULLET_SPEED;
+  var dmg=(p.wpnBaseDmg||CFG.BULLET_DAMAGE)*p.damageMul,shots=1+(p.extraShots|0),spread=p.wpnSpread||0,spd=p.wpnSpd||CFG.BULLET_SPEED;
   if(p.berserk&&p.hp/p.maxHp<0.4)dmg*=1.5;
   if(p.bloodlust)dmg*=(1+0.04*p.bloodStacks);
-  if(p.weapon==="shotgun"){shots=p.pellets+(p.extraShots|0);spread=0.32;spd*=0.9;sfx("shot_shotgun");}
-  else if(p.weapon==="smg"){spread=0.08;spd*=1.05;sfx("shot_smg");}
+  if(p.weapon==="gl"){
+    sfx("shot_gl");
+    var gb=bulletPool.pop()||{};
+    gb.x=originX;gb.y=originY;gb.vx=Math.cos(p.aimAng)*spd;gb.vy=Math.sin(p.aimAng)*spd;gb.r=p.wpnR||6;
+    gb.damage=dmg;gb.life=1.15*(p.rangeMul||1);gb.pierce=0;gb.bounce=0;
+    gb.gl=1;gb.spinA=0;gb.spinV=8;gb.expl=1;gb.explR=p.wpnRad||72;gb.explDmg=p.wpnSplash||dmg*0.65;gb.hit=new Set();
+    if(p.fireAmmo)gb.fire=1;if(p.iceAmmo)gb.ice=1;if(p.poisonAmmo)gb.poison=1;
+    game.bullets.push(gb);return;
+  }
+  if(p.weapon==="shotgun"){shots=(p.pellets||5)+(p.extraShots|0);spread=p.wpnSpread||0.34;sfx("shot_shotgun");}
+  else if(p.weapon==="smg")sfx("shot_smg");
+  else if(p.weapon==="revolver")sfx("shot_revolver");
+  else if(p.weapon==="rifle")sfx("shot_rifle");
   else sfx("shot_pistol");
   if(p.fireAmmo)p.fireTimer+=0.04;
   for(var i=0;i<shots;i++){
     var t=shots===1?0:(i/(shots-1)-0.5),ang=p.aimAng+t*spread;
     var b=bulletPool.pop()||{};
-    if(p.weapon!=="shotgun"&&p.weapon!=="smg"){spd=CFG.BULLET_SPEED*1.2;}
-    b.x=originX;b.y=originY;b.vx=Math.cos(ang)*spd;b.vy=Math.sin(ang)*spd;b.r=p.weapon==="shotgun"?3.2:p.weapon==="smg"?3.2:2.2;
+    b.x=originX;b.y=originY;b.vx=Math.cos(ang)*spd;b.vy=Math.sin(ang)*spd;b.r=p.wpnR||(p.weapon==="shotgun"?2.8:2.2);
     b.damage=dmg;b.life=CFG.BULLET_LIFE*(p.rangeMul||1);b.pierce=p.pierce;b.bounce=p.bounce?2:0;
     b.fire=p.fireAmmo;b.ice=p.iceAmmo;b.poison=p.poisonAmmo;b.expl=p.explosiveAmmo;b.hit=new Set();
-    if(p.weapon!=="shotgun"&&p.weapon!=="smg"){b.pistol=1;b.tracer=1;}
+    if(p.weapon==="pistol"){b.pistol=1;b.tracer=1;}
+    else if(p.weapon==="revolver")b.revolver=1;
+    else if(p.weapon==="rifle")b.rifle=1;
+    else if(p.weapon==="smg")b.smg=1;
+    else if(p.weapon==="shotgun")b.shot=1;
     game.bullets.push(b);
   }
   addParticle(originX,originY,p.fireAmmo?"#ff5722":"#ffe082",0.1,Math.cos(p.aimAng)*40,Math.sin(p.aimAng)*40,4,2);
@@ -261,7 +298,13 @@ function speakColossus(){
   try{if(game&&game.colossus){game.colossus.bubbleText="";game.colossus.bubbleFull="¡Vamos a gamblear!";game.colossus.bubbleIdx=0;game.colossus.bubbleT=0;}babbleSpeak("Va va vamos a gam gam blear",{pitch:88,gap:0.13});}catch(e){}
 }
 function onWaveCleared(){if(game.bossFight){startMusic("play");game.bossFight=0;}if(game.wave>=9){game.state="victory";grantAccountXP(((game.player.runXP*0.25)|0)+50);layoutMenuButtons();sfx("clear");return;}game.state="upgrade";skipDtClamp=1;sfx("clear");game.rerollLeft=1;if(game.player&&game.player.secondWind)game.player.hp=Math.min(game.player.maxHp,game.player.hp+game.player.maxHp*0.2);pickUpgradeChoices();}
-function rollRarity(luck){var w=RARITIES.map(function(r){return r.w;});if(luck>0){w[0]=Math.max(20,w[0]-luck*0.6);w[3]+=luck*0.25;w[4]+=luck*0.15;w[2]+=luck*0.2;}var t=0,i;for(i=0;i<w.length;i++)t+=w[i];var r=Math.random()*t,a=0;for(i=0;i<w.length;i++){a+=w[i];if(r<=a)return i;}return 0;}
+function rollRarity(luck){
+  var w=RARITIES.map(function(r){return r.w;}),wave=(game&&game.wave)||0,wr=wave*0.85,t=0,i,r,a=0;
+  if(luck>0){w[0]=Math.max(20,w[0]-luck*0.6);w[3]+=luck*0.25;w[4]+=luck*0.15;w[2]+=luck*0.2;}
+  w[0]=Math.max(16,w[0]-wr*0.8);w[1]=Math.max(14,w[1]-wr*0.15);w[2]+=wr*0.3;w[3]+=wr*0.4;w[4]+=wr*0.35;
+  for(i=0;i<w.length;i++)t+=w[i];r=Math.random()*t;
+  for(i=0;i<w.length;i++){a+=w[i];if(r<=a)return i;}return 0;
+}
 function tradeLine(def){var parts=[],i;for(i=0;i<(def.plus||[]).length;i++)parts.push({s:"+"+def.plus[i],c:"#2ecc71"});for(i=0;i<(def.minus||[]).length;i++)parts.push({s:"-"+def.minus[i],c:"#e74c3c"});return parts;}
 function buildUpgradeCard(def,ri){
   var R=RARITIES[ri],card={id:def.id,name:def.name,icon:def.icon,rarity:ri,rarityName:R.name,color:R.color,glow:R.glow,frame:R.frame,def:def,desc:def.desc||"",trade:tradeLine(def),apply:null};
@@ -276,8 +319,12 @@ function buildUpgradeCard(def,ri){
   else if(def.kind==="set"&&def.stat==="regen")card.desc="Regeneras "+tv+" de vida por segundo";
   else if(def.kind==="set"&&def.stat==="critChance")card.desc="+"+Math.round(tv*100)+"% probabilidad de crítico";
   else if(def.kind==="set"&&def.stat==="critMul")card.desc="Los críticos hacen x"+tv.toFixed(1)+" daño";
-  else if(def.weapon==="shotgun")card.desc="Cambia a escopeta: abanico de perdigones";
-  else if(def.weapon==="smg")card.desc="Cambia a subfusil: cadencia muy alta";
+  else if(def.weapon==="shotgun")card.desc="Abanico de perdigones. Fuerte a corta distancia.";
+  else if(def.weapon==="smg")card.desc="Ráfagas rápidas de balas ligeras.";
+  else if(def.weapon==="revolver")card.desc="Disparos pesados y precisos.";
+  else if(def.weapon==="rifle")card.desc="Cadencia firme y buen alcance.";
+  else if(def.weapon==="gl")card.desc="Granadas explosivas de gran potencia.";
+  else if(def.kind==="wpnUp")card.desc=def.desc||"Mejora tu arma actual.";
   else if(def.flag==="doubleJump")card.desc="Tu super es un dash más largo (dos cargas)";
   else if(def.flag==="tripleJump")card.desc="Dash aún más largo con tres cargas";
   else if(def.flag==="pierce")card.desc="Tus balas atraviesan a varios enemigos";
@@ -332,7 +379,8 @@ function applyUpgrade(p,def,ri){
   else if(def.kind==="heal")p.hp=Math.min(p.maxHp,p.hp+tv);
   else if(def.kind==="add")p[def.stat]=(p[def.stat]||0)+tv;
   else if(def.kind==="set")p[def.stat]=tv;
-  if(def.weapon){p.weapon=def.weapon;if(def.weapon==="shotgun")p.pellets=3;if(def.weapon==="smg")p.fireCooldown=Math.min(p.fireCooldown,0.18);}
+  if(def.weapon){if(typeof applyEricWeapon==="function")applyEricWeapon(p,def.weapon);else{p.weapon=def.weapon;if(def.weapon==="shotgun")p.pellets=5;if(def.weapon==="smg")p.fireCooldown=Math.min(p.fireCooldown,0.18);}}
+  if(def.kind==="wpnUp"&&typeof applyEricWeaponUp==="function")applyEricWeaponUp(p);
   if(def.flag)p[def.flag]=1;
   if(def.flag==="hasDash")p.dashLeft=1;
   if(def.flag==="doubleJump"){p.hasDash=1;p.dashLeft=2;}
@@ -358,7 +406,7 @@ function applyUpgrade(p,def,ri){
 }
 
 function takenFlags(p){var t={},i;for(i=0;i<p.abilities.length;i++)t[p.abilities[i].id]=1;return t;}
-function pickUpgradeChoices(){var p=game.player,taken=takenFlags(p),choices=[],guard=0;while(choices.length<3&&guard++<60){var ri=rollRarity(p.luck|0);var pool=UPGRADE_DEFS.filter(function(d){if((d.once||d.flag||d.weapon||d.custom)&&taken[d.id])return 0;if(d.minR!=null&&ri<d.minR)return 0;if(d.exclusive&&ri<4)return 0;if(d.hero&&d.hero!==p.hero)return 0;if(d.weapon&&p.hero&&p.hero!=="classic")return 0;if(d.flag==="hasMelee"&&(p.hero==="mr"||p.hero==="gompa"))return 0;if((d.flag==="pierce"||d.flag==="bounce")&&p.hero&&p.hero!=="classic")return 0;for(var c=0;c<choices.length;c++)if(choices[c].id===d.id)return 0;return 1;});if(!pool.length){ri=Math.max(0,ri-1);continue;}choices.push(buildUpgradeCard(pick(pool),ri));}game.upgradeChoices=choices;layoutUpgradeCards();}
+function pickUpgradeChoices(){var p=game.player,taken=takenFlags(p),choices=[],guard=0;while(choices.length<3&&guard++<60){var ri=rollRarity(p.luck|0);var pool=UPGRADE_DEFS.filter(function(d){if((d.once||d.flag||d.weapon||d.custom)&&taken[d.id])return 0;if(d.minR!=null&&ri<d.minR)return 0;if(d.exclusive&&ri<4)return 0;if(d.hero&&d.hero!==p.hero)return 0;if(d.weapon&&p.hero&&p.hero!=="classic")return 0;if(d.fixedR!=null&&ri!==d.fixedR)return 0;if(d.reqWeapon&&p.weapon!==d.reqWeapon)return 0;if(d.kind==="wpnUp"&&((p.wpnLv&&p.wpnLv[p.weapon])||1)>=5)return 0;if(d.flag==="hasMelee"&&(p.hero==="mr"||p.hero==="gompa"))return 0;if((d.flag==="pierce"||d.flag==="bounce")&&p.hero&&p.hero!=="classic")return 0;for(var c=0;c<choices.length;c++)if(choices[c].id===d.id)return 0;return 1;});if(!pool.length){ri=Math.max(0,ri-1);continue;}choices.push(buildUpgradeCard(pick(pool),ri));}game.upgradeChoices=choices;layoutUpgradeCards();}
 function layoutUpgradeCards(){
   var n=game.upgradeChoices.length;
   var cardW2=Math.min(200,(SW-layout.safe.l-layout.safe.r-70)/n-12),cardH2=Math.min(250,SH*0.62);

@@ -1,10 +1,10 @@
 var CFG={MAP_W:3000,MAP_H:3000,CELL:50,YSCALE:0.70,PLAYER_R:13,PLAYER_SPEED:250,MAX_HP:100,INVULN_MS:700,AUTO_RANGE:360,FIRE_COOLDOWN:0.38,BULLET_SPEED:520,BULLET_DAMAGE:12,BULLET_LIFE:1.05,BASE_ZOMBIES:5,ZOMBIES_PER_WAVE:2,MAX_ALIVE:10,SPAWN_INTERVAL:1.25,BOSS_HP:720,CAM_LERP:6.5,WORLD_BASE_W:520,WORLD_BASE_H:300,SAFE_PAD:8,SUPER_COST:100};
 var RARITIES=[
 {id:"comun",name:"Común",w:55,color:"#9e9e9e",glow:"#bdbdbd",mul:1.10,frame:"#757575"},
-{id:"muy_raro",name:"Muy raro",w:25,color:"#2196f3",glow:"#64b5f6",mul:1.18,frame:"#1565c0"},
-{id:"epico",name:"Épico",w:12,color:"#9c27b0",glow:"#ce93d8",mul:1.30,frame:"#6a1b9a"},
-{id:"mitico",name:"Mítico",w:6,color:"#e53935",glow:"#ef9a9a",mul:1.45,frame:"#b71c1c"},
-{id:"legendario",name:"Legendario",w:2,color:"#ffc107",glow:"#ffe082",mul:1.70,frame:"#ff8f00"}
+{id:"poco_comun",name:"Poco común",w:25,color:"#2196f3",glow:"#64b5f6",mul:1.18,frame:"#1565c0"},
+{id:"rara",name:"Rara",w:12,color:"#9c27b0",glow:"#ce93d8",mul:1.30,frame:"#6a1b9a"},
+{id:"epica",name:"Épica",w:6,color:"#e53935",glow:"#ef9a9a",mul:1.45,frame:"#b71c1c"},
+{id:"legendaria",name:"Legendaria",w:2,color:"#ffc107",glow:"#ffe082",mul:1.70,frame:"#ff8f00"}
 ];
 var ZT={
 normal:{hp:30,speed:78,damage:10,r:13,h:28,color:"#4a7c3f",score:10,xp:12},
@@ -32,8 +32,17 @@ var UPGRADE_DEFS=[
 {id:"jump",name:"Doble dash",icon:"💨",once:1,minR:1,flag:"doubleJump",plus:["Dash"],minus:[]},
 {id:"triple",name:"Triple dash",icon:"🌀",once:1,minR:2,flag:"tripleJump",plus:["Dash"],minus:[]},
 {id:"pierce",name:"Perforación",icon:"➡️",once:1,minR:1,flag:"pierce",plus:["Penetración"],minus:[]},
-{id:"shotgun",name:"Escopeta",icon:"💥",once:1,minR:1,weapon:"shotgun",plus:["Área"],minus:["Alcance"]},
-{id:"smg",name:"Subfusil",icon:"🔁",once:1,minR:2,weapon:"smg",plus:["Cadencia"],minus:["Daño/bala"]},
+{id:"shotgun",name:"Nueva arma: Escopeta",icon:"💥",once:1,hero:"classic",weapon:"shotgun",fixedR:2,desc:"Abanico de perdigones. Fuerte a corta distancia.",plus:["Área","Potencia"],minus:["Alcance"]},
+{id:"smg",name:"Nueva arma: Subfusil",icon:"🔁",once:1,hero:"classic",weapon:"smg",fixedR:1,desc:"Ráfagas rápidas de balas ligeras.",plus:["Cadencia"],minus:["Daño/bala"]},
+{id:"revolver",name:"Nueva arma: Revólver",icon:"🔫",once:1,hero:"classic",weapon:"revolver",fixedR:3,desc:"Disparos pesados y precisos.",plus:["Daño","Impacto"],minus:["Cadencia"]},
+{id:"rifle",name:"Nueva arma: Rifle de asalto",icon:"🎯",once:1,hero:"classic",weapon:"rifle",fixedR:3,desc:"Cadencia firme y buen alcance.",plus:["Cadencia","Alcance"],minus:[]},
+{id:"gl",name:"Nueva arma: Lanzagranadas",icon:"💣",once:1,hero:"classic",weapon:"gl",fixedR:4,desc:"Granadas explosivas de gran potencia.",plus:["Explosión","Área"],minus:["Cadencia"]},
+{id:"pistol_up",name:"Pistola mejorada",icon:"🔫",hero:"classic",kind:"wpnUp",reqWeapon:"pistol",fixedR:0,desc:"Mejora tu pistola: más daño y cadencia.",plus:["Daño","Cadencia"],minus:[]},
+{id:"smg_up",name:"Subfusil mejorado",icon:"🔁",hero:"classic",kind:"wpnUp",reqWeapon:"smg",fixedR:1,desc:"Mejora tu subfusil: más daño y cadencia.",plus:["Daño","Cadencia"],minus:[]},
+{id:"shotgun_up",name:"Escopeta mejorada",icon:"💥",hero:"classic",kind:"wpnUp",reqWeapon:"shotgun",fixedR:2,desc:"Mejora tu escopeta: más perdigones y daño.",plus:["Área","Daño"],minus:[]},
+{id:"revolver_up",name:"Revólver mejorado",icon:"🔫",hero:"classic",kind:"wpnUp",reqWeapon:"revolver",fixedR:3,desc:"Mejora tu revólver: más daño y cadencia.",plus:["Daño"],minus:[]},
+{id:"rifle_up",name:"Rifle mejorado",icon:"🎯",hero:"classic",kind:"wpnUp",reqWeapon:"rifle",fixedR:3,desc:"Mejora tu rifle: más daño y cadencia.",plus:["Daño","Cadencia"],minus:[]},
+{id:"gl_up",name:"Lanzagranadas mejorado",icon:"💣",hero:"classic",kind:"wpnUp",reqWeapon:"gl",fixedR:4,desc:"Mejora tu lanzagranadas: más explosión y cadencia.",plus:["Explosión"],minus:[]},
 {id:"melee",name:"Machete",icon:"🔪",once:1,minR:2,flag:"hasMelee",plus:["Cuerpo a cuerpo"],minus:[]},
 {id:"shield",name:"Escudo",icon:"🛡️",once:1,minR:2,flag:"hasShield",plus:["Defensa"],minus:[]},
 {id:"lifesteal",name:"Robavida",icon:"🩸",kind:"set",stat:"lifesteal",tiers:[0.06,0.08,0.12,0.16,0.22],minR:2,plus:["Vampirismo"],minus:[]},
