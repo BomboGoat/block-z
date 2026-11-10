@@ -158,7 +158,8 @@ function tryDrawArt(wx,wy,look,ang,anim,opts){
   var dir=angDir(ang||0),e=artEntry(look,dir);
   if(!e)return 0;
   var s=toScreen(wx,wy),sc=layout.scale,m=e.meta;
-  var pose=opts.pose||(opts.dying?"die":opts.spawnP!=null?"spawn":opts.flash?"hurt":(opts.muzzle>0||opts.atk)?"atk":opts.moving?"walk":"idle");
+  var pose=opts.pose||(opts.dying?"die":opts.spawnP!=null?"spawn":opts.flash?"hurt":opts.atk?"atk":opts.moving?"walk":"idle");
+  if((opts.muzzle>0||opts.atk)&&pose!=="die"&&pose!=="spawn"){/* cheap aim kick, no new raster */}
   var ph=((anim||0)%1)*Math.PI*2;
   if(pose==="walk")ph=anim*3.4;
   var bob=0,tilt=0,sx=1,sy=1;
@@ -167,6 +168,7 @@ function tryDrawArt(wx,wy,look,ang,anim,opts){
   else if(pose==="idle"){bob=Math.sin((game.time||anim||0)*2)*1.4*sc;sy=1+Math.sin((game.time||0)*2)*0.015;}
   else if(pose==="hurt"){bob=2*sc;tilt=-0.08;}
   else if(pose==="atk"){tilt=0.05;sx=1.04;sy=0.96;}
+  if(opts.muzzle>0&&pose!=="die"&&pose!=="spawn"){tilt+=(0.03);sx=Math.max(sx,1.02);sy=Math.min(sy,0.98);}
   var H=artTargetH(look,sc)*(opts.scale||1),W=H*(m.w/m.h);
   var hover=look&&look.kind==="home";
   if(!(opts.noShadow))drawArtShadow(s,e,W,H,look,bob,opts);

@@ -111,9 +111,9 @@ function onPointerDown(e){
     return;
   }
   if(st==="upgrade"){handleUpgradeClick(p.x,p.y);return;}
-  if(inBtn(getPauseBtn(),p.x,p.y)){game.state="pause";layoutMenuButtons();sfx("click");return;}
+  if(inBtn(getPauseBtn(),p.x,p.y)){game.state="pause";if(typeof stopCombatLoops==="function")stopCombatLoops();if(game.player&&typeof stopTruenoLaser==="function")stopTruenoLaser(game.player);layoutMenuButtons();sfx("click");return;}
   if(game.player&&game.player.grabbed){registerMash();return;}
-  if(inBtn(getSuperBtn(),p.x,p.y)){beginSuperAim(e,p);return;}
+  if(game&&game.state==="playing"&&inBtn(getSuperBtn(),p.x,p.y)){beginSuperAim(e,p);return;}
   /* left half joystick */
   if(p.x<SW*0.58){
     input.joy=1;input.joyX=p.x;input.joyY=p.y;input.joyId=e.pointerId!=null?e.pointerId:1;input.jx=0;input.jy=0;
@@ -175,7 +175,7 @@ function initInput(){
   canvas.addEventListener("pointermove",onPointerMove);
   window.addEventListener("pointerup",onPointerUp);
   window.addEventListener("pointercancel",onPointerUp);
-  window.addEventListener("keydown",function(e){input.keys[e.key]=1;if(e.key==="p"||e.key==="Escape"){if(game&&game.state==="playing"){game.state="pause";layoutMenuButtons();}else if(game&&game.state==="pause"){game.state="playing";layoutMenuButtons();}}if(e.key===" "&&game&&game.player)fireSuper(game.player);});
+  window.addEventListener("keydown",function(e){input.keys[e.key]=1;if(e.key==="p"||e.key==="Escape"){if(game&&game.state==="playing"){game.state="pause";if(typeof stopCombatLoops==="function")stopCombatLoops();layoutMenuButtons();}else if(game&&game.state==="pause"){game.state="playing";layoutMenuButtons();}}if(e.key===" "&&game&&game.player&&game.state==="playing")fireSuper(game.player);});
   window.addEventListener("keyup",function(e){input.keys[e.key]=0;});
   window.addEventListener("resize",resize);window.addEventListener("orientationchange",function(){setTimeout(resize,120);});
 }
@@ -183,6 +183,7 @@ function initInput(){
 function update(dt){
   if(!game)return;
   game.time+=dt;game.menuT=(game.menuT||0)+dt;
+  if(typeof noteGameState==="function")noteGameState();
   if(game.state==="playing"&&typeof updateExtraAbilities==="function")updateExtraAbilities(dt);
   if(game.shake>0)game.shake=Math.max(0,game.shake-dt*18);
   if(game.messageTimer>0){game.messageTimer-=dt;if(game.messageTimer<=0)game.message=null;}
@@ -192,7 +193,6 @@ function update(dt){
     updatePlayerMove(p,dt,1);
     game.countdown-=dt;
     if(Math.ceil(game.countdown)<game.countShown){game.countShown=Math.max(1,Math.ceil(game.countdown));sfx("click");}
-    game.countGroanT-=dt;if(game.countGroanT<=0){zombieMoan();game.countGroanT=0.9+Math.random()*0.5;}
     if(game.countdown<=0)beginCombat();
     updateCam(dt);return;
   }

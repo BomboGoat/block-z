@@ -152,6 +152,7 @@ function applyEricWeaponUp(p){
   applyEricWeapon(p,id);
 }
 function fireWeapon(p){
+  if(typeof game!=="undefined"&&game&&game.state!=="playing")return;
   var nearest=findNearestZombie(p,heroRange(p));
   if(p.weapon==="bolt"){if(!nearest)return;fireLightning(p,nearest);return;}
   if(p.weapon==="fist"){if(!nearest)return;fireGompa(p,nearest);return;}
@@ -295,6 +296,7 @@ function superPreview(p,ang){
 }
 function fireSuper(p,ang){
   if(!p||p.grabbed||(p.laserT>0)||(p.giantLeapT>0)||(p.super||0)<CFG.SUPER_COST)return;
+  if(typeof game!=="undefined"&&game&&game.state!=="playing")return;
   if(ang==null||!isFinite(ang))ang=autoSuperAng(p);
   p.super=0;p.facing=ang;p.aimAng=ang;if(p.faceAng!=null)p.faceAng=ang;
   if(typeof gfxHitStop==="function")gfxHitStop(0.055,"big");
@@ -460,6 +462,7 @@ function updateGigante(p,dt){
   if(sc>1.45)crushSmallZombies(p);
 }
 function startTruenoLaser(p,ang){
+  if(typeof game!=="undefined"&&game&&game.state!=="playing")return;
   p.laserT=3;p.laserMax=3;p.laserAng=ang;p.laserLen=truenoLaserLen(p);p.laserW=15;p.laserDps=38;p.laserTick=0;
   p.boltFlash=0.12;shake(3);sfx("laser_hum");sfx("storm");
 }
@@ -507,7 +510,7 @@ function updateTruenoLaser(p,dt){
   if(Math.random()<0.18)addParticle(x2,y2,"#bbdefb",0.14,rand(-22,22),rand(-22,22),rand(3,6),3);
   if(p.laserT<=0)stopTruenoLaser(p);
 }
-function goToMenu(){if(game&&game.player){stopTruenoLaser(game.player);if(typeof stopGigante==="function")stopGigante(game.player);}stopMusic();game=createTitleState();skipDtClamp=1;layoutMenuButtons();startMusic("menu");}
+function goToMenu(){if(game&&game.player){stopTruenoLaser(game.player);if(typeof stopGigante==="function")stopGigante(game.player);}if(typeof stopCombatLoops==="function")stopCombatLoops();stopMusic();game=createTitleState();skipDtClamp=1;layoutMenuButtons();startMusic("menu");}
 function emptyFX(){return{zombies:[],bullets:[],particles:[],floatTexts:[],projectiles:[],grenades:[],bolts:[],slashes:[],novas:[],lasers:[],scorches:[],bloods:[],meteors:[],fires:[],timeScale:1,hitStop:0,hitStopCd:0};}
 function createTitleState(){buildMap(2026);var p=createPlayer();applyHero(p,selectedHero||"classic");p.x=760;p.y=900;var g=emptyFX();g.state="title";g.player=p;g.camX=p.x;g.camY=p.y;g.shake=0;g.wave=0;g.kills=0;g.score=0;g.waveSpawned=0;g.upgradeChoices=[];g.upgradeCards=[];g.time=0;g.bossSpawned=0;g.bossFight=0;g.message=null;g.messageTimer=0;g.titleZ=[];g.seed=2026;g.menuT=0;g.countdown=0;g.colossus=null;g.boss=null;g.home=null;g.spawnQueue=[];g.spawnTimer=0;return g;}
 function startGame(){
@@ -528,7 +531,7 @@ function startWave(idx){
   updateFlow(game.player.x,game.player.y);
   startMusic("play");
   if(idx===0){
-    game.state="countdown";game.countdown=5;game.countShown=5;game.countGroanT=0.15;sfx("wave");zombieMoan();
+    game.state="countdown";game.countdown=5;game.countShown=5;game.countGroanT=0.15;if(typeof stopCombatLoops==="function")stopCombatLoops();if(typeof stopTruenoLaser==="function")stopTruenoLaser(game.player);sfx("wave");
   }else beginCombat();
 }
 function beginCombat(){

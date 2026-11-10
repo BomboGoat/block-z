@@ -3,6 +3,9 @@ var GFX={q:2,sprMul:2,chunkMul:2,lights:1,ready:0,menuBg:null,tex:{},ft:16,slow:
 function gfxIsPhone(){return /iPhone|iPad|Android/i.test(navigator.userAgent||"");}
 function gfxInit(){
   GFX.q=2;GFX.sprMul=gfxIsPhone()?2:3;GFX.chunkMul=2;GFX.lights=1;GFX.maxPart=gfxIsPhone()?180:280;GFX.dprMax=2;
+  if(typeof ensureMuzzleSpr==="function")ensureMuzzleSpr();
+  if(typeof ensureBulletSprs==="function")ensureBulletSprs();
+  if(typeof ensureFxSpr==="function")ensureFxSpr();
 }
 function gfxSetQ(q){
   q=clamp(q|0,0,2);if(q===GFX.q)return;
@@ -90,9 +93,10 @@ function drawLighting(){
   }
   if(game.player&&game.player.muzzle>0){
     s=toScreen(game.player.x,game.player.y);
-    var g3=ctx.createRadialGradient(s.x,s.y-10*sc,1,s.x,s.y-8*sc,12*sc);
-    g3.addColorStop(0,"rgba(255,230,160,0.22)");g3.addColorStop(1,"rgba(255,120,0,0)");
-    ctx.fillStyle=g3;ctx.beginPath();ctx.arc(s.x,s.y-8*sc,12*sc,0,7);ctx.fill();
+    if(typeof ensureMuzzleSpr==="function"){
+      var ms=ensureMuzzleSpr(),a=Math.min(1,game.player.muzzle*16),sz=14*sc;
+      ctx.globalAlpha=0.22*a;ctx.drawImage(ms,s.x-sz,s.y-10*sc-sz,sz*2,sz*2);ctx.globalAlpha=1;
+    }
   }
   ctx.globalCompositeOperation="source-over";
 }
