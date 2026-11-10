@@ -1,5 +1,16 @@
 function getPauseBtn(){var s=layout.safe,sz=40;return{x:SW-s.r-sz-10,y:s.t+10,w:sz,h:sz};}
-function getSuperBtn(){var s=layout.safe,sz=layout.isPortrait?78:68;return{x:SW-s.r-sz-18,y:SH-s.b-sz-22,w:sz,h:sz};}
+function getSuperBtn(){var s=layout.safe,sz=layout.isPortrait?78:68;return{x:SW-s.r-sz-18,y:SH-s.b-sz-22,w:sz,h:sz};}function getMashBtn(){
+  var safe=layout.safe,w=Math.min(260,SW*0.52),h=108;
+  return{x:(SW-w)/2,y:Math.min(SH-safe.b-h-10,SH*0.66),w:w,h:h};
+}
+function registerMash(){
+  var p=game&&game.player;if(!p||!p.grabbed)return;
+  var now=game.time||0;
+  if(now-(p.mashAt||0)<0.08)return;
+  p.mashAt=now;p.mashCount=(p.mashCount||0)+1;p.mashPop=1;p.mash=(p.mash||0)+1;
+  shake(6);sfx("mash");
+}
+
 function inBtn(b,x,y){return b&&x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h;}
 function joyOrigin(){return{x:layout.safe.l+90,y:SH-layout.safe.b-100};}
 function resize(){
@@ -98,8 +109,8 @@ function onPointerDown(e){
   }
   if(st==="upgrade"){handleUpgradeClick(p.x,p.y);return;}
   if(inBtn(getPauseBtn(),p.x,p.y)){game.state="pause";layoutMenuButtons();sfx("click");return;}
-  if(game.player&&game.player.grabbed){game.player.mash=(game.player.mash||0)+1;}
-  if(inBtn(getSuperBtn(),p.x,p.y)){if(!(game.player&&game.player.grabbed))fireSuper(game.player);return;}
+  if(game.player&&game.player.grabbed){registerMash();return;}
+  if(inBtn(getSuperBtn(),p.x,p.y)){fireSuper(game.player);return;}
   /* left half joystick */
   if(p.x<SW*0.58){
     input.joy=1;input.joyX=p.x;input.joyY=p.y;input.joyId=e.pointerId!=null?e.pointerId:1;input.jx=0;input.jy=0;
@@ -209,11 +220,9 @@ function update(dt){
 function updatePlayerMove(p,dt,safe){
   var mx=0,my=0,mag,keys;
   if(p.grabbed){
-    mag=Math.sqrt((input.jx||0)*(input.jx||0)+(input.jy||0)*(input.jy||0));
-    if(mag>0.55&&(p.mashJoy||0)<0.35)p.mash=(p.mash||0)+1;
-    p.mashJoy=mag;
-    keys=input.keys.ArrowLeft||input.keys.a||input.keys.A||input.keys.ArrowRight||input.keys.d||input.keys.D||input.keys.ArrowUp||input.keys.w||input.keys.W||input.keys.ArrowDown||input.keys.s||input.keys.S;
-    if(keys){if(!p.mashKey){p.mash=(p.mash||0)+1;p.mashKey=1;}}else p.mashKey=0;
+    if(p.mashPop>0)p.mashPop=Math.max(0,p.mashPop-dt*5);
+    keys=input.keys.ArrowLeft||input.keys.a||input.keys.A||input.keys.ArrowRight||input.keys.d||input.keys.D||input.keys.ArrowUp||input.keys.w||input.keys.W||input.keys.ArrowDown||input.keys.s||input.keys.S||input.keys[" "]||input.keys.Enter;
+    if(keys){if(!p.mashKey){registerMash();p.mashKey=1;}}else p.mashKey=0;
     return;
   }
   if(p.throwT>0){
@@ -261,33 +270,37 @@ function updatePlayerMove(p,dt,safe){
 function bossCamDrop(b){
   if(!b||!layout)return 28;
   var h=typeof artTargetH==="function"?artTargetH(b.look||{kind:b.isColossus?"colossus":b.isHome?"home":"final"},layout.scale):(b.h||40)*layout.scale;
-  var drop=(0.58*h)/(CFG.YSCALE*Math.max(0.5,layout.scale));
-  if(b.isHome|| (b.look&&b.look.kind==="home"))drop+=10;
-  return Math.max(28, drop);
+  var drop=(0.42*h)/(CFG.YSCALE*Math.max(0.5,layout.scale));
+  if(b.isHome||(b.look&&b.look.kind==="home"))drop+=6;
+  /* keep tall bosses inside the intro letterbox band */
+  if(game&&game.state==="boss_intro"){
+    var lb=(0.18*SH)/(CFG.YSCALE*Math.max(0.5,layout.scale));
+    drop=Math.max(10,drop-lb*0.65);
+  }
+  return Math.max(16, drop);
 }
 function updateCam(dt){
   var p=game.player,k=1-Math.exp(-CFG.CAM_LERP*dt),tx=p.x,ty=p.y,b=game.boss,t,u,bx,by,drop;
+  var base=layout.baseViewW||420, want=base, zin=0;
   if(game.state==="boss_intro"&&b){
     t=b.introT;drop=bossCamDrop(b);bx=b.x;by=b.y-drop;
     if(t>3.7){u=(4.2-t)/0.5;u=u*u*(3-2*u);tx=(game.introX||p.x)+(bx-(game.introX||p.x))*u;ty=(game.introY||p.y)+(by-(game.introY||p.y))*u;}
     else if(t>1){tx=bx;ty=by;}
     else {u=1-t;u=u*u*(3-2*u);tx=bx+(p.x-bx)*u;ty=by+(p.y-by)*u;}
     k=1-Math.exp(-10*dt);
-    /* slow menacing zoom onto the boss */
-    var zin=t>3.7?((4.2-t)/0.5)*0.14:t>1?0.14+((3.7-t)/2.7)*0.08:0.22*(t);
-    var base=layout.baseViewW||420;
-    layout.viewW=base*(1-zin);
+    /* zoom in to the intro hold and KEEP that zoom (no zoom-out on the return pan) */
+    zin=t>3.7?((4.2-t)/0.5)*0.22:0.22;
+    want=base*(1-zin);
+  }else if(game.bossFight&&b&&!b.dead&&!b.dying){
+    drop=bossCamDrop(b);
+    tx=p.x*0.40+b.x*0.60;ty=p.y*0.40+(b.y-drop)*0.60;
+    want=base*0.78; /* same scale as the intro hold, so the boss stays imposing */
+  }
+  if(layout.viewW!==want){
+    layout.viewW=want;
     layout.scale=layout.gameDrawW/layout.viewW;
     layout.viewH=layout.gameDrawH/(layout.scale*CFG.YSCALE);
     W=layout.viewW;H=layout.viewH;
-  }else{
-    if(layout.baseViewW&&layout.viewW!==layout.baseViewW){
-      layout.viewW=layout.baseViewW;
-      layout.scale=layout.gameDrawW/layout.viewW;
-      layout.viewH=layout.gameDrawH/(layout.scale*CFG.YSCALE);
-      W=layout.viewW;H=layout.viewH;
-    }
-    if(game.bossFight&&b&&!b.dead&&!b.dying){drop=bossCamDrop(b)*0.7;tx=p.x*0.62+b.x*0.38;ty=p.y*0.62+b.y*0.38-drop;}
   }
   game.camX+=(tx-game.camX)*k;game.camY+=(ty-game.camY)*k;
   var hw=worldW()*0.5,hh=worldH()*0.5;
@@ -482,7 +495,6 @@ function updateHome(z,dt){
 
   if(z.grabT>0){
     z.grabT-=dt;
-    if(p.mash){z.grabT-=p.mash*0.3;p.mash=0;}
     sp=520;z.x+=Math.cos(z.grabA)*sp*dt;z.y+=Math.sin(z.grabA)*sp*dt;
     z.x=clamp(z.x,70,CFG.MAP_W-70);z.y=clamp(z.y,70,CFG.MAP_H-70);
     if(z.slamCd>0)z.slamCd-=dt;
@@ -492,10 +504,12 @@ function updateHome(z,dt){
     else if(z.y<=70||z.y>=CFG.MAP_H-70)homeSlam(z,p,0,z.y<=70?1:-1);
     if(Math.random()<0.55)addParticle(z.x-Math.cos(z.grabA)*10,z.y-Math.sin(z.grabA)*10,"#c62828",0.28,0,0,10,4);
     p.x=z.x+Math.cos(z.grabA+3.14)*10;p.y=z.y+8;p.grabbed=1;z.aimAng=z.grabA;
-    if(z.grabT<=0){
-      p.grabbed=0;p.vx=Math.cos(z.grabA)*420;p.vy=Math.sin(z.grabA)*420;p.throwT=0.28;
-      p.invuln=Math.max(p.invuln,0.85);p.x+=Math.cos(z.grabA)*28;p.y+=Math.sin(z.grabA)*28;resolveCircle(p);
-      z.atkCd=z.p2?6.5:9;z.grabT=0;floatText(z.x,z.y-20,"¡Suelta!","#ffe082");shake(8);sfx("dash");
+    var need=z.mashNeed||8, freed=((p.mashCount||0)>=need)||z.grabT<=0;
+    if(freed){
+      p.grabbed=0;p.mashCount=0;p.mashPop=0;p.vx=-Math.cos(z.grabA)*180;p.vy=-Math.sin(z.grabA)*180;p.throwT=0.22;
+      p.invuln=Math.max(p.invuln,0.9);p.x-=Math.cos(z.grabA)*22;p.y-=Math.sin(z.grabA)*22;resolveCircle(p);
+      z.grabT=0;z.stun=1.2;z.x+=Math.cos(z.grabA)*36;z.y+=Math.sin(z.grabA)*36;resolveCircle(z);
+      z.atkCd=z.p2?6.5:9;floatText(z.x,z.y-20,"¡Suelta!","#ffe082");shake(10);sfx("explode");
     }
     return;
   }
@@ -504,7 +518,7 @@ function updateHome(z,dt){
     z.x+=Math.cos(ang)*sp*dt;z.y+=Math.sin(ang)*sp*dt;z.aimAng=ang;
     if(Math.random()<0.7)addParticle(z.x,z.y,"#c62828",0.25,-Math.cos(ang)*40,-Math.sin(ang)*40,9,4);
     if(dist(z.x,z.y,p.x,p.y)<z.r+p.r+14){
-      z.grabT=2.7;z.grabA=ang;z.slamCd=0.12;z.grabDmg=0;z.grabDash=0;p.grabbed=1;p.mash=0;
+      z.grabT=3.0;z.grabMax=3.0;z.mashNeed=8;z.grabA=ang;z.slamCd=0.12;z.grabDmg=0;z.grabDash=0;p.grabbed=1;p.mash=0;p.mashCount=0;p.mashPop=0;p.mashAt=0;
       sfx("dash");shake(7);floatText(z.x,z.y-12,"¡AGARRE!","#ff1744");return;
     }
     if(z.grabDash<=0||dist(z.x,z.y,z.tx,z.ty)<14){

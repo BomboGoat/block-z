@@ -114,46 +114,45 @@ function drawBodyShadow(s,bodyW,bob,opts,look){
 }
 
 
-function drawWalkLegs(look,anim,pose,H,W,fx,fy,waist){
-  var walk=pose==="walk";
+function artWaist(look){
+  if(!look)return 0.57;
+  if(look.kind==="colossus")return 0.55;
+  if(look.kind==="final")return 0.58;
+  if(look.kind==="zombie")return (look.type==="tank"||look.type==="armored")?0.56:0.57;
+  if(look.hero==="gompa")return 0.54;
+  if(look.hero==="classic"||look.hero==="trueno")return 0.56;
+  if(look.hero==="mr")return 0.55;
+  return 0.57;
+}
+/* Walk using the sprite's own legs (correct pants, shoes, outlines) instead of procedural sticks. */
+function drawSpriteWalk(e,look,anim,pose,H,W,fx,fy){
+  var iw=e.img.naturalWidth||e.img.width, ih=e.img.naturalHeight||e.img.height;
+  if(pose!=="walk"){ctx.drawImage(e.img,-W*fx,-H*fy,W,H);return;}
+  var waist=artWaist(look);
   var boss=look&&(look.kind==="colossus"||look.kind==="final");
   var sham=look&&look.kind==="zombie";
-  var ph=walk?(anim||0)*(boss?5.2:sham?6.2:7.0):(game.time||0)*2.15;
-  var amp=walk?(boss?0.28:sham?0.4:0.38):0.055;
-  var lean=sham?0.12:0;
-  var aL=Math.sin(ph)*amp+lean, aR=Math.sin(ph+Math.PI)*amp+lean;
-  var waistY=H*(waist-(fy!=null?fy:1));
-  var groundY=H*(1-(fy!=null?fy:1));
-  var overlap=H*0.12; /* hips tuck under the torso crop — no seam/gap */
-  var legLen=Math.max(10,groundY-(waistY-overlap*0.25));
-  var hipW=boss?H*0.18:(sham?H*0.13:H*0.145);
-  var thigh=boss?H*0.08:(sham?H*0.06:H*0.068);
-  var shin=thigh*0.82;
-  var pants=(look&&(look.pants||look.pantsDark))||(boss?"#1e1814":"#2a2a2a");
-  var pantsDark=(look&&look.pantsDark)||pants;
-  var shoe=(look&&look.shoe)||"#1a1a1a";
-  /* wide pelvis that overlaps the crop line so the hoodie/jacket sits on pants */
-  ctx.fillStyle=pants;
-  ctx.beginPath();ctx.ellipse(0,waistY+thigh*0.05,hipW*1.08,overlap*0.85+thigh*0.4,0,0,7);ctx.fill();
-  ctx.fillRect(-hipW*0.95,waistY-overlap,hipW*1.9,overlap+thigh*0.7);
-  function limb(a,side,front){
-    var hipX=side*hipW*0.48, hipY=waistY-overlap*0.35;
-    var kneeX=hipX+Math.sin(a*0.65)*legLen*0.38;
-    var kneeY=hipY+Math.cos(a*0.25)*legLen*0.5;
-    var footX=hipX+Math.sin(a)*legLen*0.68;
-    var footY=groundY-Math.max(0,Math.sin(a))*legLen*0.1;
-    ctx.strokeStyle=front?pants:pantsDark;ctx.lineCap="round";ctx.lineJoin="round";
-    ctx.lineWidth=thigh*2;
-    ctx.beginPath();ctx.moveTo(hipX,hipY);ctx.lineTo(kneeX,kneeY);ctx.stroke();
-    ctx.lineWidth=shin*2;
-    ctx.beginPath();ctx.moveTo(kneeX,kneeY);ctx.lineTo(footX,footY);ctx.stroke();
-    ctx.fillStyle=shoe;
-    ctx.beginPath();
-    ctx.ellipse(footX+side*1.6+Math.sin(a)*2,footY+1.2,thigh*1.15,thigh*0.52,0,0,7);
-    ctx.fill();
+  var ph=(anim||0)*(boss?5.1:sham?6.0:6.6);
+  var amp=boss?0.20:sham?0.30:0.26;
+  var aL=Math.sin(ph)*amp, aR=Math.sin(ph+Math.PI)*amp;
+  var overlap=0.08, srcY=Math.max(0,Math.floor(ih*(waist-overlap))), srcH=ih-srcY, mid=iw*0.5, pad=Math.floor(iw*0.07);
+  function destX(sx){return -W*fx+(sx/iw)*W;}
+  function destY(sy){return -H*fy+(sy/ih)*H;}
+  function leg(side,ang){
+    var srcX=side<0?0:Math.max(0,Math.floor(mid-pad));
+    var srcW=side<0?Math.min(iw,Math.ceil(mid+pad))-srcX:iw-srcX;
+    if(srcW<=1)return;
+    var hipSx=mid+side*iw*0.11, hipSy=ih*waist, hx=destX(hipSx), hy=destY(hipSy);
+    var lift=Math.max(0,Math.sin(ang))*H*0.05;
+    ctx.save();ctx.translate(hx,hy-lift);ctx.rotate(ang);
+    ctx.drawImage(e.img,srcX,srcY,srcW,srcH,destX(srcX)-hx,destY(srcY)-hy,W*(srcW/iw),H*(srcH/ih));
+    ctx.restore();
   }
-  limb(aR,-1,0);limb(aL,1,1);
+  if(Math.sin(ph)>=0){leg(-1,aR);leg(1,aL);}else{leg(1,aL);leg(-1,aR);}
+  var torsoH=Math.min(ih,Math.ceil(ih*(waist+0.07)));
+  ctx.drawImage(e.img,0,0,iw,torsoH,-W*fx,-H*fy,W,H*(torsoH/ih));
 }
+function drawWalkLegs(look,anim,pose,H,W,fx,fy,waist){ /* kept as a no-op alias */ }
+
 function tryDrawArt(wx,wy,look,ang,anim,opts){
   opts=opts||{};
   var dir=angDir(ang||0),e=artEntry(look,dir);
@@ -164,7 +163,7 @@ function tryDrawArt(wx,wy,look,ang,anim,opts){
   if(pose==="walk")ph=anim*3.4;
   var bob=0,tilt=0,sx=1,sy=1;
   if(opts.air||(look&&look.kind==="home")){bob=-((look.kind==="home")?16:10)*sc;if(look.kind==="home")bob-=Math.sin((game.time||0)*3.5)*4*sc;}
-  else if(pose==="walk"){bob=-Math.abs(Math.sin(ph))*3.2*sc;tilt=Math.sin(ph)*0.06;sx=1+Math.sin(ph*2)*0.04;sy=1-Math.sin(ph*2)*0.04;}
+  else if(pose==="walk"){bob=-Math.abs(Math.sin(ph))*2.2*sc;tilt=Math.sin(ph)*0.035;sx=1+Math.sin(ph*2)*0.015;sy=1-Math.sin(ph*2)*0.015;}
   else if(pose==="idle"){bob=Math.sin((game.time||anim||0)*2)*1.4*sc;sy=1+Math.sin((game.time||0)*2)*0.015;}
   else if(pose==="hurt"){bob=2*sc;tilt=-0.08;}
   else if(pose==="atk"){tilt=0.05;sx=1.04;sy=0.96;}
@@ -179,16 +178,8 @@ function tryDrawArt(wx,wy,look,ang,anim,opts){
   if(opts.flash)ctx.filter="brightness(1.7) saturate(0.55)";
   var fx=m.fx!=null?m.fx:0.5, fy=m.fy!=null?m.fy:1;
   var skipLegs=!!(opts.air&&look&&look.kind==="home")||(look&&look.kind==="home")||(look&&look.type==="crawler")||opts.dying||opts.spawnP!=null;
-  var waist=0.64;
-  if(look&&look.kind==="colossus")waist=0.66;
-  else if(look&&look.kind==="final")waist=0.70;
-  else if(look&&look.kind==="zombie")waist=0.64;
-  else if(look&&look.hero==="gompa")waist=0.63;
-
   if(!skipLegs){
-    drawWalkLegs(look,anim,pose,H,W,fx,fy,waist);
-    var iw=e.img.naturalWidth||e.img.width, ih=e.img.naturalHeight||e.img.height;
-    ctx.drawImage(e.img,0,0,iw,ih*waist,-W*fx,-H*fy,W,H*waist);
+    drawSpriteWalk(e,look,anim,pose,H,W,fx,fy);
   }else{
     ctx.drawImage(e.img,-W*fx,-H*fy,W,H);
   }

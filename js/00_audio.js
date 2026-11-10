@@ -1,8 +1,56 @@
 var audio={ctx:null,master:null,sfxG:null,musG:null,mutedSfx:0,mutedMus:0,musicTimer:null,musicMode:null,started:0,step:0};
 function loadAudioSettings(){var s=lsGet("bz_audio",null);if(s){audio.mutedSfx=!!s.sfx;audio.mutedMus=!!s.mus;}}
 function saveAudioSettings(){lsSet("bz_audio",{sfx:audio.mutedSfx?1:0,mus:audio.mutedMus?1:0});}
+var MUS_BEDS={menu:"assets/mus/menu.mp3",play:"assets/mus/play.mp3"};
+function musicBedKey(mode){return(mode==="menu"||mode==="play")?mode:null;}
+function ensureMusicBeds(){
+  if(audio.beds)return;
+  audio.beds={};
+  Object.keys(MUS_BEDS).forEach(function(k){
+    var a=new Audio(MUS_BEDS[k]);
+    a.loop=true;a.preload="auto";a.crossOrigin="anonymous";a.volume=0;a.setAttribute("playsinline","playsinline");
+    audio.beds[k]={el:a,gain:null,wanted:0,src:null};
+  });
+}
+function hookBedNodes(){
+  if(!audio.ctx||!audio.beds)return;
+  Object.keys(audio.beds).forEach(function(k){
+    var b=audio.beds[k];if(b.src||!audio.musG)return;
+    try{b.gain=audio.ctx.createGain();b.gain.gain.value=0;b.src=audio.ctx.createMediaElementSource(b.el);b.src.connect(b.gain);b.gain.connect(audio.musG);}catch(err){}
+  });
+}
+function fadeBed(b,to,dur){
+  if(!b)return;
+  if(b.gain&&audio.ctx){
+    var t=audio.ctx.currentTime,cur=b.gain.gain.value;
+    try{b.gain.gain.cancelScheduledValues(t);b.gain.gain.setValueAtTime(Math.max(0.0001,cur),t);b.gain.gain.linearRampToValueAtTime(to,t+dur);}catch(e){b.gain.gain.value=to;}
+  }
+  try{b.el.volume=to;}catch(e){}
+}
+function unlockBeds(){
+  ensureMusicBeds();
+  if(audio.ctx&&audio.ctx.state==="suspended")audio.ctx.resume();
+  hookBedNodes();
+  Object.keys(audio.beds||{}).forEach(function(k){
+    var b=audio.beds[k],pr;
+    if(!b.el)return;
+    if(b.el.paused){
+      try{b.el.muted=true;b.el.volume=0;}catch(e){}
+      pr=b.el.play();
+      if(pr&&pr.then)pr.then(function(){if(!b.wanted){try{b.el.pause();b.el.currentTime=0;}catch(e){}}b.el.muted=false;}).catch(function(){});
+    }
+  });
+}
+function fadeOutBeds(dur){
+  Object.keys(audio.beds||{}).forEach(function(k){
+    var b=audio.beds[k];
+    if(!b.wanted&&(!b.gain||b.gain.gain.value<=0.001))return;
+    b.wanted=0;fadeBed(b,0,dur||0.7);
+    setTimeout(function(){if(!b.wanted){try{b.el.pause();}catch(e){}}},((dur||0.7)*1000)+80);
+  });
+}
 function ensureAudio(){
-  if(audio.ctx){if(audio.ctx.state==="suspended")audio.ctx.resume();return audio.ctx;}
+  if(audio.ctx){if(audio.ctx.state==="suspended")audio.ctx.resume();unlockBeds();return audio.ctx;}
   try{
     var AC=window.AudioContext||window.webkitAudioContext;if(!AC)return null;
     audio.ctx=new AC();audio.master=audio.ctx.createGain();audio.master.gain.value=0.7;
@@ -11,12 +59,15 @@ function ensureAudio(){
     audio.comp.attack.value=0.003;audio.comp.release.value=0.14;
     audio.master.connect(audio.comp);audio.comp.connect(audio.ctx.destination);
     audio.sfxG=audio.ctx.createGain();audio.sfxG.gain.value=audio.mutedSfx?0:0.9;audio.sfxG.connect(audio.master);
-    audio.musG=audio.ctx.createGain();audio.musG.gain.value=audio.mutedMus?0:0.28;audio.musG.connect(audio.master);
-    audio.gunVoices=0;audio.started=1;return audio.ctx;
+    audio.musG=audio.ctx.createGain();audio.musG.gain.value=audio.mutedMus?0:0.42;audio.musG.connect(audio.master);
+    audio.gunVoices=0;audio.started=1;
+    ensureMusicBeds();hookBedNodes();unlockBeds();
+    if(audio.musicMode)startMusic(audio.musicMode);
+    return audio.ctx;
   }catch(e){return null;}
 }
 function setMuteSfx(v){audio.mutedSfx=!!v;if(audio.sfxG)audio.sfxG.gain.value=audio.mutedSfx?0:0.9;saveAudioSettings();}
-function setMuteMus(v){audio.mutedMus=!!v;if(audio.musG)audio.musG.gain.value=audio.mutedMus?0:0.28;saveAudioSettings();}
+function setMuteMus(v){audio.mutedMus=!!v;if(audio.musG)audio.musG.gain.value=audio.mutedMus?0:0.42;saveAudioSettings();}
 function getNoiseBuf(dur){
   if(!audio.ctx)return null;
   audio.noiseBuf=audio.noiseBuf||{};
@@ -73,6 +124,7 @@ function noiseBurst(dur,vol){
 function sfx(name,extra){
   if(audio.mutedSfx&&name!=="unlock")return;
   switch(name){
+    case"mash":musOsc(audio.sfxG,"sine",180,audio.ctx.currentTime,0.07,0.22,90);noiseBurst(0.05,0.1);break;
     case"shot_pistol":gunshot("pistol");break;
     case"shot_shotgun":gunshot("shotgun");break;
     case"shot_smg":gunshot("smg");break;
@@ -181,40 +233,48 @@ function startMusic(mode){
   if(!mode){stopMusic();return;}
   if(!ensureAudio()||!audio.ctx){audio.musicMode=mode;return;}
   if(audio.mutedMus){audio.musicMode=mode;return;}
-  if(audio.musicMode===mode&&audio.musBus&&audio.musicTimer)return;
+  var bed=musicBedKey(mode);
+  if(audio.musicMode===mode&&((bed&&audio.beds&&audio.beds[bed]&&audio.beds[bed].wanted)||(!bed&&audio.musBus&&audio.musicTimer)))return;
   if(audio.musBus)fadeOutBus(audio.musBus,0.7);
   if(audio.musicTimer){clearTimeout(audio.musicTimer);audio.musicTimer=null;}
   audio.musicGen=(audio.musicGen||0)+1;
+  audio.musicMode=mode;audio.musicStep=0;
+  ensureMusicBeds();hookBedNodes();unlockBeds();
+  /* fade out beds that are not the one we want */
+  Object.keys(audio.beds||{}).forEach(function(k){
+    var b=audio.beds[k];
+    if(bed===k)return;
+    if(b.wanted||(b.gain&&b.gain.gain.value>0.001)){b.wanted=0;fadeBed(b,0,0.7);setTimeout(function(){if(!b.wanted){try{b.el.pause();}catch(e){}}},780);}
+  });
+  if(bed&&audio.beds[bed]){
+    var B=audio.beds[bed],pr;
+    B.wanted=1;
+    try{B.el.muted=false;if(B.el.paused){pr=B.el.play();if(pr&&pr.catch)pr.catch(function(){});}}catch(e){}
+    fadeBed(B,1,0.7);
+    audio.musBus=null;
+    if(mode==="play"){
+      /* very quiet heartbeat pulse under the recorded bed — not a melody */
+      var gen=audio.musicGen,bus=audio.ctx.createGain(),now=audio.ctx.currentTime;
+      bus.gain.setValueAtTime(0.0001,now);bus.gain.linearRampToValueAtTime(1,now+0.65);
+      bus.connect(audio.musG);audio.musBus=bus;
+      function pulse(){
+        if(gen!==audio.musicGen||!audio.ctx||audio.musicMode!=="play")return;
+        var t=audio.ctx.currentTime;
+        musOsc(bus,"sine",46.25,t,0.28,0.035,32);
+        musNoise(bus,t,0.04,0.012,180);
+        audio.musicTimer=setTimeout(pulse,820);
+      }
+      pulse();
+    }
+    return;
+  }
   var gen=audio.musicGen,bus=audio.ctx.createGain(),now=audio.ctx.currentTime;
   bus.gain.setValueAtTime(0.0001,now);bus.gain.linearRampToValueAtTime(1,now+0.65);
-  bus.connect(audio.musG);audio.musBus=bus;audio.musicMode=mode;audio.musicStep=0;
+  bus.connect(audio.musG);audio.musBus=bus;
   function tick(){
     if(gen!==audio.musicGen||!audio.ctx||!audio.musBus)return;
     var t=audio.ctx.currentTime,s=audio.musicStep++,m=audio.musicMode,wait=0.28,n,bass,mel,ch;
-    if(m==="menu"){
-      /* Dark eerie horror intro, ~66 BPM, D minor, music-box, drones, wind, distant groans */
-      wait=0.455;
-      mel=[587.3,0,440.0,0, 698.5,0,659.3,0,  587.3,0,0,440.0, 523.3,0,440.0,0,
-           698.5,659.3,0,587.3, 0,440.0,0,0,  587.3,0,349.2,0, 329.6,0,293.7,0];
-      n=s%32;
-      if(n%8===0){musOsc(bus,"sine",36.71,t,2.2,0.07);musOsc(bus,"sine",55.00,t,2.2,0.04);musChoir(bus,t,[146.8,174.6],2.0,0.02);}
-      if(n===4||n===20)musWind(bus,t,2.8,0.03);
-      if(n===18||n===30)musGroanMus(bus,t);
-      if(mel[n])musBox(bus,t,mel[n],1.15,0.055);
-    }else if(m==="play"){
-      /* Calm horror tension, ~90 BPM, E minor, pulsing low synth, subtle perc, non-fatiguing */
-      wait=0.333;
-      bass=[82.41,82.41,82.41,82.41, 82.41,82.41,73.42,82.41, 82.41,82.41,82.41,61.74, 73.42,73.42,82.41,82.41];
-      mel=[0,0,329.6,0, 0,392.0,0,0, 329.6,0,246.9,0, 0,293.7,0,0];
-      n=s%16;
-      musOsc(bus,"sine",bass[n],t,0.3,0.09);
-      musOsc(bus,"triangle",bass[n]*0.5,t,0.32,0.08);
-      if(n%8===0)musKick(bus,t,0.05);
-      if(n%8===4)musNoise(bus,t,0.045,0.012,2200);
-      if(n===0)musChoir(bus,t,[164.8,196.0,246.9],2.5,0.02);
-      if(mel[n])musOsc(bus,"triangle",mel[n],t,0.5,0.03);
-      if(n===10)musWind(bus,t,1.6,0.016);
-    }else if(m==="colo"||m==="boss"){
+    if(m==="colo"||m==="boss"){
       /* Epic Colossus, ~104 BPM, D minor, big drums + brass */
       wait=0.288;
       bass=[73.42,73.42,73.42,65.41, 73.42,87.31,98.00,73.42, 65.41,73.42,58.27,73.42, 87.31,73.42,55.00,73.42];
@@ -250,10 +310,9 @@ function startMusic(mode){
       musKick(bus,t,0.2);
       musHat(bus,t,0.036);
       if(n%2===0)musSnare(bus,t,n%4===0?0.1:0.05);
-      if(n%4===0)musChoir(bus,t,[233.1,246.9,277.2,349.2],0.6,0.04);
+      if(n%4===0)musChoir(bus,t,[233.1,246.9,277.2,349.2],0.75,0.045);
       musNoise(bus,t,0.06,0.02,400);
-      var rise2=415.3*Math.pow(1.018,(s%24));
-      musOsc(bus,"square",rise2,t,0.12,0.035);
+      if(n%4===0)musOsc(bus,"sawtooth",207.7,t,0.22,0.05,155.6);
     }else{
       /* Final boss: ritual, distinct, ~96 BPM, C# minor + tritone */
       wait=0.312;
@@ -265,8 +324,8 @@ function startMusic(mode){
       if(n%8===4)musSnare(bus,t,0.09);
       if(n%4===2)musHat(bus,t,0.02);
       if(n===0)musChoir(bus,t,[138.6,164.8,207.7],1.15,0.04);
-      if(n%8===6)musOsc(bus,"square",196.0,t,0.28,0.05,138.6);
-      if(n%16===8)musOsc(bus,"triangle",277.2,t,0.4,0.05,155.6);
+      if(n%8===6)musOsc(bus,"sawtooth",196.0,t,0.35,0.05,138.6);
+      if(n%16===8)musChoir(bus,t,[277.2,329.6],0.5,0.03);
     }
     audio.musicTimer=setTimeout(tick,wait*1000);
   }
@@ -276,6 +335,7 @@ function stopMusic(){
   audio.musicGen=(audio.musicGen||0)+1;
   if(audio.musicTimer){clearTimeout(audio.musicTimer);audio.musicTimer=null;}
   if(audio.musBus)fadeOutBus(audio.musBus,0.3);
+  fadeOutBeds(0.3);
   audio.musBus=null;audio.musicMode=null;
 }
 function zombieMoan(){

@@ -105,7 +105,8 @@ function drawHUD(){
   ctx.fillStyle="#cfd8dc";ctx.font="11px system-ui";ctx.fillText((zn?zn+"  ·  ":"")+"Bajas "+game.kills+"  ·  "+game.score+" pts",hx,hy+44);
   drawMinimap();
   drawPauseBtn();
-  if(game.state==="playing"||game.state==="countdown"||game.state==="boss_intro"){drawJoystick();drawSuperBtn();}
+  if((game.state==="playing"||game.state==="countdown"||game.state==="boss_intro")&&!(p&&p.grabbed)){drawJoystick();drawSuperBtn();}
+  if(p&&p.grabbed)drawMashButton();
   var boss=game.boss;
   if(boss&&!boss.dead&&!boss.dying&&game.bossFight&&game.state!=="boss_intro"){
     var bw=Math.min(340,SW-120),bx=(SW-bw)/2,by=s.t+2,bh=8;
@@ -260,6 +261,27 @@ function drawCountdownOverlay(){
   ctx.strokeText(msg,SW/2,SH*0.32);ctx.fillStyle="#ffecb3";ctx.fillText(msg,SW/2,SH*0.32);
   ctx.font="bold 84px system-ui";ctx.lineWidth=10;ctx.strokeText(String(n),SW/2,SH*0.5);ctx.fillStyle="#ffc107";ctx.fillText(String(n),SW/2,SH*0.5);
   ctx.textBaseline="alphabetic";ctx.textAlign="left";
+}
+function drawMashButton(){
+  var b=getMashBtn(),p=game.player,need=(game.boss&&game.boss.mashNeed)||8;
+  var prog=clamp((p.mashCount||0)/need,0,1);
+  if(game.boss&&game.boss.grabMax)prog=Math.max(prog,1-clamp((game.boss.grabT||0)/game.boss.grabMax,0,1)*0.0);
+  var pop=1+0.18*(p.mashPop||0), pulse=1+Math.sin((game.time||0)*10)*0.03;
+  ctx.save();ctx.translate(b.x+b.w/2,b.y+b.h/2);ctx.scale(pop*pulse,pop*pulse);
+  ctx.translate(-(b.x+b.w/2),-(b.y+b.h/2));
+  ctx.fillStyle="rgba(0,0,0,0.45)";roundRect(ctx,b.x-6,b.y-6,b.w+12,b.h+12,20);ctx.fill();
+  var g=ctx.createLinearGradient(b.x,b.y,b.x,b.y+b.h);
+  g.addColorStop(0,"#ff5252");g.addColorStop(1,"#b71c1c");
+  ctx.fillStyle=g;roundRect(ctx,b.x,b.y,b.w,b.h,18);ctx.fill();
+  ctx.strokeStyle="#ffe082";ctx.lineWidth=4;roundRect(ctx,b.x,b.y,b.w,b.h,18);ctx.stroke();
+  ctx.textAlign="center";ctx.font="bold 28px system-ui";
+  ctx.strokeStyle="rgba(0,0,0,0.7)";ctx.lineWidth=6;ctx.strokeText("¡PULSA!",b.x+b.w/2,b.y+42);
+  ctx.fillStyle="#fff";ctx.fillText("¡PULSA!",b.x+b.w/2,b.y+42);
+  var bx=b.x+18,by=b.y+b.h-28,bw=b.w-36,bh=14;
+  ctx.fillStyle="rgba(0,0,0,0.45)";roundRect(ctx,bx,by,bw,bh,7);ctx.fill();
+  ctx.fillStyle="#ffe082";roundRect(ctx,bx,by,Math.max(6,bw*prog),bh,7);ctx.fill();
+  ctx.strokeStyle="#1a140c";ctx.lineWidth=2;roundRect(ctx,bx,by,bw,bh,7);ctx.stroke();
+  ctx.restore();ctx.textAlign="left";
 }
 function drawBossIntroUI(){
   var b=game.boss,t=b?b.introT:0,h=SH*0.18;
