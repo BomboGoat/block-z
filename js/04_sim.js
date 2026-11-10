@@ -41,7 +41,11 @@ function explodeAt(x,y,r,dmg,opts){
 }
 function findNearestZombie(p,range){
   var best=null,bestD=range||CFG.AUTO_RANGE*(p.rangeMul||1),i,z,d;
-  for(i=0;i<game.zombies.length;i++){z=game.zombies[i];if(z.dead||z.dying)continue;d=dist(p.x,p.y,z.x,z.y);if(d>=bestD)continue;if(d>40&&hiddenInBush(z.x,z.y,p))continue;if(d>28&&!hasLOS(p.x,p.y,z.x,z.y))continue;bestD=d;best=z;}
+  for(i=0;i<game.zombies.length;i++){
+    z=game.zombies[i];if(z.dead||z.dying)continue;d=dist(p.x,p.y,z.x,z.y);if(d>=bestD)continue;
+    if(d>36&&typeof inCamView==="function"&&!inCamView(z.x,z.y,-18))continue;
+    if(d>40&&hiddenInBush(z.x,z.y,p))continue;if(d>28&&!hasLOS(p.x,p.y,z.x,z.y))continue;bestD=d;best=z;
+  }
   return best;
 }
 function heroRange(p){
@@ -70,23 +74,14 @@ function fireLightning(p,first){
   sfx("zap");
 }
 function fireGompa(p,n){
-  var d=dist(p.x,p.y,n.x,n.y),reach=(p.meleeRange||86)*(p.rangeMul||1);
-  p.aimAng=Math.atan2(n.y-p.y,n.x-p.x);p.recoil=0.6;
-  if(d<reach+n.r){
-    p.meleeSwing=0.22;p.swingDone=0;p.slashAng=p.aimAng;
-    game.slashes.push({x:p.x,y:p.y,ang:p.aimAng,r:reach*0.7,life:0.16,maxLife:0.16});
-    sfx("melee");
-    if(typeof maybeShockN==="function")maybeShockN(p);
-    if(typeof maybeKnifeFan==="function")maybeKnifeFan(p);
-  }else{
-    var spd=340,b=bulletPool.pop()||{};
-    b.x=p.x+Math.cos(p.aimAng)*16;b.y=p.y+Math.sin(p.aimAng)*16;
-    b.vx=Math.cos(p.aimAng)*spd;b.vy=Math.sin(p.aimAng)*spd;b.r=6;
-    b.damage=(16+(p.heavyBell?5:0))*p.damageMul;b.life=1.05*(p.rangeMul||1);
-    b.pierce=0;b.bounce=0;b.bell=1;b.hit=new Set();
-    if(p.fireAmmo)b.fire=1;if(p.iceAmmo)b.ice=1;if(p.poisonAmmo)b.poison=1;
-    game.bullets.push(b);sfx("hit");
-  }
+  p.aimAng=Math.atan2(n.y-p.y,n.x-p.x);p.recoil=0.5;p.meleeSwing=0.14;
+  var spd=400,b=bulletPool.pop()||{};
+  b.x=p.x+Math.cos(p.aimAng)*18;b.y=p.y+Math.sin(p.aimAng)*18;
+  b.vx=Math.cos(p.aimAng)*spd;b.vy=Math.sin(p.aimAng)*spd;b.r=7;
+  b.damage=(16+(p.heavyBell?5:0))*p.damageMul;b.life=1.15*(p.rangeMul||1);
+  b.pierce=0;b.bounce=0;b.bell=1;b.spinA=Math.random()*6;b.spinV=16;b.hit=new Set();
+  if(p.fireAmmo)b.fire=1;if(p.iceAmmo)b.ice=1;if(p.poisonAmmo)b.poison=1;
+  game.bullets.push(b);sfx("melee");
 }
 function fireMeleeHero(p,n){
   var range=(p.meleeRange||100)*(p.rangeMul||1)*(p.wideSlash?1.3:1);
@@ -117,9 +112,11 @@ function fireWeapon(p){
   for(var i=0;i<shots;i++){
     var t=shots===1?0:(i/(shots-1)-0.5),ang=p.aimAng+t*spread;
     var b=bulletPool.pop()||{};
-    b.x=originX;b.y=originY;b.vx=Math.cos(ang)*spd;b.vy=Math.sin(ang)*spd;b.r=p.weapon==="shotgun"?3.2:3.6;
+    if(p.weapon!=="shotgun"&&p.weapon!=="smg"){spd=CFG.BULLET_SPEED*1.2;}
+    b.x=originX;b.y=originY;b.vx=Math.cos(ang)*spd;b.vy=Math.sin(ang)*spd;b.r=p.weapon==="shotgun"?3.2:p.weapon==="smg"?3.2:2.2;
     b.damage=dmg;b.life=CFG.BULLET_LIFE*(p.rangeMul||1);b.pierce=p.pierce;b.bounce=p.bounce?2:0;
     b.fire=p.fireAmmo;b.ice=p.iceAmmo;b.poison=p.poisonAmmo;b.expl=p.explosiveAmmo;b.hit=new Set();
+    if(p.weapon!=="shotgun"&&p.weapon!=="smg"){b.pistol=1;b.tracer=1;}
     game.bullets.push(b);
   }
   addParticle(originX,originY,p.fireAmmo?"#ff5722":"#ffe082",0.1,Math.cos(p.aimAng)*40,Math.sin(p.aimAng)*40,4,2);
@@ -254,7 +251,10 @@ function startBoss(z,line,bab,pitch){
   game.introX=game.camX;game.introY=game.camY;
   z.phase="intro";z.introT=4.2;z.bubbleFull=line;z.bubbleText="";z.bubbleIdx=0;z.bubbleT=0;
   if(game.player)game.player.invuln=Math.max(game.player.invuln,4.3);
-  sfx("boss");startMusic("boss");
+  sfx("boss");sfx("sting");
+  if(z.isHome){sfx("laugh");startMusic("home");z.loom=1;}
+  else if(z.isColossus){sfx("growl");sfx("foot_heavy");startMusic("colo");}
+  else startMusic("final");
   try{babbleSpeak(bab,{pitch:pitch||90,gap:0.13});}catch(e){}
 }
 function speakColossus(){

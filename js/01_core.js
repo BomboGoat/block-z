@@ -1,4 +1,4 @@
-var CFG={MAP_W:3000,MAP_H:3000,CELL:50,YSCALE:0.76,PLAYER_R:13,PLAYER_SPEED:250,MAX_HP:100,INVULN_MS:700,AUTO_RANGE:360,FIRE_COOLDOWN:0.38,BULLET_SPEED:520,BULLET_DAMAGE:12,BULLET_LIFE:1.05,BASE_ZOMBIES:5,ZOMBIES_PER_WAVE:2,MAX_ALIVE:10,SPAWN_INTERVAL:1.25,BOSS_HP:720,CAM_LERP:6.5,WORLD_BASE_W:520,WORLD_BASE_H:300,SAFE_PAD:8,SUPER_COST:100};
+var CFG={MAP_W:3000,MAP_H:3000,CELL:50,YSCALE:0.70,PLAYER_R:13,PLAYER_SPEED:250,MAX_HP:100,INVULN_MS:700,AUTO_RANGE:360,FIRE_COOLDOWN:0.38,BULLET_SPEED:520,BULLET_DAMAGE:12,BULLET_LIFE:1.05,BASE_ZOMBIES:5,ZOMBIES_PER_WAVE:2,MAX_ALIVE:10,SPAWN_INTERVAL:1.25,BOSS_HP:720,CAM_LERP:6.5,WORLD_BASE_W:520,WORLD_BASE_H:300,SAFE_PAD:8,SUPER_COST:100};
 var RARITIES=[
 {id:"comun",name:"Común",w:55,color:"#9e9e9e",glow:"#bdbdbd",mul:1.10,frame:"#757575"},
 {id:"muy_raro",name:"Muy raro",w:25,color:"#2196f3",glow:"#64b5f6",mul:1.18,frame:"#1565c0"},
@@ -98,7 +98,7 @@ var UPGRADE_DEFS=[
 {id:"lastStand",name:"Último aliento",icon:"❤️‍🔥",once:1,minR:2,custom:"lastStand",desc:"Con poca vida ganas daño y cadencia",plus:["Bajo vida"],minus:[]},
 {id:"luckyCharm",name:"Amuleto",icon:"🍀",once:1,minR:1,flag:"luckyCharm",desc:"Más suerte en las mejoras y +8% de crítico",plus:["Suerte","Crítico"],minus:[]},
 {id:"bulletStorm",name:"Tromba",icon:"🌧️",kind:"add",stat:"extraShots",tiers:[1,1,1,2,2],minR:1,desc:"Disparas un proyectil extra",plus:["Proyectiles"],minus:["Precisión"]},
-{id:"hero_dual",name:"Doble pistola",icon:"🔫",once:1,minR:1,hero:"classic",flag:"dualPistols",desc:"Classic dispara con dos pistolas",plus:["Proyectiles"],minus:[]},
+{id:"hero_dual",name:"Doble pistola",icon:"🔫",once:1,minR:1,hero:"classic",flag:"dualPistols",desc:"Eric dispara con dos pistolas",plus:["Proyectiles"],minus:[]},
 {id:"hero_cloud",name:"Nube tormenta",icon:"🌩️",once:1,minR:2,hero:"trueno",flag:"stormCloud",desc:"Una nube te sigue y lanza rayos",plus:["Electricidad"],minus:[]},
 {id:"hero_fan",name:"Abanico",icon:"🗡️",once:1,minR:2,hero:"mr",flag:"knifeFan",desc:"Cada pocos cortes lanzas un abanico de cuchillos",plus:["Área"],minus:[]},
 {id:"hero_shockN",name:"Onda rítmica",icon:"💥",once:1,minR:1,hero:"gompa",flag:"shockN",desc:"Cada 4.º puñetazo suelta una onda de choque",plus:["Onda"],minus:[]}
@@ -130,7 +130,7 @@ function rngPick(rng,arr){return arr[(rng()*arr.length)|0];}
 function rngRange(rng,a,b){return a+rng()*(b-a);}
 var selectedHero="classic";
 var HEROES=[
-{id:"classic",name:"Classic",desc:"Equilibrado. Pistola y granada super.",hp:100,spd:100,dmg:100,wpn:"Pistola",col:"#1565c0"},
+{id:"classic",name:"Eric",desc:"Equilibrado. Pistola y granada super.",hp:100,spd:100,dmg:100,wpn:"Pistola",col:"#1565c0"},
 {id:"trueno",name:"Trueno",desc:"Rayos en cadena que saltan entre zombis.",hp:90,spd:105,dmg:115,wpn:"Rayos",col:"#ffd54f"},
 {id:"mr",name:"Mr.",desc:"Cuchillo ágil y un buen corte.",hp:120,spd:115,dmg:100,wpn:"Cuchillo",col:"#37474f"},
 {id:"gompa",name:"Gompa",desc:"Culturista: puños y pesas. Super Flex que aturde.",hp:140,spd:88,dmg:100,wpn:"Pesas",col:"#6d4c41"}

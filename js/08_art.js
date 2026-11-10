@@ -35,8 +35,8 @@ function artLoad(done){
       im.src=(ART.meta[k]&&ART.meta[k].file)||("assets/spr/"+k+".webp");
     })(keys[i]);
   };
-  mj.onerror=tick;mj.open("GET","assets/spr/meta.json?v=19");mj.send();
-  var mw=new Image();mw.onload=function(){ART.menuWide=mw;tick();};mw.onerror=tick;mw.src="assets/ui/menu-wide.webp?v=19";
+  mj.onerror=tick;mj.open("GET","assets/spr/meta.json?v=19.1");mj.send();
+  var mw=new Image();mw.onload=function(){ART.menuWide=mw;tick();};mw.onerror=tick;mw.src="assets/ui/menu-wide.webp?v=19.1";
 }
 function artEntry(look,dir){
   if(!ART.ready||!ART.meta)return null;
@@ -48,7 +48,8 @@ function artEntry(look,dir){
   return{img:img,meta:meta,flip:fl<0,key:k};
 }
 function artTargetH(look,sc){
-  var h=28.4*sc; /* ~80px at landscape viewW=300 */
+  var h=31*sc; /* ~62px at landscape viewW=420 */
+
   if(look&&look.kind==="colossus")h*=2.4;
   else if(look&&look.kind==="home")h*=1.85;
   else if(look&&(look.kind==="final"||look.final||(look.type==="boss"&&!look.kind)))h*=2.65;
@@ -57,6 +58,99 @@ function artTargetH(look,sc){
   else if(look&&look.type==="fast")h*=0.9;
   if(look&&look.kind==="player"&&look.bulk)h*=1.08;
   return h*(look&&(look._artScale||1));
+}
+
+var ART_SH={};
+function artShadowSpr(e){
+  var k=(e.meta&&e.meta.file)||e.key||"x";
+  if(ART_SH[k])return ART_SH[k];
+  var im=e.img,pad=10,c=document.createElement("canvas");
+  c.width=im.width+pad*2;c.height=im.height+pad*2;
+  var g=c.getContext("2d");
+  g.filter="blur(3px)";g.drawImage(im,pad,pad);g.filter="none";
+  g.globalCompositeOperation="source-in";g.fillStyle="#000";g.fillRect(0,0,c.width,c.height);
+  ART_SH[k]={c:c,pad:pad,w:im.width,h:im.height};return ART_SH[k];
+}
+/* Contact blob + squashed silhouette, light from upper-left (shadow falls down-right). */
+function drawArtShadow(s,e,W,H,look,bob,opts){
+  opts=opts||{};
+  var sc=layout.scale,m=e.meta,fx=m.fx!=null?m.fx:0.5,fy=m.fy!=null?m.fy:1;
+  var hover=look&&look.kind==="home";
+  var lift=(opts.lift||0)*sc;
+  if(opts.air||hover)lift+=(hover?16:10)*sc;
+  if(hover)lift+=Math.abs(Math.sin((game.time||0)*3.5)*4*sc);
+  var up=Math.max(0,lift+Math.max(0,-bob));
+  var fade=clamp(1-up/(56*sc),hover?0.22:0.18,1);
+  if(opts.dying)fade*=clamp(opts.dieP||0,0.15,1);
+  var shrink=0.58+0.42*fade;
+  var bodyW=W*(look&&look.type==="crawler"?0.58:look&&look.type==="jumper"?0.40:0.40);
+  var footW=bodyW*0.70*shrink,footH=Math.max(3,footW*0.30);
+  var ox=7*sc*shrink,oy=2*sc;
+  ctx.save();
+  ctx.fillStyle="rgba(0,0,0,"+(0.32*fade)+")";
+  fillEllipse(ctx,s.x+ox*0.3,s.y+oy,footW,footH);
+  var sh=artShadowSpr(e),pad=sh.pad,iw=sh.w,ih=sh.h;
+  var dw=W*(1+2*pad/iw),dh=H*(1+2*pad/ih),sx=W/iw,sy=H/ih;
+  ctx.translate(s.x+ox,s.y+oy);
+  ctx.transform(1,0,0.40,0.17*shrink,0,0);
+  if(e.flip)ctx.scale(-1,1);
+  ctx.globalAlpha=0.26*fade;
+  ctx.drawImage(sh.c,-(pad+iw*fx)*sx,-(pad+ih*fy)*sy,dw,dh);
+  ctx.restore();ctx.globalAlpha=1;
+}
+function drawBodyShadow(s,bodyW,bob,opts,look){
+  opts=opts||{};
+  var sc=layout.scale,hover=look&&look.kind==="home";
+  var lift=(opts.lift||0)*sc+(opts.air||hover?(hover?16:10)*sc:0);
+  var up=Math.max(0,lift+Math.max(0,-(bob||0)));
+  var fade=clamp(1-up/(56*sc),hover?0.22:0.18,1);
+  var shrink=0.58+0.42*fade;
+  var footW=bodyW*0.70*shrink,footH=Math.max(3,footW*0.30);
+  var ox=7*sc*shrink,oy=2*sc;
+  ctx.fillStyle="rgba(0,0,0,"+(0.30*fade)+")";
+  fillEllipse(ctx,s.x+ox*0.3,s.y+oy,footW,footH);
+  ctx.fillStyle="rgba(0,0,0,"+(0.16*fade)+")";
+  fillEllipse(ctx,s.x+ox,s.y+oy,bodyW*0.55*shrink,bodyW*0.22*shrink);
+}
+
+
+function drawWalkLegs(look,anim,pose,H,W,fx,fy,waist){
+  var walk=pose==="walk";
+  var boss=look&&(look.kind==="colossus"||look.kind==="final");
+  var sham=look&&look.kind==="zombie";
+  var ph=walk?(anim||0)*(boss?5.2:sham?6.2:7.0):(game.time||0)*2.15;
+  var amp=walk?(boss?0.28:sham?0.4:0.38):0.055;
+  var lean=sham?0.12:0;
+  var aL=Math.sin(ph)*amp+lean, aR=Math.sin(ph+Math.PI)*amp+lean;
+  var waistY=H*(waist-(fy!=null?fy:1));
+  var groundY=H*(1-(fy!=null?fy:1));
+  var legLen=Math.max(10,groundY-waistY);
+  var hipW=boss?H*0.16:(sham?H*0.11:H*0.12);
+  var thigh=boss?H*0.075:(sham?H*0.055:H*0.062);
+  var shin=thigh*0.82;
+  var pants=(look&&(look.pants||look.pantsDark))||(boss?"#1e1814":"#2a2a2a");
+  var pantsDark=(look&&look.pantsDark)||pants;
+  var shoe=(look&&look.shoe)||"#1a1a1a";
+  /* hip block so the torso crop sits on trousers, not a gap */
+  ctx.fillStyle=pants;
+  ctx.beginPath();ctx.ellipse(0,waistY+thigh*0.15,hipW,thigh*0.85,0,0,7);ctx.fill();
+  function limb(a,side,front){
+    var hipX=side*hipW*0.55, hipY=waistY+thigh*0.15;
+    var kneeX=hipX+Math.sin(a*0.65)*legLen*0.42;
+    var kneeY=hipY+Math.cos(a*0.25)*legLen*0.48;
+    var footX=hipX+Math.sin(a)*legLen*0.72;
+    var footY=groundY-Math.max(0,Math.sin(a))*legLen*0.12;
+    ctx.strokeStyle=front?pants:pantsDark;ctx.lineCap="round";ctx.lineJoin="round";
+    ctx.lineWidth=thigh*2;
+    ctx.beginPath();ctx.moveTo(hipX,hipY);ctx.lineTo(kneeX,kneeY);ctx.stroke();
+    ctx.lineWidth=shin*2;
+    ctx.beginPath();ctx.moveTo(kneeX,kneeY);ctx.lineTo(footX,footY);ctx.stroke();
+    ctx.fillStyle=shoe;
+    ctx.beginPath();
+    ctx.ellipse(footX+side*1.6+Math.sin(a)*2,footY+1.2,thigh*1.15,thigh*0.52,0,0,7);
+    ctx.fill();
+  }
+  limb(aR,-1,0);limb(aL,1,1);
 }
 function tryDrawArt(wx,wy,look,ang,anim,opts){
   opts=opts||{};
@@ -73,9 +167,8 @@ function tryDrawArt(wx,wy,look,ang,anim,opts){
   else if(pose==="hurt"){bob=2*sc;tilt=-0.08;}
   else if(pose==="atk"){tilt=0.05;sx=1.04;sy=0.96;}
   var H=artTargetH(look,sc)*(opts.scale||1),W=H*(m.w/m.h);
-  var vr=(opts.r||13)*sc,hover=look&&look.kind==="home";
-  ctx.fillStyle="rgba(0,0,0,"+(hover?0.3:0.4)+")";
-  fillEllipse(ctx,s.x+3,s.y+5,vr*(hover?2.2:1.55),vr*CFG.YSCALE*(hover?1.35:1));
+  var hover=look&&look.kind==="home";
+  if(!(opts.noShadow))drawArtShadow(s,e,W,H,look,bob,opts);
   ctx.save();
   ctx.translate(s.x,s.y+bob-(opts.lift||0)*sc);
   if(opts.dying){var dp=1-(opts.dieP||0);ctx.scale(1+dp*0.15,Math.max(0.22,1-dp*0.72));ctx.rotate(dp*0.5);ctx.globalAlpha=clamp((opts.dieP||0)*1.4,0,1);}
@@ -83,7 +176,20 @@ function tryDrawArt(wx,wy,look,ang,anim,opts){
   ctx.rotate(tilt);ctx.scale((e.flip?-1:1)*sx,sy);
   if(opts.flash)ctx.filter="brightness(1.7) saturate(0.55)";
   var fx=m.fx!=null?m.fx:0.5, fy=m.fy!=null?m.fy:1;
-  ctx.drawImage(e.img,-W*fx,-H*fy,W,H);
+  var skipLegs=!!(opts.air&&look&&look.kind==="home")||(look&&look.kind==="home")||(look&&look.type==="crawler")||opts.dying||opts.spawnP!=null;
+  var waist=0.66;
+  if(look&&look.kind==="colossus")waist=0.675;
+  else if(look&&look.kind==="final")waist=0.72;
+  else if(look&&look.kind==="zombie")waist=0.66;
+  else if(look&&look.hero==="gompa")waist=0.65;
+
+  if(!skipLegs){
+    drawWalkLegs(look,anim,pose,H,W,fx,fy,waist);
+    var iw=e.img.naturalWidth||e.img.width, ih=e.img.naturalHeight||e.img.height;
+    ctx.drawImage(e.img,0,0,iw,ih*waist,-W*fx,-H*fy,W,H*waist);
+  }else{
+    ctx.drawImage(e.img,-W*fx,-H*fy,W,H);
+  }
   ctx.filter="none";ctx.restore();ctx.globalAlpha=1;
   /* anchors */
   var hx=(m.hx!=null?m.hx:0.78),hy=(m.hy!=null?m.hy:0.62);
@@ -249,8 +355,9 @@ function drawMenuArt(){
   ctx.save();ctx.filter="blur(18px)";ctx.globalAlpha=0.85;
   ctx.drawImage(img,(SW-iw*k0)/2,(SH-ih*k0)/2,iw*k0,ih*k0);
   ctx.restore();
-  var k=Math.max(SW/iw,SH/ih)*(1.0+Math.sin(t*0.2)*0.01);
-  var ox=(SW-iw*k)/2+Math.sin(t*0.1)*6, oy=Math.min(0, SH-ih*k); /* pin top */
+  /* cover-fit, pin TOP so the BLOCK Z logo stays fully visible */
+  var k=Math.max(SW/iw,SH/ih);
+  var ox=(SW-iw*k)/2+Math.sin(t*0.1)*4, oy=0;
   ctx.drawImage(img,ox,oy,iw*k,ih*k);
   var grd=ctx.createLinearGradient(SW*0.5,0,SW,0);
   grd.addColorStop(0,"rgba(16,4,4,0)");grd.addColorStop(0.65,"rgba(16,4,4,0.15)");grd.addColorStop(1,"rgba(16,4,4,0.55)");

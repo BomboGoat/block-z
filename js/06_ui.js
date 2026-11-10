@@ -47,7 +47,7 @@ function drawHero(){
   var two=wpn==="shotgun"||wpn==="smg"||wpn==="pistol";
   if(p.fireAura){var s=toScreen(p.x,p.y);ctx.fillStyle="rgba(255,87,34,0.18)";fillEllipse(ctx,s.x,s.y,50*layout.scale,36*layout.scale);}
   if(p.hasOrbit){for(var i=0;i<3;i++){var a=p.orbitAngle+i*2.094,ox=p.x+Math.cos(a)*36,oy=p.y+Math.sin(a)*36,os=toScreen(ox,oy);ctx.fillStyle="#eceff1";ctx.beginPath();ctx.arc(os.x,os.y,4*layout.scale,0,7);ctx.fill();}}
-  drawChar34(p.x,p.y,p.look,p.aimAng,p.anim,{h:40,r:p.r,scale:p.scale||1,moving:Math.abs(p.vx)+Math.abs(p.vy)>20,wpn:wpn,aim:p.aimAng,twoHand:two,muzzle:p.muzzle,flash:p.flash>0,lift:p.grabbed?26:0});
+  drawChar34(p.x,p.y,p.look,p.faceAng!=null?p.faceAng:(p.facing||p.aimAng),p.anim,{h:40,r:p.r,scale:p.scale||1,moving:Math.abs(p.vx)+Math.abs(p.vy)>20,wpn:wpn,aim:p.aimAng,twoHand:two,muzzle:p.muzzle,flash:p.flash>0,lift:(p.grabbed?26:0)+(p.airH||0)});
   if(p.hasShield&&p.shieldReady){var s2=toScreen(p.x,p.y);ctx.strokeStyle="rgba(33,150,243,0.7)";ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(s2.x,s2.y,22*layout.scale,16*layout.scale,0,0,7);ctx.stroke();}
   ctx.globalAlpha=1;
 }
@@ -55,8 +55,11 @@ function drawZ(z){
   if(z.dying)ctx.globalAlpha=clamp(z.deathT*2,0,1);
   var look=z.look||makeZombieLook(z.type,1);
   var opts={h:z.h,r:z.r,moving:z.isHome?0:1,flash:z.hitFlash>0,hpBar:(!game.lineup&&(z.isBoss||z.type==="tank"||z.type==="armored")&&!z.bName)?z.hp/z.maxHp:0};
-  if(z.leapT>0)opts.air=1;
-  if(z.isHome&&(z.windup||z.grabDash>0||z.grabT>0))opts.eyeGlow=1;
+  if(z.leapT>0||z.vaultT>0)opts.air=1;
+  if(z.lift)opts.lift=(opts.lift||0)+z.lift;
+  if(z.isHome&&(game.bossFight||game.state==="boss_intro"||z.windup||z.grabDash>0||z.grabT>0))opts.eyeGlow=1;
+  if(z.isColossus&&(z.eyeFlash>0||z.windup==="slam"))opts.eyeGlow=1;
+  if(z.isHome&&game.state==="boss_intro")opts.lift=(opts.lift||0)+22*clamp(((z.introT||0)-1)/3,0,1);
   if(z.dying){opts.dying=1;opts.dieP=clamp(z.deathT/0.45,0,1);}
   if(z.spawnT>0)opts.spawnP=clamp(1-z.spawnT/0.65,0,1);
   if(z.windup&&(z.isColossus||z.isHome||z.isBoss))opts.atk=1;
@@ -202,17 +205,23 @@ function drawTitle(){
   if(!hasArt){drawWorld();ctx.fillStyle="rgba(0,0,0,0.38)";ctx.fillRect(0,0,SW,SH);}
   var cx=SW/2,top=layout.isPortrait?layout.safe.t+20:SH*0.06;
   if(!hasArt)drawLogo(cx,layout.isPortrait?layout.safe.t+54:SH*0.12,layout.isPortrait?0.85:1.05);
-  ctx.textAlign="center";
-  ctx.fillStyle="#ffecb3";ctx.font="bold 13px system-ui";
-  ctx.strokeStyle="rgba(0,0,0,0.7)";ctx.lineWidth=4;ctx.lineJoin="round";
+  layoutMenuButtons();
+  for(var i=0;i<menuBtns.length;i++)drawUIButton(menuBtns[i],i===0?"#e65100":i===1?"#c62818":"#5d4037");
   var sub="Sobrevive · Mejora · Derrota a los jefes";
-  var sy=hasArt?(layout.isPortrait?SH*0.46:SH*0.42):top+(layout.isPortrait?40:48);
-  if(!hasArt){ctx.fillStyle="#cfd8dc";ctx.font="13px system-ui";}
-  ctx.strokeText(sub,cx,sy);ctx.fillText(sub,cx,sy);
+  var xp="Nivel "+account.level+"  ·  XP "+account.xp+"/"+account.xpToNext;
+  var last=menuBtns[menuBtns.length-1], tx,ty;
+  if(hasArt&&last){
+    tx=last.x+last.w/2;
+    ty=Math.min(SH-layout.safe.b-28, last.y+last.h+22);
+  }else{
+    tx=cx;ty=(hasArt?SH*0.42:top+48);
+  }
+  ctx.textAlign="center";ctx.lineJoin="round";
+  ctx.strokeStyle="rgba(0,0,0,0.85)";ctx.lineWidth=5;
+  ctx.font="bold 13px system-ui";ctx.fillStyle="#ffecb3";
+  ctx.strokeText(sub,tx,ty);ctx.fillText(sub,tx,ty);
   ctx.fillStyle="#ffc107";ctx.font="bold 13px system-ui";
-  ctx.strokeText("Nivel "+account.level+"  ·  XP "+account.xp+"/"+account.xpToNext,cx,sy+20);
-  ctx.fillText("Nivel "+account.level+"  ·  XP "+account.xp+"/"+account.xpToNext,cx,sy+20);
-  layoutMenuButtons();for(var i=0;i<menuBtns.length;i++)drawUIButton(menuBtns[i],i===0?"#e65100":i===1?"#c62818":"#5d4037");
+  ctx.strokeText(xp,tx,ty+18);ctx.fillText(xp,tx,ty+18);
   ctx.textAlign="left";
 }
 function drawSettings(){ctx.fillStyle="rgba(0,0,0,0.82)";ctx.fillRect(0,0,SW,SH);ctx.textAlign="center";ctx.fillStyle="#ffc107";ctx.font="bold 22px system-ui";ctx.fillText("Ajustes",SW/2,layout.safe.t+56);layoutMenuButtons();for(var i=0;i<settingsBtns.length;i++)drawUIButton(settingsBtns[i],settingsBtns[i].id==="back"?"#95a5a6":"#5c6bc0");}
@@ -251,18 +260,75 @@ function drawCountdownOverlay(){
   ctx.textBaseline="alphabetic";ctx.textAlign="left";
 }
 function drawBossIntroUI(){
-  var b=game.boss,t=b?b.introT:0,h=SH*0.15;
+  var b=game.boss,t=b?b.introT:0,h=SH*0.18;
   var a=t>3.8?clamp((4.2-t)/0.4,0,1):t<0.8?clamp(t/0.8,0,1):1;
-  ctx.fillStyle="rgba(0,0,0,"+(0.9*a)+")";ctx.fillRect(0,0,SW,h);ctx.fillRect(0,SH-h,SW,h);
+  ctx.fillStyle="rgba(0,0,0,"+(0.92*a)+")";ctx.fillRect(0,0,SW,h);ctx.fillRect(0,SH-h,SW,h);
   ctx.save();ctx.globalAlpha=a;ctx.textAlign="center";
-  ctx.font="bold 26px system-ui";ctx.fillStyle="#ff1744";ctx.fillText((b&&b.bName)||"JEFE",SW/2,h*0.48);
-  ctx.fillStyle="#ffe082";ctx.font="15px system-ui";ctx.fillText((b&&(b.bubbleFull||b.bubbleText))||"",SW/2,h*0.48+22);
+  var punch=1;
+  if(t<=3.7&&t>3.15)punch=2.35-1.35*((3.7-t)/0.55);
+  else if(t>3.7)punch=0.6;
+  var nameY=h*0.42;
+  ctx.save();ctx.translate(SW/2,nameY);ctx.scale(punch,punch);
+  ctx.font="bold 34px system-ui";
+  ctx.strokeStyle="rgba(0,0,0,0.85)";ctx.lineWidth=6;ctx.strokeText((b&&b.bName)||"JEFE",0,0);
+  ctx.fillStyle="#ff1744";ctx.fillText((b&&b.bName)||"JEFE",0,0);
+  ctx.restore();
+  var line=(b&&(b.bubbleFull||b.bubbleText))||"";
+  var tag=b&&b.isHome?"No hay escapatoria.":b&&b.isColossus?"El suelo tiembla.":b&&b.isBoss?"Este es el final.":"";
+  ctx.fillStyle="#ffe082";ctx.font="16px system-ui";
+  ctx.strokeStyle="rgba(0,0,0,0.7)";ctx.lineWidth=4;
+  if(line){ctx.strokeText(line,SW/2,nameY+28);ctx.fillText(line,SW/2,nameY+28);}
+  if(tag){ctx.fillStyle="#ef9a9a";ctx.font="italic 14px system-ui";ctx.fillText(tag,SW/2,nameY+48);}
   ctx.restore();ctx.textAlign="left";
+}
+function drawBossMenace(){
+  var b=game.boss,intro=game.state==="boss_intro",fight=game.bossFight&&b&&!b.dead&&!b.dying;
+  if(!(intro||fight)||!b)return;
+  var sc=layout.scale,s=toScreen(b.x,b.y),a=1,t=b.introT||0;
+  if(intro)a=t>3.8?clamp((4.2-t)/0.4,0,1):t<0.8?clamp(t/0.8,0,1):1;
+  /* dark vignette + fight tint (readable) */
+  var g=ctx.createRadialGradient(SW/2,SH/2,Math.min(SW,SH)*0.28,SW/2,SH/2,Math.max(SW,SH)*0.78);
+  g.addColorStop(0,"rgba(0,0,0,0)");
+  g.addColorStop(1,b.isHome?"rgba(40,0,0,"+(0.42*a)+")":b.isColossus?"rgba(30,8,4,"+(0.34*a)+")":"rgba(10,0,16,"+(0.4*a)+")");
+  ctx.fillStyle=g;ctx.fillRect(0,0,SW,SH);
+  ctx.fillStyle=b.isHome?(b.p2?"rgba(80,0,10,0.12)":"rgba(70,8,12,0.08)"):b.isColossus?"rgba(60,20,10,0.07)":"rgba(20,0,30,0.09)";
+  ctx.globalAlpha=a;ctx.fillRect(0,0,SW,SH);ctx.globalAlpha=1;
+  /* Homelander looming shadow during intro, flickering aura, heat haze */
+  if(b.isHome){
+    if(intro&&t>1){
+      var loom=0.6+1.4*clamp((t-1)/3,0,1);
+      ctx.save();ctx.fillStyle="rgba(0,0,0,"+(0.32*a)+")";
+      ctx.beginPath();ctx.ellipse(s.x,s.y+8*sc,70*sc*loom,22*sc*loom,0,0,7);ctx.fill();
+      ctx.restore();
+    }
+    var flick=0.18+0.16*Math.abs(Math.sin((game.time||0)*11));
+    if(b.p2)flick+=0.08;
+    var ag=ctx.createRadialGradient(s.x,s.y-18*sc,8*sc,s.x,s.y-10*sc,70*sc);
+    ag.addColorStop(0,"rgba(200,16,16,"+flick+")");
+    ag.addColorStop(1,"rgba(80,0,0,0)");
+    ctx.fillStyle=ag;ctx.beginPath();ctx.arc(s.x,s.y-16*sc,70*sc,0,7);ctx.fill();
+    /* heat haze bands */
+    ctx.save();ctx.globalAlpha=0.07+0.03*Math.sin((game.time||0)*7);
+    var hi,hy;
+    for(hi=0;hi<8;hi++){
+      hy=s.y-10*sc-hi*10*sc+Math.sin((game.time||0)*6+hi)*4*sc;
+      ctx.strokeStyle="rgba(255,180,140,0.9)";ctx.lineWidth=2;
+      ctx.beginPath();
+      ctx.moveTo(s.x-50*sc,hy);
+      ctx.quadraticCurveTo(s.x+Math.sin((game.time||0)*5+hi)*10*sc,hy-6*sc,s.x+50*sc,hy);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+  if(b.isColossus&&(b.eyeFlash||0)>0){
+    ctx.save();ctx.globalAlpha=Math.min(1,b.eyeFlash*2);
+    ctx.fillStyle="rgba(255,40,20,0.18)";ctx.fillRect(0,0,SW,SH);
+    ctx.restore();
+  }
 }
 function drawVignette(){var g=ctx.createRadialGradient(SW/2,SH/2,Math.min(SW,SH)*0.35,SW/2,SH/2,Math.max(SW,SH)*0.72);g.addColorStop(0,"rgba(0,0,0,0)");g.addColorStop(1,"rgba(0,0,0,0.16)");ctx.fillStyle=g;ctx.fillRect(0,0,SW,SH);}
 function drawZoneTint(){
   var p=game&&game.player,z=p?zoneAt(p.x,p.y):null;
-  ctx.fillStyle="rgba(255,140,60,0.06)";ctx.fillRect(0,0,SW,SH);
   if(z&&z.tint){ctx.fillStyle=z.tint;ctx.fillRect(0,0,SW,SH);}
 }
 function draw(){
@@ -270,13 +336,14 @@ function draw(){
   ctx.fillStyle="#102014";ctx.fillRect(0,0,SW,SH);
   if(layout&&layout.isPortrait&&typeof drawRotateOverlay==="function"){drawRotateOverlay();return;}
   if(!game)return;
-  if(game.state==="title"){drawTitle();drawZoneTint();drawVignette();return;}
+  if(game.state==="title"){drawTitle();return;}
   if(game.state==="select"){drawSelect();drawVignette();return;}
   if(game.state==="settings"){drawSettings();return;}
   if(game.state==="howto"){drawHowTo();return;}
   drawWorld();
   if(typeof drawExtraAbilities==="function")drawExtraAbilities();
   drawZoneTint();if(typeof drawLighting==="function")drawLighting();drawVignette();
+  if(typeof drawBossMenace==="function")drawBossMenace();
   if(game.state==="countdown")drawCountdownOverlay();
   if(game.state==="boss_intro"){drawBossIntroUI();return;}
   if(game.state!=="upgrade")drawHUD();

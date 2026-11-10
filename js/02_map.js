@@ -29,16 +29,22 @@ function overlapsAny(x,y,w,d,pad){
   return 0;
 }
 function addWall(x,y,w,d,h,col){if(w<4||d<4)return;addSolid({k:"wall",x:x,y:y,w:w,d:d,h:h||36,top:col||"#6d6a63",side:shadeHex(col||"#6d6a63",-32)});}
+function addFence(x,y,w,d,style,opt){
+  opt=opt||{};
+  if(w<3||d<3)return;
+  var border=!!opt.border;
+  addSolid({k:"fence",style:style||"wood",x:x,y:y,w:w,d:d,h:opt.h||(border?14:12),climbable:!border&&opt.climbable!==0,border:border,solid:1,top:style==="chain"?"#8a9aa8":"#8d6e4a",side:style==="chain"?"#5c6b75":"#5d4037"});
+}
 function buildMap(seed){
   map={zones:[],solids:[],bushes:[],decos:[],spawns:[],chunks:{},chunkS:400,dirty:1,grid:null,cols:0,rows:0,flow:null,flowT:0,opens:[],corridors:[],decals:[],birds:[],lamps:[],rats:[],papers:[]};
   var MW=CFG.MAP_W,MH=CFG.MAP_H,bw=48,rng=seeded(seed||1337);
   var midX=1472,midY=1472,dw=56,GAP=40;
   map.zones=[
-    {id:"park",x:bw,y:bw,w:midX-bw,h:midY-bw,k:"grass",floor:"#3aa644",floor2:"#2d8a36",name:"Parque",tint:"rgba(40,120,40,0.08)"},
-    {id:"gas",x:midX+dw,y:bw,w:MW-(midX+dw)-bw,h:midY-bw,k:"plaza",floor:"#d4bc8e",floor2:"#c0a674",name:"Gasolinera",tint:"rgba(200,120,40,0.08)"},
-    {id:"street",x:bw,y:midY+dw,w:midX-bw,h:MH-(midY+dw)-bw,k:"asphalt",floor:"#4a5160",floor2:"#3c424e",name:"Avenida",tint:"rgba(40,50,90,0.10)"},
-    {id:"ruins",x:midX+dw,y:midY+dw,w:MW-(midX+dw)-bw,h:MH-(midY+dw)-bw,k:"ruins",floor:"#b07848",floor2:"#8d5a32",name:"Ruinas",tint:"rgba(160,70,20,0.10)"},
-    {id:"lot",x:1200,y:1200,w:600,h:600,k:"parking",floor:"#4a5160",floor2:"#3c424e",name:"Aparcamiento",tint:"rgba(30,30,40,0.06)"}
+    {id:"park",x:bw,y:bw,w:midX-bw,h:midY-bw,k:"grass",floor:"#3aa644",floor2:"#2d8a36",name:"Parque",tint:"rgba(30,90,30,0.04)"},
+    {id:"gas",x:midX+dw,y:bw,w:MW-(midX+dw)-bw,h:midY-bw,k:"plaza",floor:"#d4bc8e",floor2:"#c0a674",name:"Gasolinera",tint:"rgba(180,110,40,0.04)"},
+    {id:"street",x:bw,y:midY+dw,w:midX-bw,h:MH-(midY+dw)-bw,k:"asphalt",floor:"#4a5160",floor2:"#3c424e",name:"Avenida",tint:"rgba(30,36,60,0.045)"},
+    {id:"ruins",x:midX+dw,y:midY+dw,w:MW-(midX+dw)-bw,h:MH-(midY+dw)-bw,k:"ruins",floor:"#b07848",floor2:"#8d5a32",name:"Ruinas",tint:"rgba(140,60,20,0.05)"},
+    {id:"lot",x:1200,y:1200,w:600,h:600,k:"parking",floor:"#4a5160",floor2:"#3c424e",name:"Aparcamiento",tint:"rgba(20,20,28,0.04)"}
   ];
   map.opens=[
     {x:midX,y:560,w:dw,h:220},{x:midX,y:1380,w:dw,h:240},{x:midX,y:2140,w:dw,h:220},
@@ -52,8 +58,10 @@ function buildMap(seed){
     {x:1380,y:1380,w:240,h:240}
   ];
   var wallCol="#d2c4ae";
-  addWall(0,0,MW,bw,40,wallCol);addWall(0,MH-bw,MW,bw,40,wallCol);
-  addWall(0,bw,bw,MH-2*bw,40,wallCol);addWall(MW-bw,bw,bw,MH-2*bw,40,wallCol);
+  addFence(0,0,MW,12,"wood",{border:1,h:14});
+  addFence(0,MH-12,MW,12,"wood",{border:1,h:14});
+  addFence(0,12,12,MH-24,"wood",{border:1,h:14});
+  addFence(MW-12,12,12,MH-24,"wood",{border:1,h:14});
   function wallStrip(x,y,w,d){
     var segs=[{x:x,y:y,w:w,d:d}],i,j,op=map.opens;
     for(i=0;i<op.length;i++){
@@ -69,7 +77,11 @@ function buildMap(seed){
       }
       segs=next;
     }
-    for(i=0;i<segs.length;i++)if(segs[i].w>8&&segs[i].d>8)addWall(segs[i].x,segs[i].y,segs[i].w,segs[i].d,42,wallCol);
+    for(i=0;i<segs.length;i++)if(segs[i].w>8&&segs[i].d>8){
+      var sg=segs[i],fw,fd,fx,fy;
+      if(sg.w>=sg.d){fd=10;fy=sg.y+(sg.d-fd)/2;addFence(sg.x,fy,sg.w,fd,"chain",{climbable:1,h:12});}
+      else{fw=10;fx=sg.x+(sg.w-fw)/2;addFence(fx,sg.y,fw,sg.d,"wood",{climbable:1,h:13});}
+    }
   }
   wallStrip(midX,bw,dw,MH-2*bw);
   wallStrip(bw,midY,MW-2*bw,dw);
@@ -225,7 +237,7 @@ function buildGrid(){
   map.cols=(CFG.MAP_W/CFG.CELL)|0;map.rows=(CFG.MAP_H/CFG.CELL)|0;
   var n=map.cols*map.rows,g=new Uint8Array(n),i,s,c,r;
   for(i=0;i<map.solids.length;i++){
-    s=map.solids[i];if(s.dead)continue;
+    s=map.solids[i];if(s.dead||s.climbable)continue;
     var c0=clamp((s.x/CFG.CELL)|0,0,map.cols-1),c1=clamp(((s.x+s.w)/CFG.CELL)|0,0,map.cols-1);
     var r0=clamp((s.y/CFG.CELL)|0,0,map.rows-1),r1=clamp(((s.y+s.d)/CFG.CELL)|0,0,map.rows-1);
     for(r=r0;r<=r1;r++)for(c=c0;c<=c1;c++)g[r*map.cols+c]=1;
@@ -258,10 +270,17 @@ function ensureConnected(sx,sy){
     best.dead=1;buildGrid();
   }
 }
-function circleHitSolid(cx,cy,rad,ignoreBreakGone){
-  var i,s,a=map.solids,best=null,bestD=0;
+function circleHitSolid(cx,cy,rad,ent){
+  var i,s,a=map.solids,best=null,bestD=0,mode;
+  mode=typeof ent==="string"?ent:(ent?"ent":"soft");
   for(i=0;i<a.length;i++){
     s=a[i];if(s.dead)continue;
+    if(s.climbable){
+      if(mode==="soft")continue;
+      if(mode==="ent"){
+        if(ent.vaultT>0||ent.jumpT>0||ent.dashT>0||(ent.airH||0)>4||ent.isHome||ent.isColossus||ent.isBoss)continue;
+      }
+    }
     var qx=clamp(cx,s.x,s.x+s.w),qy=clamp(cy,s.y,s.y+s.d);
     var dx=cx-qx,dy=cy-qy,d2=dx*dx+dy*dy;
     if(d2<rad*rad){var d=Math.sqrt(d2)||0.0001;if(!best||rad-d>bestD){best=s;bestD=rad-d;best.nx=dx/d;best.ny=dy/d;best.pen=rad-d;}}
@@ -271,7 +290,7 @@ function circleHitSolid(cx,cy,rad,ignoreBreakGone){
 function resolveCircle(ent){
   var i;
   for(i=0;i<3;i++){
-    var hit=circleHitSolid(ent.x,ent.y,ent.r);
+    var hit=circleHitSolid(ent.x,ent.y,ent.r,ent);
     if(!hit)return;
     var nx=hit.nx,ny=hit.ny,pen=hit.pen;
     if(Math.abs(nx)+Math.abs(ny)<0.05){
@@ -345,14 +364,14 @@ function inCamView(x,y,pad){
 function pickSpawn(p){
   if(!map.flowDist)updateFlow(p.x,p.y);
   var hw=worldW()*0.5,hh=worldH()*0.5,diag=Math.sqrt(hw*hw+hh*hh);
-  var r0=Math.max(350,diag*1.1),r1=Math.max(r0+40,diag*1.5);
+  var r0=diag+28,r1=diag+90;
   var bias=Math.atan2(p.lastMoveY||0,p.lastMoveX||0);
   if(!(p.lastMoveX||p.lastMoveY))bias=p.facing||0;
   function ok(x,y){
     x=clamp(x,90,CFG.MAP_W-90);y=clamp(y,90,CFG.MAP_H-90);
-    if(dist(p.x,p.y,x,y)<350)return 0;
-    if(inCamView(x,y,28))return 0;
-    if(circleHitSolid(x,y,16))return 0;
+    if(inCamView(x,y,16))return 0;
+    if(dist(p.x,p.y,x,y)<r0-8)return 0;
+    if(circleHitSolid(x,y,16,"solid"))return 0;
     var c=clamp((x/CFG.CELL)|0,0,map.cols-1),r=clamp((y/CFG.CELL)|0,0,map.rows-1),idx=r*map.cols+c;
     if(map.grid[idx])return 0;
     if(map.flowDist&&map.flowDist[idx]<0)return 0;
