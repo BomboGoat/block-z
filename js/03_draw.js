@@ -703,8 +703,10 @@ function drawWeapon34(c,hx,hy,ang,wpn,sc,muzzle,skin,two){
   }else if(wpn==="bolt"){
     palm(0,0.8*sc,4.2*sc,5*sc);
     fing(5*sc,-2.8*sc,1.4*sc,2.8*sc);fing(6.2*sc,-0.6*sc,1.4*sc,2.8*sc);fing(6.2*sc,1.4*sc,1.4*sc,2.8*sc);fing(5*sc,3.2*sc,1.4*sc,2.6*sc);fing(-3.6*sc,0.4*sc,1.6*sc,2.2*sc);
-    c.fillStyle="#fff59d";c.shadowColor="#82b1ff";c.shadowBlur=8*sc;
-    c.beginPath();c.moveTo(7*sc,-3.2*sc);c.lineTo(15*sc,0);c.lineTo(7*sc,3.2*sc);c.closePath();c.fill();c.shadowBlur=0;
+    c.save();c.globalCompositeOperation="lighter";
+    c.fillStyle="rgba(129,212,250,0.55)";c.beginPath();c.moveTo(6*sc,-4.2*sc);c.lineTo(16.5*sc,0);c.lineTo(6*sc,4.2*sc);c.closePath();c.fill();
+    c.fillStyle="#e3f2fd";c.beginPath();c.moveTo(7*sc,-2.2*sc);c.lineTo(14.5*sc,0);c.lineTo(7*sc,2.2*sc);c.closePath();c.fill();
+    c.restore();
     body(-2*sc,-1.6*sc,8*sc,3.2*sc,1.4,"#1565c0","#0d47a1");
   }else if(wpn==="fist"){
     palm(0,0,5.2*sc,5.6*sc);
@@ -817,7 +819,6 @@ function drawBullet(b){
     ctx.restore();return;
   }
   var col=b.fire?"#ff5722":b.ice?"#81d4fa":b.poison?"#9ccc65":"#ffe082";
-  if(b.fire||b.ice||b.poison){ctx.shadowColor=col;ctx.shadowBlur=6*sc;}
   ctx.fillStyle=col;fillEllipse(ctx,0,0,5.5*sc,2.1*sc);
   ctx.fillStyle="#fff";fillEllipse(ctx,1.6*sc,0,2.2*sc,1.1*sc);
   ctx.restore();
@@ -843,15 +844,31 @@ function drawFloat(ft){
   ctx.fillStyle=ft.col;ctx.fillText(ft.text,0,0);
   ctx.restore();
 }
+var fxSpr=null;
+function ensureFxSpr(){
+  if(fxSpr)return fxSpr;
+  var c=document.createElement("canvas");c.width=64;c.height=64;
+  var g=c.getContext("2d"),grd=g.createRadialGradient(32,32,0,32,32,32);
+  grd.addColorStop(0,"rgba(255,255,255,1)");
+  grd.addColorStop(0.16,"rgba(227,242,253,0.95)");
+  grd.addColorStop(0.4,"rgba(100,181,246,0.5)");
+  grd.addColorStop(0.68,"rgba(21,101,192,0.18)");
+  grd.addColorStop(1,"rgba(13,71,161,0)");
+  g.fillStyle=grd;g.fillRect(0,0,64,64);
+  fxSpr=c;return c;
+}
 function drawBolt(b){
   if(!b.pts||b.pts.length<2)return;
-  var i,sc=layout.scale,a=clamp(b.life/(b.maxLife||0.2),0,1);
-  ctx.save();ctx.lineJoin="round";ctx.lineCap="round";
-  ctx.strokeStyle="rgba(255,245,157,"+a+")";ctx.lineWidth=6*sc;ctx.shadowColor="#82b1ff";ctx.shadowBlur=18*sc;
+  var i,sc=layout.scale,a=clamp(b.life/(b.maxLife||0.2),0,1),s,spr=ensureFxSpr(),fork=!!b.fork;
+  ctx.save();ctx.lineJoin="round";ctx.lineCap="round";ctx.globalCompositeOperation="lighter";
   ctx.beginPath();
-  for(i=0;i<b.pts.length;i++){var s=toScreen(b.pts[i].x,b.pts[i].y);if(i===0)ctx.moveTo(s.x,s.y);else ctx.lineTo(s.x,s.y);}
-  ctx.stroke();
-  ctx.strokeStyle="rgba(130,177,255,"+a+")";ctx.lineWidth=2.2*sc;ctx.shadowBlur=0;ctx.stroke();
+  for(i=0;i<b.pts.length;i++){s=toScreen(b.pts[i].x,b.pts[i].y);if(i===0)ctx.moveTo(s.x,s.y);else ctx.lineTo(s.x,s.y);}
+  ctx.strokeStyle="rgba(33,150,243,"+(0.28*a)+")";ctx.lineWidth=(fork?5:7.5)*sc;ctx.stroke();
+  ctx.strokeStyle="rgba(129,212,250,"+(0.75*a)+")";ctx.lineWidth=(fork?2.2:3.2)*sc;ctx.stroke();
+  ctx.strokeStyle="rgba(255,255,255,"+(0.95*a)+")";ctx.lineWidth=(fork?0.9:1.35)*sc;ctx.stroke();
+  var sz=(fork?11:16)*sc*a;
+  ctx.globalAlpha=0.5*a;
+  for(i=0;i<b.pts.length;i+=2){s=toScreen(b.pts[i].x,b.pts[i].y);ctx.drawImage(spr,s.x-sz,s.y-sz,sz*2,sz*2);}
   ctx.restore();
 }
 function drawSlashFX(sl){

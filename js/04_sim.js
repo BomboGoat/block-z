@@ -28,8 +28,25 @@ function spawnHome(x,y){
   return z;
 }
 function addParticle(x,y,color,life,vx,vy,size,kind){var p=particlePool.pop()||{};p.x=x;p.y=y;p.vx=vx!=null?vx:rand(-80,80);p.vy=vy!=null?vy:rand(-80,80);p.life=life||0.4;p.maxLife=p.life;p.color=color;p.size=size||rand(2,5);p.kind=kind||0;p.rot=rand(0,6);p.spin=rand(-8,8);game.particles.push(p);var cap=(typeof GFX!=="undefined"&&GFX.maxPart)||240;if(game.particles.length>cap)game.particles.splice(0,game.particles.length-cap);}
-function floatText(x,y,text,col){var f=floatPool.pop()||{};f.x=x;f.y=y;f.text=text;f.col=col||"#fff";f.life=0.8;game.floatTexts.push(f);}
-function bloodBurst(x,y){for(var i=0;i<6;i++)addParticle(x,y,"#8b0000",0.3,rand(-80,80),rand(-80,80),3,1);}
+function floatText(x,y,text,col){
+  col=col||"#fff";
+  var list=game.floatTexts,i,f,n=parseFloat(text);
+  if(list&&isFinite(n)&&String(text).search(/[^0-9.+-]/)<0){
+    for(i=0;i<list.length;i++){
+      f=list[i];
+      if(f.col===col&&Math.abs(f.x-x)<20&&Math.abs(f.y-y)<20&&isFinite(+f.text)&&String(f.text).search(/[^0-9.+-]/)<0){
+        f.text=""+(Math.round((+f.text)+n));f.life=Math.max(f.life,0.55);f.x=x;f.y=y;return;
+      }
+    }
+  }
+  f=floatPool.pop()||{};f.x=x;f.y=y;f.text=text;f.col=col;f.life=0.8;
+  (list||(game.floatTexts=[])).push(f);
+  if(game.floatTexts.length>14){floatPool.push(game.floatTexts.shift());}
+}
+function bloodBurst(x,y){for(var i=0;i<3;i++)addParticle(x,y,"#8b0000",0.26,rand(-70,70),rand(-70,70),3,1);}
+function pushBolt(b){if(!game.bolts)game.bolts=[];game.bolts.push(b);if(game.bolts.length>8)game.bolts.splice(0,game.bolts.length-8);}
+function impactSpark(x,y){addParticle(x,y,"#e3f2fd",0.11,0,-10,9,4);var i;for(i=0;i<3;i++)addParticle(x,y,"#90caf9",0.13,rand(-100,100),rand(-100,100),rand(2,4),3);}
+function truenoLaserLen(p){var vw=(typeof layout!=="undefined"&&layout.viewW)||420;return vw*((p&&p.bigStorm)?0.45:0.42);}
 function explodeAt(x,y,r,dmg,opts){
   opts=opts||{};
   var i,z,p=game.player;
@@ -53,24 +70,37 @@ function heroRange(p){
   return CFG.AUTO_RANGE*(p.rangeMul||1);
 }
 function zigPts(ax,ay,bx,by,n){
-  var pts=[{x:ax,y:ay}],i,t,px,py,nx,ny,d=dist(ax,ay,bx,by)||1,ox=-(by-ay)/d,oy=(bx-ax)/d;
-  for(i=1;i<n;i++){t=i/n;px=ax+(bx-ax)*t;py=ay+(by-ay)*t;var off=(i%2?1:-1)*rand(8,16);pts.push({x:px+ox*off,y:py+oy*off});}
+  n=Math.max(2,n||5);
+  var pts=[{x:ax,y:ay}],i,t,px,py,d=dist(ax,ay,bx,by)||1,ox=-(by-ay)/d,oy=(bx-ax)/d,off,amp=Math.min(16,6+d*0.04);
+  for(i=1;i<n;i++){t=i/n;px=ax+(bx-ax)*t;py=ay+(by-ay)*t;off=(i%2?1:-1)*rand(amp*0.45,amp);pts.push({x:px+ox*off,y:py+oy*off});}
   pts.push({x:bx,y:by});return pts;
 }
 function fireLightning(p,first){
   var jumps=3+(p.chainJumps?1:0)+(p.extraShots|0),dmg=CFG.BULLET_DAMAGE*1.05*p.damageMul,i,targets=[first],src=first,n;
   if(p.berserk&&p.hp/p.maxHp<0.4)dmg*=1.5;
   if(p.bloodlust)dmg*=(1+0.04*p.bloodStacks);
-  p.aimAng=Math.atan2(first.y-p.y,first.x-p.x);p.recoil=1;p.muzzle=0.1;
+  p.aimAng=Math.atan2(first.y-p.y,first.x-p.x);p.recoil=1;p.muzzle=0.1;p.boltFlash=0.1;
   for(i=1;i<jumps;i++){
     n=null;var best=140*(p.rangeMul||1),j,z,d;
     for(j=0;j<game.zombies.length;j++){z=game.zombies[j];if(z.dead||z.dying||targets.indexOf(z)>=0)continue;d=dist(src.x,src.y,z.x,z.y);if(d<best){best=d;n=z;}}
     if(!n)break;targets.push(n);src=n;
   }
-  var pts=zigPts(p.x,p.y,targets[0].x,targets[0].y,5);
-  for(i=1;i<targets.length;i++)pts=pts.concat(zigPts(targets[i-1].x,targets[i-1].y,targets[i].x,targets[i].y,4).slice(1));
-  game.bolts.push({pts:pts,life:0.32,maxLife:0.32});
-  for(i=0;i<targets.length;i++){hurtZombie(targets[i],dmg*(i?0.7:1),p.x);if(p.fireAmmo)targets[i].burn=1.4;if(p.iceAmmo)targets[i].slow=1.6;if(p.poisonAmmo)targets[i].poison=2;}
+  var pts=zigPts(p.x,p.y,targets[0].x,targets[0].y,8);
+  for(i=1;i<targets.length;i++)pts=pts.concat(zigPts(targets[i-1].x,targets[i-1].y,targets[i].x,targets[i].y,7).slice(1));
+  pushBolt({pts:pts,life:0.11,maxLife:0.11});
+  var forks=1+(Math.random()<0.55?1:0),k,a,b,ang,len;
+  for(i=0;i<forks&&pts.length>3;i++){
+    k=2+((Math.random()*(pts.length-3))|0);
+    a=pts[k];ang=Math.atan2(pts[Math.min(k+1,pts.length-1)].y-pts[Math.max(0,k-1)].y,pts[Math.min(k+1,pts.length-1)].x-pts[Math.max(0,k-1)].x);
+    ang+=(Math.random()<0.5?-1:1)*rand(0.55,1.2);len=rand(16,32);
+    b={x:a.x+Math.cos(ang)*len,y:a.y+Math.sin(ang)*len};
+    pushBolt({pts:zigPts(a.x,a.y,b.x,b.y,4),life:0.08,maxLife:0.08,fork:1});
+  }
+  for(i=0;i<targets.length;i++){
+    hurtZombie(targets[i],dmg*(i?0.7:1),p.x,0,{quiet:1,noCrit:i>0});
+    impactSpark(targets[i].x,targets[i].y);
+    if(p.fireAmmo)targets[i].burn=1.4;if(p.iceAmmo)targets[i].slow=1.6;if(p.poisonAmmo)targets[i].poison=2;
+  }
   sfx("zap");
 }
 function fireGompa(p,n){
@@ -246,7 +276,7 @@ function superKind(p){
 }
 function superPreview(p,ang){
   var kind=superKind(p),len,r;
-  if(kind==="laser")return{kind:kind,ang:ang,len:p.bigStorm?520:460,w:34};
+  if(kind==="laser")return{kind:kind,ang:ang,len:truenoLaserLen(p),w:15};
   if(kind==="dash"){
     len=(p.hero==="mr"?190:p.tripleJump?220:p.doubleJump?180:150)*(p.dashLenMul||1);
     return{kind:kind,ang:ang,len:len,slash:p.hero==="mr"?1:0};
@@ -278,8 +308,8 @@ function fireSuper(p,ang){
   }
 }
 function startTruenoLaser(p,ang){
-  p.laserT=3;p.laserMax=3;p.laserAng=ang;p.laserLen=p.bigStorm?520:460;p.laserW=34;p.laserDps=72;p.laserTick=0;
-  shake(6);sfx("laser_hum");sfx("storm");
+  p.laserT=3;p.laserMax=3;p.laserAng=ang;p.laserLen=truenoLaserLen(p);p.laserW=15;p.laserDps=38;p.laserTick=0;
+  p.boltFlash=0.12;shake(3);sfx("laser_hum");sfx("storm");
 }
 function stopTruenoLaser(p){
   if(!p)return;
@@ -291,42 +321,38 @@ function updateTruenoLaser(p,dt){
   if(!(p.laserT>0))return;
   if(p.grabbed||(game&&game.state!=="playing")){stopTruenoLaser(p);return;}
   p.laserT-=dt;
-  var want=null,rate=6.5;
-  /* Dedicated super stick (right thumb put back on the button) aims only and is snappier. */
+  p.laserLen=truenoLaserLen(p);p.laserW=15;
+  var want=null,rate=11;
+  /* Super stick only — lifting the thumb keeps the last laserAng. Move stick never steers the beam. */
   if(input.super&&Math.sqrt((input.sjx||0)*(input.sjx||0)+(input.sjy||0)*(input.sjy||0))>0.2){
-    want=Math.atan2(input.sjy,input.sjx);rate=11;
-  }else if(input.joy&&Math.sqrt((input.jx||0)*(input.jx||0)+(input.jy||0)*(input.jy||0))>0.2){
-    /* Common case after release-to-fire: left move stick steers the beam. */
-    want=Math.atan2(input.jy,input.jx);rate=7;
+    want=Math.atan2(input.sjy,input.sjx);
   }
   if(want!=null){
     var d=Math.atan2(Math.sin(want-p.laserAng),Math.cos(want-p.laserAng));
     p.laserAng+=d*(1-Math.exp(-rate*dt));
   }
   p.facing=p.laserAng;p.aimAng=p.laserAng;p.faceAng=p.laserAng;
-  var x2=p.x+Math.cos(p.laserAng)*p.laserLen,y2=p.y+Math.sin(p.laserAng)*p.laserLen,half=(p.laserW||34)*0.5,i,z,dseg,hit=0;
+  var x2=p.x+Math.cos(p.laserAng)*p.laserLen,y2=p.y+Math.sin(p.laserAng)*p.laserLen,half=(p.laserW||15)*0.5,i,z,dseg,hit=0;
   p.laserTick-=dt;
   if(p.laserTick<=0){
-    p.laserTick=0.1;
-    var tick=p.laserDps*(p.damageMul||1)*0.1;
+    p.laserTick=0.12;
+    var tick=p.laserDps*(p.damageMul||1)*0.12;
     for(i=0;i<game.zombies.length;i++){
       z=game.zombies[i];if(z.dead||z.dying)continue;
       dseg=distSeg(z.x,z.y,p.x,p.y,x2,y2);
       if(dseg<half+z.r){
         hurtZombie(z,tick,p.x,1,{quiet:1,noCrit:1});
-        z.burn=Math.max(z.burn||0,0.35);hit=1;
-        if(Math.random()<0.7)addParticle(z.x+rand(-6,6),z.y+rand(-6,6),"#e3f2fd",0.28,rand(-40,40),rand(-50,20),rand(4,8),3);
+        z.burn=Math.max(z.burn||0,0.3);hit=1;
+        if(Math.random()<0.28)addParticle(z.x+rand(-5,5),z.y+rand(-5,5),"#e3f2fd",0.16,rand(-30,30),rand(-40,16),rand(3,6),3);
       }
     }
-    if(hit){sfx("crackle");shake(2);}
+    if(hit&&Math.random()<0.45){sfx("crackle");shake(1);}
   }
-  /* beam crackle bolts + tip sparks */
-  if(Math.random()<0.55){
-    var t=Math.random(),px=p.x+(x2-p.x)*t,py=p.y+(y2-p.y)*t,nx=-Math.sin(p.laserAng),ny=Math.cos(p.laserAng),off=(Math.random()-0.5)*20;
-    if(!game.bolts)game.bolts=[];
-    game.bolts.push({pts:zigPts(px-nx*8,py-ny*8,px+nx*8+off,py+ny*8-off,3),life:0.08,maxLife:0.08,col:"#90caf9"});
+  if(Math.random()<0.08){
+    var t=Math.random(),px=p.x+(x2-p.x)*t,py=p.y+(y2-p.y)*t,nx=-Math.sin(p.laserAng),ny=Math.cos(p.laserAng),off=(Math.random()-0.5)*12;
+    pushBolt({pts:zigPts(px-nx*6,py-ny*6,px+nx*6+off,py+ny*6-off,3),life:0.07,maxLife:0.07,fork:1});
   }
-  if(Math.random()<0.4)addParticle(x2,y2,"#bbdefb",0.22,rand(-30,30),rand(-30,30),rand(5,10),3);
+  if(Math.random()<0.18)addParticle(x2,y2,"#bbdefb",0.14,rand(-22,22),rand(-22,22),rand(3,6),3);
   if(p.laserT<=0)stopTruenoLaser(p);
 }
 function goToMenu(){if(game&&game.player)stopTruenoLaser(game.player);stopMusic();game=createTitleState();skipDtClamp=1;layoutMenuButtons();startMusic("menu");}

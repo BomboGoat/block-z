@@ -8,7 +8,7 @@ Menu bed: "Lost in a bad place (horror ambience loop)"
   Source: https://opengameart.org/content/lost-in-a-bad-place-horror-ambience-loop
   License: CC0 1.0 Universal (public domain dedication)
   File in this repo: assets/mus/menu.mp3
-  Notes: Downloaded as lost_1.ogg and compressed to 80 kbps stereo MP3 for the web build. No changes to the composition.
+  Notes: Downloaded as lost_1.ogg. For faster first load the web build uses a 45-second stereo loop at 64 kbps (trimmed from the start of the original, composition otherwise unchanged).
 
 Round / in-game bed: "Ancient caverns (horror ambient loop)"
   Author: congusbongus

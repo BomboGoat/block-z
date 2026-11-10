@@ -289,7 +289,7 @@ function updateExtraAbilities(dt){
   if(p.stormCloud){
     if(!p.cloud)p.cloud={x:p.x,y:p.y-30,t:0};
     p.cloud.x+=(p.x-p.cloud.x)*Math.min(1,dt*3);p.cloud.y+=(p.y-40-p.cloud.y)*Math.min(1,dt*3);
-    p.cloud.t-=dt;if(p.cloud.t<=0){p.cloud.t=1.4;var n=findNearestZombie(p,200);if(n){hurtZombie(n,10*p.damageMul,p.x);if(game.bolts)game.bolts.push({pts:[{x:p.cloud.x,y:p.cloud.y},{x:n.x,y:n.y}],life:0.18,maxLife:0.18});}}
+    p.cloud.t-=dt;if(p.cloud.t<=0){p.cloud.t=1.4;var n=findNearestZombie(p,200);if(n){hurtZombie(n,10*p.damageMul,p.x);if(typeof pushBolt==="function")pushBolt({pts:[{x:p.cloud.x,y:p.cloud.y},{x:n.x,y:n.y}],life:0.12,maxLife:0.12});else if(game.bolts)game.bolts.push({pts:[{x:p.cloud.x,y:p.cloud.y},{x:n.x,y:n.y}],life:0.12,maxLife:0.12});}}
   }
   if(p.shieldRegen&&p.hasShield&&!p.shieldReady){p.shieldCd=Math.max(0,(p.shieldCd||0)-dt*0.5);}
   if(p.dashFire&&p.dashT>0){
@@ -323,7 +323,7 @@ function extraFireCooldown(p,cd){
   return cd;
 }
 function extraCrit(p,z){
-  if(p.critBolt&&z){hurtZombie(z,(CFG.BULLET_DAMAGE||8)*0.6*p.damageMul,p.x,1);if(game.bolts)game.bolts.push({pts:[{x:p.x,y:p.y},{x:z.x,y:z.y}],life:0.16,maxLife:0.16});}
+  if(p.critBolt&&z){hurtZombie(z,(CFG.BULLET_DAMAGE||8)*0.6*p.damageMul,p.x,1);if(typeof pushBolt==="function")pushBolt({pts:[{x:p.x,y:p.y},{x:z.x,y:z.y}],life:0.11,maxLife:0.11});else if(game.bolts)game.bolts.push({pts:[{x:p.x,y:p.y},{x:z.x,y:z.y}],life:0.11,maxLife:0.11});}
 }
 function maybeKnifeFan(p){
   if(!p.knifeFan)return;
