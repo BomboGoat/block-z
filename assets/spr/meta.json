@@ -1,0 +1,200 @@
+{
+  "classic_f": {
+    "file": "assets/spr/classic_f.webp",
+    "w": 162,
+    "h": 360,
+    "fx": 0.38,
+    "fy": 0.992,
+    "hx": 0.932,
+    "hy": 0.642,
+    "ex": 0.499,
+    "ey": 0.198
+  },
+  "classic_b": {
+    "file": "assets/spr/classic_b.webp",
+    "w": 158,
+    "h": 360,
+    "fx": 0.358,
+    "fy": 0.992,
+    "hx": 0.88,
+    "hy": 0.65,
+    "ex": 0.465,
+    "ey": 0.191
+  },
+  "trueno_f": {
+    "file": "assets/spr/trueno_f.webp",
+    "w": 167,
+    "h": 360,
+    "fx": 0.259,
+    "fy": 0.992,
+    "hx": 0.922,
+    "hy": 0.603,
+    "ex": 0.486,
+    "ey": 0.193
+  },
+  "mr_f": {
+    "file": "assets/spr/mr_f.webp",
+    "w": 151,
+    "h": 360,
+    "fx": 0.305,
+    "fy": 0.992,
+    "hx": 0.927,
+    "hy": 0.628,
+    "ex": 0.485,
+    "ey": 0.195
+  },
+  "gompa_f": {
+    "file": "assets/spr/gompa_f.webp",
+    "w": 212,
+    "h": 360,
+    "fx": 0.307,
+    "fy": 0.992,
+    "hx": 0.925,
+    "hy": 0.567,
+    "ex": 0.515,
+    "ey": 0.213
+  },
+  "colossus_f": {
+    "file": "assets/spr/colossus_f.webp",
+    "w": 204,
+    "h": 360,
+    "fx": 0.31,
+    "fy": 0.992,
+    "hx": 0.922,
+    "hy": 0.583,
+    "ex": 0.514,
+    "ey": 0.21
+  },
+  "home_f": {
+    "file": "assets/spr/home_f.webp",
+    "w": 216,
+    "h": 360,
+    "fx": 0.434,
+    "fy": 0.992,
+    "hx": 0.894,
+    "hy": 0.592,
+    "ex": 0.595,
+    "ey": 0.197
+  },
+  "final_f": {
+    "file": "assets/spr/final_f.webp",
+    "w": 281,
+    "h": 360,
+    "fx": 0.364,
+    "fy": 0.992,
+    "hx": 0.904,
+    "hy": 0.625,
+    "ex": 0.581,
+    "ey": 0.227
+  },
+  "z_normal_f": {
+    "file": "assets/spr/z_normal_f.webp",
+    "w": 163,
+    "h": 360,
+    "fx": 0.295,
+    "fy": 0.992,
+    "hx": 0.908,
+    "hy": 0.606,
+    "ex": 0.482,
+    "ey": 0.195
+  },
+  "z_fast_f": {
+    "file": "assets/spr/z_fast_f.webp",
+    "w": 233,
+    "h": 360,
+    "fx": 0.22,
+    "fy": 0.992,
+    "hx": 0.897,
+    "hy": 0.608,
+    "ex": 0.571,
+    "ey": 0.196
+  },
+  "z_tank_f": {
+    "file": "assets/spr/z_tank_f.webp",
+    "w": 291,
+    "h": 360,
+    "fx": 0.342,
+    "fy": 0.992,
+    "hx": 0.935,
+    "hy": 0.586,
+    "ex": 0.529,
+    "ey": 0.221
+  },
+  "z_exploder_f": {
+    "file": "assets/spr/z_exploder_f.webp",
+    "w": 224,
+    "h": 360,
+    "fx": 0.319,
+    "fy": 0.992,
+    "hx": 0.844,
+    "hy": 0.597,
+    "ex": 0.481,
+    "ey": 0.206
+  },
+  "z_crawler_f": {
+    "file": "assets/spr/z_crawler_f.webp",
+    "w": 591,
+    "h": 360,
+    "fx": 0.646,
+    "fy": 0.986,
+    "hx": 0.834,
+    "hy": 0.656,
+    "ex": 0.693,
+    "ey": 0.209
+  },
+  "z_armored_f": {
+    "file": "assets/spr/z_armored_f.webp",
+    "w": 176,
+    "h": 360,
+    "fx": 0.283,
+    "fy": 0.992,
+    "hx": 0.835,
+    "hy": 0.617,
+    "ex": 0.48,
+    "ey": 0.201
+  },
+  "z_spitter_f": {
+    "file": "assets/spr/z_spitter_f.webp",
+    "w": 167,
+    "h": 360,
+    "fx": 0.331,
+    "fy": 0.992,
+    "hx": 0.91,
+    "hy": 0.603,
+    "ex": 0.487,
+    "ey": 0.198
+  },
+  "z_jumper_f": {
+    "file": "assets/spr/z_jumper_f.webp",
+    "w": 252,
+    "h": 360,
+    "fx": 0.224,
+    "fy": 0.992,
+    "hx": 0.885,
+    "hy": 0.581,
+    "ex": 0.442,
+    "ey": 0.198
+  },
+  "z_screamer_f": {
+    "file": "assets/spr/z_screamer_f.webp",
+    "w": 211,
+    "h": 360,
+    "fx": 0.314,
+    "fy": 0.992,
+    "hx": 0.735,
+    "hy": 0.728,
+    "ex": 0.495,
+    "ey": 0.212
+  },
+  "z_splitter_f": {
+    "file": "assets/spr/z_splitter_f.webp",
+    "w": 162,
+    "h": 360,
+    "fx": 0.287,
+    "fy": 0.992,
+    "hx": 0.858,
+    "hy": 0.578,
+    "ex": 0.477,
+    "ey": 0.197
+  }
+}

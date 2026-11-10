@@ -12,8 +12,8 @@ function gfxSetQ(q){
 function gfxLoad(done){
   var urls={grass:"assets/tex/grass.webp",asphalt:"assets/tex/asphalt.webp",plaza:"assets/tex/plaza.webp",ruins:"assets/tex/ruins.webp",parking:"assets/tex/parking.webp",sidewalk:"assets/tex/sidewalk.webp",concrete:"assets/tex/concrete.webp"},keys=Object.keys(urls),left=keys.length+1;
   function tick(){if(--left<=0){GFX.ready=1;if(typeof map!=="undefined"&&map){map.chunks={};map.dirty=1;}if(done)done();}}
-  keys.forEach(function(k){var im=new Image();im.onload=function(){GFX.tex[k]=im;tick();};im.onerror=tick;im.src=urls[k];});
-  var mb=new Image();mb.onload=function(){GFX.menuBg=mb;tick();};mb.onerror=tick;mb.src="assets/ui/menu-bg.webp";
+  keys.forEach(function(k){var im=new Image();im.onload=function(){GFX.tex[k]=im;tick();};im.onerror=tick;im.src=urls[k]+"?v=19c";});
+  var mb=new Image();mb.onload=function(){GFX.menuBg=mb;tick();};mb.onerror=tick;mb.src="assets/ui/menu-bg.webp?v=19c";
 }
 function gfxTick(dt){
   var ms=(dt||0.016)*1000;GFX.ft=GFX.ft*0.9+ms*0.1;
@@ -25,9 +25,11 @@ function gfxFillZone(g,z,x0,y0){
   if(z.k==="sidewalk")key="sidewalk";
   var tex=GFX.tex[key],rx=z.x-x0,ry=(z.y-y0)*ys,rw=z.w,rd=z.h*ys;
   if(tex){
+    var tile=key==="grass"?110:key==="asphalt"?240:key==="plaza"?140:key==="sidewalk"?80:key==="parking"?100:96;
+    var sx=tile/tex.width, sy=(tile*ys)/tex.height;
     g.save();g.beginPath();g.rect(rx-1,ry-1,rw+2,rd+2);g.clip();
-    g.translate(-x0,-y0*ys);
-    try{g.fillStyle=g.createPattern(tex,"repeat");g.fillRect(z.x,z.y*ys,z.w,z.h*ys);}catch(e){g.fillStyle=z.floor;g.fillRect(z.x,z.y*ys,z.w,z.h*ys);}
+    g.translate(-x0,-y0*ys);g.scale(sx,sy);
+    try{g.fillStyle=g.createPattern(tex,"repeat");g.fillRect(z.x/sx,z.y*ys/sy,z.w/sx,z.h*ys/sy);}catch(e){g.scale(1/sx,1/sy);g.fillStyle=z.floor;g.fillRect(z.x,z.y*ys,z.w,z.h*ys);}
     g.restore();
   }else{g.fillStyle=z.floor;g.fillRect(rx,ry,rw,rd);}
 }
@@ -66,7 +68,7 @@ function drawLighting(){
   if(!GFX.lights||!game)return;
   var sc=layout.scale,t=game.time||0,i,s,o,flick;
   /* dusk grade — warm, matches the title art */
-  ctx.fillStyle="rgba(40,12,6,0.10)";ctx.fillRect(0,0,SW,SH);
+  ctx.fillStyle="rgba(40,12,6,0.055)";ctx.fillRect(0,0,SW,SH);
   ctx.globalCompositeOperation="lighter";
   if(map&&map.lamps){
     for(i=0;i<map.lamps.length;i++){
@@ -135,4 +137,21 @@ function ejectShell(p){
   var a=(p.aimAng||0)+1.2,sp=120+rand(0,60);
   addParticle(p.x+Math.cos(p.aimAng||0)*8,p.y+Math.sin(p.aimAng||0)*8,"#ffd54f",0.45,Math.cos(a)*sp,Math.sin(a)*sp-40,3,7);
 }
-function gfxHitStop(t){if(game)game.hitStop=Math.max(game.hitStop||0,t||0.045);}
+function gfxHitStop(t,kind){
+  if(!game)return;
+  /* only big events: boss, super, heavy slam. never stack, short cap, cooldown */
+  if(kind!=="big")return;
+  if((game.hitStop||0)>0||(game.hitStopCd||0)>0)return;
+  game.hitStop=Math.min(0.06,t||0.05);
+  game.hitStopCd=0.22;
+  game.timeScale=0.18;
+}
+function gfxHitStopTick(realDt){
+  if(!game)return;
+  if(game.hitStopCd>0)game.hitStopCd=Math.max(0,game.hitStopCd-realDt);
+  if(game.hitStop>0){
+    game.hitStop=Math.max(0,game.hitStop-realDt);
+    if(game.hitStop<=0)game.timeScale=1;
+  }else game.timeScale=1;
+}
+

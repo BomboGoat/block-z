@@ -77,7 +77,31 @@ var UPGRADE_DEFS=[
 {id:"hero_slash",name:"Arcazo",icon:"🗡️",once:1,minR:1,hero:"mr",flag:"wideSlash",plus:["Alcance cuchillo"],minus:[]},
 {id:"hero_bleed",name:"Sangrado",icon:"🩸",once:1,minR:2,hero:"mr",flag:"bleedSlash",plus:["Sangrado"],minus:[]},
 {id:"hero_iron",name:"Hierro",icon:"🏋️",once:1,minR:1,hero:"gompa",flag:"heavyBell",plus:["Pesa pesada"],minus:[]},
-{id:"hero_flex",name:"Flex plus",icon:"💪",once:1,minR:2,hero:"gompa",flag:"bigFlex",plus:["Super slam"],minus:[]}
+{id:"hero_flex",name:"Flex plus",icon:"💪",once:1,minR:2,hero:"gompa",flag:"bigFlex",plus:["Super slam"],minus:[]},
+{id:"vampKill",name:"Vampirismo letal",icon:"🦇",once:1,minR:2,flag:"vampKill",desc:"Cúrate un 6% de vida máxima al matar",plus:["Curación"],minus:[]},
+{id:"meteors",name:"Meteoritos",icon:"☄️",once:1,minR:3,flag:"meteors",desc:"Caen meteoritos sobre los zombis cercanos",plus:["Área"],minus:[]},
+{id:"chainBoom",name:"Reacción",icon:"💥",once:1,minR:2,flag:"chainBoom",desc:"Los enemigos explotan al morir",plus:["Explosión"],minus:[]},
+{id:"dashFire",name:"Estela ígnea",icon:"🔥",once:1,minR:2,flag:"dashFire",desc:"El dash deja un rastro de fuego",plus:["Fuego","Dash"],minus:[]},
+{id:"superCharge",name:"Super carga",icon:"🔋",once:1,minR:1,flag:"superCharge",desc:"La super se carga un 35% más rápido",plus:["Super"],minus:[]},
+{id:"superCD",name:"Super rápido",icon:"⏱️",once:1,minR:2,flag:"superCD",desc:"La super cuesta un 25% menos",plus:["Super"],minus:[]},
+{id:"frenzy",name:"Frenesí",icon:"😤",once:1,minR:2,flag:"frenzy",desc:"Cada baja sube la cadencia durante unos segundos",plus:["Cadencia"],minus:[]},
+{id:"critBolt",name:"Rayo crítico",icon:"⚡",once:1,minR:2,flag:"critBolt",desc:"Los críticos lanzan un rayo extra",plus:["Crítico","Electricidad"],minus:[]},
+{id:"blackHole",name:"Agujero negro",icon:"🌀",once:1,minR:3,exclusive:1,flag:"blackHole",desc:"Un mini agujero negro atrae y daña a los zombis",plus:["Control","Daño"],minus:[]},
+{id:"clone",name:"Clon",icon:"👥",once:1,minR:4,exclusive:1,flag:"hasClone",desc:"Un clon te sigue y dispara",plus:["Aliado"],minus:[]},
+{id:"poisonCloud",name:"Nube tóxica",icon:"☁️",once:1,minR:2,flag:"poisonCloud",desc:"Una nube de veneno te rodea",plus:["Veneno","Aura"],minus:[]},
+{id:"shieldRegen",name:"Escudo vivo",icon:"💠",once:1,minR:2,flag:"shieldRegen",desc:"El escudo se regenera más rápido",plus:["Defensa"],minus:[]},
+{id:"freezeAura",name:"Aura gélida",icon:"🧊",once:1,minR:2,flag:"freezeAura",desc:"Los zombis cercanos se ralentizan",plus:["Hielo","Control"],minus:[]},
+{id:"xpBoost",name:"Sabiduría",icon:"📘",kind:"mul",stat:"xpMul",tiers:[0.15,0.22,0.32,0.45,0.6],desc:"Ganas más XP al terminar las rondas",plus:["XP"],minus:[]},
+{id:"hunter",name:"Cazajefes",icon:"🎯",once:1,minR:2,flag:"hunter",desc:"+18% de daño a jefes",plus:["Jefes"],minus:[]},
+{id:"secondWind",name:"Segundo aire",icon:"🌬️",once:1,minR:1,flag:"secondWind",desc:"Al terminar una ronda recuperas un 20% de vida",plus:["Curación"],minus:[]},
+{id:"turboDash",name:"Dash largo",icon:"🚀",once:1,minR:1,flag:"turboDash",desc:"El dash recorre más distancia",plus:["Dash"],minus:[]},
+{id:"lastStand",name:"Último aliento",icon:"❤️‍🔥",once:1,minR:2,custom:"lastStand",desc:"Con poca vida ganas daño y cadencia",plus:["Bajo vida"],minus:[]},
+{id:"luckyCharm",name:"Amuleto",icon:"🍀",once:1,minR:1,flag:"luckyCharm",desc:"Más suerte en las mejoras y +8% de crítico",plus:["Suerte","Crítico"],minus:[]},
+{id:"bulletStorm",name:"Tromba",icon:"🌧️",kind:"add",stat:"extraShots",tiers:[1,1,1,2,2],minR:1,desc:"Disparas un proyectil extra",plus:["Proyectiles"],minus:["Precisión"]},
+{id:"hero_dual",name:"Doble pistola",icon:"🔫",once:1,minR:1,hero:"classic",flag:"dualPistols",desc:"Classic dispara con dos pistolas",plus:["Proyectiles"],minus:[]},
+{id:"hero_cloud",name:"Nube tormenta",icon:"🌩️",once:1,minR:2,hero:"trueno",flag:"stormCloud",desc:"Una nube te sigue y lanza rayos",plus:["Electricidad"],minus:[]},
+{id:"hero_fan",name:"Abanico",icon:"🗡️",once:1,minR:2,hero:"mr",flag:"knifeFan",desc:"Cada pocos cortes lanzas un abanico de cuchillos",plus:["Área"],minus:[]},
+{id:"hero_shockN",name:"Onda rítmica",icon:"💥",once:1,minR:1,hero:"gompa",flag:"shockN",desc:"Cada 4.º puñetazo suelta una onda de choque",plus:["Onda"],minus:[]}
 ];
 var bootErrorEl=document.getElementById("bootError");
 function showBootError(err){try{var msg=(err&&err.stack)?String(err.stack):String(err);if(bootErrorEl){bootErrorEl.style.display="block";bootErrorEl.textContent="Error del juego:\n"+msg;}if(console&&console.error)console.error(err);}catch(e2){}}

@@ -15,14 +15,14 @@ function spawnZombie(type,x,y,wave){
 }
 function spawnColossus(x,y){
   var z=spawnZombie("boss",x,y,0);
-  z.hp=1100;z.maxHp=1100;z.isBoss=1;z.isColossus=1;z.r=20;z.h=42;z.speed=70;z.damage=20;z.score=800;z.xp=350;
+  z.hp=1100;z.maxHp=1100;z.isBoss=1;z.isColossus=1;z.r=24;z.h=52;z.speed=70;z.damage=20;z.score=800;z.xp=350;
   z.look=makeColossusLook();z.phase="intro";z.introT=4.2;z.atkCd=1.6;z.windup=null;z.windupT=0;z.bName="EL COLOSSUS";
   z.speechDone=0;z.bubbleText="";z.bubbleFull="";z.bubbleIdx=0;z.bubbleT=0;z.rings=[];z.throws=[];z.chargeT=0;z.chargeAng=0;
   return z;
 }
 function spawnHome(x,y){
   var z=spawnZombie("boss",x,y,0);
-  z.hp=1200;z.maxHp=1200;z.isBoss=1;z.isHome=1;z.r=16;z.h=44;z.speed=88;z.damage=16;z.score=900;z.xp=380;
+  z.hp=1200;z.maxHp=1200;z.isBoss=1;z.isHome=1;z.r=20;z.h=50;z.speed=88;z.damage=16;z.score=900;z.xp=380;
   z.look=makeHomeLook();z.phase="intro";z.introT=4;z.atkCd=1.8;z.windup=null;z.windupT=0;z.p2=0;z.bName="HOMELANDER";
   z.bubbleText="";z.bubbleFull="¿Sabéis quién soy?";z.bubbleIdx=0;z.bubbleT=0;z.rings=[];z.diveT=0;z.tx=x;z.ty=y;
   return z;
@@ -37,7 +37,6 @@ function explodeAt(x,y,r,dmg,opts){
   if(!opts.friendly&&p&&dist(x,y,p.x,p.y)<r+p.r)hurtPlayer(p,dmg*0.5);
   sfx("explode");
   if(typeof gfxBoom==="function")gfxBoom(x,y,r);else for(i=0;i<10;i++)addParticle(x,y,"#ff9800",0.4,rand(-140,140),rand(-140,140),5,2);
-  if(typeof gfxHitStop==="function")gfxHitStop(0.05);
   if(typeof addBlood==="function")addBlood(x,y,4);
 }
 function findNearestZombie(p,range){
@@ -77,6 +76,8 @@ function fireGompa(p,n){
     p.meleeSwing=0.22;p.swingDone=0;p.slashAng=p.aimAng;
     game.slashes.push({x:p.x,y:p.y,ang:p.aimAng,r:reach*0.7,life:0.16,maxLife:0.16});
     sfx("melee");
+    if(typeof maybeShockN==="function")maybeShockN(p);
+    if(typeof maybeKnifeFan==="function")maybeKnifeFan(p);
   }else{
     var spd=340,b=bulletPool.pop()||{};
     b.x=p.x+Math.cos(p.aimAng)*16;b.y=p.y+Math.sin(p.aimAng)*16;
@@ -128,11 +129,13 @@ function hurtZombie(z,dmg,fromX,noChain,opts){
   if(z.dying||z.dead)return;opts=opts||{};
   var p=game.player;
   if(z.armor&&fromX!=null)dmg*=0.7;
-  if(p.critChance&&Math.random()<p.critChance){dmg*=(p.critMul||2);floatText(z.x,z.y-8,"CRÍT","#ffeb3b");}
+  if(p.hunter&&z.isBoss)dmg*=1.18;
+  if(p.lastStand&&p.hp<p.maxHp*0.35)dmg*=1.25;
+  if(!opts.noCrit&&!noChain&&p.critChance&&Math.random()<p.critChance){dmg*=(p.critMul||2);floatText(z.x,z.y-8,"CRÍT","#ffeb3b");if(typeof extraCrit==="function")extraCrit(p,z);}
   z.hp-=dmg;z.hitFlash=0.12;floatText(z.x,z.y,""+Math.round(dmg),"#ffe066");bloodBurst(z.x,z.y);sfx("hit");
   if(typeof addBlood==="function")addBlood(z.x,z.y,z.hp<=0?7:2);
-  if(z.hp<=0&&typeof gfxHitStop==="function")gfxHitStop(0.04);
-  p.super=Math.min(CFG.SUPER_COST,(p.super||0)+Math.min(12,dmg*0.25));
+  if(z.isBoss&&typeof gfxHitStop==="function")gfxHitStop(0.05,"big");
+  p.super=Math.min(CFG.SUPER_COST*(p.superCD?0.75:1),(p.super||0)+Math.min(12,dmg*0.25)*(p.superCharge?1.35:1));
   if(p.lifesteal)p.hp=Math.min(p.maxHp,p.hp+dmg*p.lifesteal);
   if(p.sparkOnHit&&!noChain){for(var i=0;i<game.zombies.length;i++){var o=game.zombies[i];if(o!==z&&!o.dead&&!o.dying&&dist(z.x,z.y,o.x,o.y)<50)hurtZombie(o,dmg*0.2,z.x,1);}}
   if(p.hasChain&&!noChain){var n=findNearestZombie({x:z.x,y:z.y},140);if(n&&n!==z)hurtZombie(n,dmg*0.5,z.x,1);}
@@ -140,6 +143,7 @@ function hurtZombie(z,dmg,fromX,noChain,opts){
 }
 function killZombie(z){
   if(z.dying||z.dead)return;z.dying=1;z.deathT=0.45;sfx("death");
+  if(typeof onExtraKill==="function")onExtraKill(z);
   var p=game.player;game.kills++;game.score+=z.score||10;grantRunXP(p,z.xp||10);
   for(var pi=0;pi<10;pi++)addParticle(z.x,z.y,pick(["#8bc34a","#a5d6a7","#6d4c41","#7a1f1a","#cfd8dc"]),0.55,rand(-110,110),rand(-140,-20),rand(5,13),3);
   if(typeof addBlood==="function")addBlood(z.x,z.y,8);
@@ -148,6 +152,7 @@ function killZombie(z){
   if(z.type==="splitter"){for(var i=0;i<2;i++){var m=spawnZombie("mini",z.x+rand(-16,16),z.y+rand(-16,16),game.wave);game.zombies.push(m);}}
 }
 function grantRunXP(p,n){
+  if(p.xpMul)n=(n*p.xpMul)|0;
   if(p.xpMagnet)n=(n*1.25)|0;p.runXP+=n;
   while(p.runXP>=p.runXPNext){p.runXP-=p.runXPNext;p.runLevel++;p.runXPNext=(50+p.runLevel*25)|0;p.levelFlash=1;p.hp=Math.min(p.maxHp,p.hp+15);sfx("level");}
 }
@@ -178,6 +183,7 @@ function dashDir(p){
 }
 function startDash(p,len,slash){
   if(p.grabbed)return;
+  len*=(p.dashLenMul||1);
   var d=dashDir(p);
   p.dashT=0.18;p.dashVx=d.x*len/0.18;p.dashVy=d.y*len/0.18;
   p.invuln=Math.max(p.invuln,0.18);p.dashSlash=slash||0;p.facing=Math.atan2(d.y,d.x);
@@ -187,6 +193,7 @@ function startDash(p,len,slash){
 function fireSuper(p){
   if(p.grabbed||(p.super||0)<CFG.SUPER_COST)return;
   p.super=0;
+  if(typeof gfxHitStop==="function")gfxHitStop(0.055,"big");
   if(p.hero==="trueno"){
     var r=p.bigStorm?170:130,i,z,ang;
     for(i=0;i<game.zombies.length;i++){z=game.zombies[i];if(!z.dead&&!z.dying&&dist(p.x,p.y,z.x,z.y)<r+z.r){hurtZombie(z,38*p.damageMul,p.x);z.burn=0.4;}}
@@ -211,7 +218,7 @@ function fireSuper(p){
   }
 }
 function goToMenu(){stopMusic();game=createTitleState();skipDtClamp=1;layoutMenuButtons();startMusic("menu");}
-function emptyFX(){return{zombies:[],bullets:[],particles:[],floatTexts:[],projectiles:[],grenades:[],bolts:[],slashes:[],novas:[],lasers:[],scorches:[],bloods:[]};}
+function emptyFX(){return{zombies:[],bullets:[],particles:[],floatTexts:[],projectiles:[],grenades:[],bolts:[],slashes:[],novas:[],lasers:[],scorches:[],bloods:[],meteors:[],fires:[],timeScale:1,hitStop:0,hitStopCd:0};}
 function createTitleState(){buildMap(2026);var p=createPlayer();applyHero(p,selectedHero||"classic");p.x=760;p.y=900;var g=emptyFX();g.state="title";g.player=p;g.camX=p.x;g.camY=p.y;g.shake=0;g.wave=0;g.kills=0;g.score=0;g.waveSpawned=0;g.upgradeChoices=[];g.upgradeCards=[];g.time=0;g.bossSpawned=0;g.bossFight=0;g.message=null;g.messageTimer=0;g.titleZ=[];g.seed=2026;g.menuT=0;g.countdown=0;g.colossus=null;g.boss=null;g.home=null;g.spawnQueue=[];g.spawnTimer=0;return g;}
 function startGame(){
   buildMap(((Math.random()*1e9)|0)^Date.now());
@@ -238,7 +245,7 @@ function beginCombat(){
   var p=game.player;
   if(game.wave===2){var s=pickSpawn(p);startBoss(spawnColossus(s.x,s.y),"¡Vamos a gamblear!","Va va vamos a gam gam blear",88);return;}
   if(game.wave===5){var s1=pickSpawn(p);startBoss(spawnHome(s1.x,s1.y),"¿Sabéis quién soy?","Sa sa sabeis quien soy yo",110);return;}
-  if(game.wave===9){var s2=pickSpawn(p),fb=spawnZombie("boss",s2.x,s2.y,9);fb.isBoss=1;fb.hp=1250;fb.maxHp=1250;fb.r=22;fb.h=46;fb.bName="JEFE FINAL";startBoss(fb,"¡El fin!","El fin",70);return;}
+  if(game.wave===9){var s2=pickSpawn(p),fb=spawnZombie("boss",s2.x,s2.y,9);fb.isBoss=1;fb.hp=1250;fb.maxHp=1250;fb.r=26;fb.h=58;fb.bName="JEFE FINAL";fb.look.final=1;fb.look.kind="final";fb.look.type="boss";fb.rings=[];fb.throws=[];fb.atkCd=2;fb.windup=null;fb.windupT=0;fb.chargeT=0;startBoss(fb,"¡El fin!","El fin",70);return;}
   p.invuln=Math.max(p.invuln,0.9);game.state="playing";game.spawnTimer=0.5;game.graceT=1.4;
 }
 function startBoss(z,line,bab,pitch){
@@ -253,11 +260,11 @@ function startBoss(z,line,bab,pitch){
 function speakColossus(){
   try{if(game&&game.colossus){game.colossus.bubbleText="";game.colossus.bubbleFull="¡Vamos a gamblear!";game.colossus.bubbleIdx=0;game.colossus.bubbleT=0;}babbleSpeak("Va va vamos a gam gam blear",{pitch:88,gap:0.13});}catch(e){}
 }
-function onWaveCleared(){if(game.bossFight){startMusic("play");game.bossFight=0;}if(game.wave>=9){game.state="victory";grantAccountXP(((game.player.runXP*0.25)|0)+50);layoutMenuButtons();sfx("clear");return;}game.state="upgrade";skipDtClamp=1;sfx("clear");pickUpgradeChoices();}
+function onWaveCleared(){if(game.bossFight){startMusic("play");game.bossFight=0;}if(game.wave>=9){game.state="victory";grantAccountXP(((game.player.runXP*0.25)|0)+50);layoutMenuButtons();sfx("clear");return;}game.state="upgrade";skipDtClamp=1;sfx("clear");game.rerollLeft=1;if(game.player&&game.player.secondWind)game.player.hp=Math.min(game.player.maxHp,game.player.hp+game.player.maxHp*0.2);pickUpgradeChoices();}
 function rollRarity(luck){var w=RARITIES.map(function(r){return r.w;});if(luck>0){w[0]=Math.max(20,w[0]-luck*0.6);w[3]+=luck*0.25;w[4]+=luck*0.15;w[2]+=luck*0.2;}var t=0,i;for(i=0;i<w.length;i++)t+=w[i];var r=Math.random()*t,a=0;for(i=0;i<w.length;i++){a+=w[i];if(r<=a)return i;}return 0;}
 function tradeLine(def){var parts=[],i;for(i=0;i<(def.plus||[]).length;i++)parts.push({s:"+"+def.plus[i],c:"#2ecc71"});for(i=0;i<(def.minus||[]).length;i++)parts.push({s:"-"+def.minus[i],c:"#e74c3c"});return parts;}
 function buildUpgradeCard(def,ri){
-  var R=RARITIES[ri],card={id:def.id,name:def.name,icon:def.icon,rarity:ri,rarityName:R.name,color:R.color,glow:R.glow,frame:R.frame,def:def,desc:"",trade:tradeLine(def),apply:null};
+  var R=RARITIES[ri],card={id:def.id,name:def.name,icon:def.icon,rarity:ri,rarityName:R.name,color:R.color,glow:R.glow,frame:R.frame,def:def,desc:def.desc||"",trade:tradeLine(def),apply:null};
   var tv=def.tiers?def.tiers[ri]:0;
   if(def.kind==="mul")card.desc="Aumenta "+(def.stat==="damageMul"?"el daño":def.stat==="speedMul"?"la velocidad":def.stat==="rangeMul"?"el alcance":"la potencia")+" un "+Math.round(tv*100)+"%";
   else if(def.kind==="cd")card.desc="Disparas un "+Math.round(tv*100)+"% más rápido";
@@ -310,7 +317,9 @@ function buildUpgradeCard(def,ri){
   else if(def.flag==="bleedSlash")card.desc="Los cortes dejan sangrando";
   else if(def.flag==="heavyBell")card.desc="Tus pesas hacen más daño";
   else if(def.flag==="bigFlex")card.desc="El Flex aturde en más área";
+  else if(def.desc)card.desc=def.desc;
   else card.desc=def.name;
+  if(def.desc)card.desc=def.desc;
   card.apply=function(pl){applyUpgrade(pl,def,ri);};
   return card;
 }
@@ -328,6 +337,10 @@ function applyUpgrade(p,def,ri){
   if(def.flag==="hasDash")p.dashLeft=1;
   if(def.flag==="doubleJump"){p.hasDash=1;p.dashLeft=2;}
   if(def.flag==="tripleJump"){p.hasDash=1;p.doubleJump=1;p.dashLeft=3;}
+  if(def.flag==="dualPistols"){p.extraShots=(p.extraShots||0)+1;p.twoHand=1;}
+  if(def.flag==="turboDash")p.dashLenMul=1.35;
+  if(def.flag==="luckyCharm"){p.luck=(p.luck||0)+2;p.critChance=Math.min(0.55,(p.critChance||0)+0.08);}
+  if(def.custom==="lastStand")p.lastStand=1;
   if(def.custom==="giant"){p.scale=1.35;p.r=CFG.PLAYER_R*1.3;p.damageMul*=1.25;p.maxHp+=40;p.hp+=40;p.speedMul*=0.88;}
   if(def.custom==="dwarf"){p.scale=0.78;p.r=CFG.PLAYER_R*0.8;p.damageMul*=0.9;p.speedMul*=1.2;p.evasion=Math.max(p.evasion||0,0.12);}
   if(def.custom==="berserk")p.berserk=1;
@@ -346,5 +359,18 @@ function applyUpgrade(p,def,ri){
 
 function takenFlags(p){var t={},i;for(i=0;i<p.abilities.length;i++)t[p.abilities[i].id]=1;return t;}
 function pickUpgradeChoices(){var p=game.player,taken=takenFlags(p),choices=[],guard=0;while(choices.length<3&&guard++<60){var ri=rollRarity(p.luck|0);var pool=UPGRADE_DEFS.filter(function(d){if((d.once||d.flag||d.weapon||d.custom)&&taken[d.id])return 0;if(d.minR!=null&&ri<d.minR)return 0;if(d.exclusive&&ri<4)return 0;if(d.hero&&d.hero!==p.hero)return 0;if(d.weapon&&p.hero&&p.hero!=="classic")return 0;if(d.flag==="hasMelee"&&(p.hero==="mr"||p.hero==="gompa"))return 0;if((d.flag==="pierce"||d.flag==="bounce")&&p.hero&&p.hero!=="classic")return 0;for(var c=0;c<choices.length;c++)if(choices[c].id===d.id)return 0;return 1;});if(!pool.length){ri=Math.max(0,ri-1);continue;}choices.push(buildUpgradeCard(pick(pool),ri));}game.upgradeChoices=choices;layoutUpgradeCards();}
-function layoutUpgradeCards(){var n=game.upgradeChoices.length;if(layout.isPortrait){var cardW=Math.min(330,SW-28),gap=8,cardH=Math.min(118,((SH-100-(n-1)*gap)/n)|0),totalH=n*cardH+(n-1)*gap,startY=Math.max(48,(SH-totalH)/2),x=(SW-cardW)/2;game.upgradeCards=game.upgradeChoices.map(function(u,i){return{upgrade:u,x:x,y:startY+i*(cardH+gap),w:cardW,h:cardH,stacked:1};});}else{var cardW2=Math.min(200,(SW-70)/n-12),cardH2=Math.min(260,SH*0.7),totalW=n*cardW2+(n-1)*12,startX=(SW-totalW)/2,y=(SH-cardH2)/2;game.upgradeCards=game.upgradeChoices.map(function(u,i){return{upgrade:u,x:startX+i*(cardW2+12),y:y,w:cardW2,h:cardH2,stacked:0};});}}
-function handleUpgradeClick(lx,ly){for(var i=0;i<game.upgradeCards.length;i++){var card=game.upgradeCards[i];if(lx>=card.x&&lx<=card.x+card.w&&ly>=card.y&&ly<=card.y+card.h){card.upgrade.apply(game.player);sfx("card");sfx("rarity"+card.upgrade.rarity);startWave(game.wave+1);skipDtClamp=1;return;}}}
+function layoutUpgradeCards(){
+  var n=game.upgradeChoices.length;
+  var cardW2=Math.min(200,(SW-layout.safe.l-layout.safe.r-70)/n-12),cardH2=Math.min(250,SH*0.62);
+  var totalW=n*cardW2+(n-1)*12,startX=(SW-totalW)/2,y=Math.max(layout.safe.t+44,(SH-cardH2)/2-10);
+  game.upgradeCards=game.upgradeChoices.map(function(u,i){return{upgrade:u,x:startX+i*(cardW2+12),y:y,w:cardW2,h:cardH2,stacked:0};});
+  var rw=Math.min(200,SW*0.28),rh=40;
+  game.rerollBtn={x:(SW-rw)/2,y:Math.min(SH-layout.safe.b-16-rh,(y+cardH2+16)),w:rw,h:rh};
+}
+function handleUpgradeClick(lx,ly){
+  var b=game.rerollBtn;
+  if(b&&(game.rerollLeft||0)>0&&lx>=b.x&&lx<=b.x+b.w&&ly>=b.y&&ly<=b.y+b.h){
+    game.rerollLeft=0;sfx("card");pickUpgradeChoices();return;
+  }
+  for(var i=0;i<game.upgradeCards.length;i++){var card=game.upgradeCards[i];if(lx>=card.x&&lx<=card.x+card.w&&ly>=card.y&&ly<=card.y+card.h){card.upgrade.apply(game.player);sfx("card");sfx("rarity"+card.upgrade.rarity);startWave(game.wave+1);skipDtClamp=1;return;}}
+}
