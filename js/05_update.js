@@ -45,10 +45,15 @@ function layoutMenuButtons(){
     y=layout.safe.t+80;
     pauseBtns=[{id:"continuar",label:"Continuar",x:cx-bw/2,y:y,w:bw,h:bh},{id:"ajustes",label:"Ajustes",x:cx-bw/2,y:y+bh+gap,w:bw,h:bh},{id:"menu",label:"Menú",x:cx-bw/2,y:y+2*(bh+gap),w:bw,h:bh}];
   }else if(game.state==="select"){
-    y=SH-layout.safe.b-42;var bw2=Math.min(150,SW/2-20);
+    var pad=8,btnH=36,bw2=Math.min(150,SW/2-20);
+    y=SH-layout.safe.b-pad-btnH;
+    if(game.selectCards&&game.selectCards[0]){
+      var below=game.selectCards[0].y+game.selectCards[0].h+14;
+      if(below+btnH<=SH-layout.safe.b-pad)y=below;
+    }
     menuBtns=[
-      {id:"back",label:"Volver",x:cx-bw2-6,y:y,w:bw2,h:36},
-      {id:"start",label:"Jugar",x:cx+6,y:y,w:bw2,h:36}
+      {id:"back",label:"Volver",x:cx-bw2-6,y:y,w:bw2,h:btnH},
+      {id:"start",label:"Jugar",x:cx+6,y:y,w:bw2,h:btnH}
     ];
   }else if(game.state==="dead"||game.state==="victory"){
     y=(layout.isPortrait?layout.gameY+layout.gameDrawH*0.55:SH*0.55);
@@ -56,10 +61,16 @@ function layoutMenuButtons(){
   }
 }
 function layoutSelect(){
-  var n=HEROES.length,i,s=layout.safe;
-  var cw=Math.min(200,(SW-layout.safe.l-layout.safe.r-40)/n-8),ch=Math.min(300,SH-layout.safe.t-layout.safe.b-70);
-  var tw=n*cw+(n-1)*12,x0=(SW-tw)/2,y=layout.safe.t+48;
-  game.selectCards=HEROES.map(function(h,i){return{hero:h,x:x0+i*(cw+12),y:y,w:cw,h:ch,idx:i};});
+  var n=HEROES.length,s=layout.safe;
+  var titleH=layout.isPortrait?50:52,btnH=36,gap=14,pad=8;
+  var y=s.t+titleH;
+  var maxH=SH-s.b-pad-btnH-gap-y;
+  var gapX=10,availW=SW-s.l-s.r-28;
+  var cw=Math.min(184,(availW-(n-1)*gapX)/n);
+  var ch=Math.min(maxH, layout.isPortrait?300:248);
+  ch=Math.max(160, Math.min(ch, maxH));
+  var tw=n*cw+(n-1)*gapX,x0=(SW-tw)/2;
+  game.selectCards=HEROES.map(function(h,i){return{hero:h,x:x0+i*(cw+gapX),y:y,w:cw,h:ch,idx:i};});
 }
 var menuBtns=[],settingsBtns=[],pauseBtns=[],howToBack=null,prevSettings="title";
 function handleMenuClick(id,st){
