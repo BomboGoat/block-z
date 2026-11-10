@@ -656,10 +656,15 @@ function drawChar34(wx,wy,look,ang,anim,opts){
   if(opts.wpn)opts.noArm=1;
   var spr=getCharSpr(look,dir,fr,opts);
   ctx.imageSmoothingEnabled=1;ctx.imageSmoothingQuality="high";
-  if(opts.flash){ctx.filter="brightness(1.7) saturate(0.6)";}
   if(opts.dying||opts.spawnP!=null){ctx.save();ctx.translate(s.x,s.y);if(opts.dying){var dp=1-(opts.dieP||0);ctx.scale(1+dp*0.15,Math.max(0.25,1-dp*0.7));ctx.rotate(dp*0.5);ctx.globalAlpha=clamp((opts.dieP||0)*1.4,0,1);ctx.drawImage(spr.c,-dw/2,oy-s.y-dp*8,dw,dh);}else{var sp=opts.spawnP||0;ctx.translate(0,(1-sp)*28*sc);ctx.scale(0.85+0.15*sp,0.7+0.3*sp);ctx.drawImage(spr.c,-dw/2,oy-s.y,dw,dh);}ctx.restore();}
   else ctx.drawImage(spr.c,ox-dw/2,oy,dw,dh);
-  ctx.filter="none";ctx.globalAlpha=1;
+  if(opts.flash){
+    ctx.save();ctx.globalCompositeOperation="lighter";ctx.globalAlpha=0.55;
+    if(typeof ensureFxSpr==="function"){var fs=ensureFxSpr(),fz=Math.max(18,dw*0.55);ctx.drawImage(fs,s.x-fz,oy+dh*0.15-fz,fz*2,fz*2);}
+    else{ctx.fillStyle="rgba(255,255,255,0.5)";ctx.beginPath();ctx.ellipse(s.x,oy+dh*0.45,dw*0.35,dh*0.4,0,0,7);ctx.fill();}
+    ctx.restore();
+  }
+  ctx.globalAlpha=1;
   if(opts.wpn){
     var aim=opts.aim!=null?opts.aim:ang,sa=Math.atan2(Math.sin(aim)*CFG.YSCALE,Math.cos(aim));
     var bob=pose==="walk"?-Math.abs(Math.sin((fr/8)*Math.PI*2))*2.8:0;
@@ -912,9 +917,12 @@ function drawBolt(b){
   ctx.strokeStyle="rgba(33,150,243,"+(0.28*a)+")";ctx.lineWidth=(fork?5:7.5)*sc;ctx.stroke();
   ctx.strokeStyle="rgba(129,212,250,"+(0.75*a)+")";ctx.lineWidth=(fork?2.2:3.2)*sc;ctx.stroke();
   ctx.strokeStyle="rgba(255,255,255,"+(0.95*a)+")";ctx.lineWidth=(fork?0.9:1.35)*sc;ctx.stroke();
-  var sz=(fork?11:16)*sc*a;
-  ctx.globalAlpha=0.5*a;
-  for(i=0;i<b.pts.length;i+=2){s=toScreen(b.pts[i].x,b.pts[i].y);ctx.drawImage(spr,s.x-sz,s.y-sz,sz*2,sz*2);}
+  if(!fork&&spr){
+    var sz=14*sc*a,p0=toScreen(b.pts[0].x,b.pts[0].y),p1=toScreen(b.pts[b.pts.length-1].x,b.pts[b.pts.length-1].y);
+    ctx.globalAlpha=0.5*a;
+    ctx.drawImage(spr,p0.x-sz,p0.y-sz,sz*2,sz*2);
+    ctx.drawImage(spr,p1.x-sz,p1.y-sz,sz*2,sz*2);
+  }
   ctx.restore();
 }
 function drawSlashFX(sl){

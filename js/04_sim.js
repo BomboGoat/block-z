@@ -45,7 +45,7 @@ function floatText(x,y,text,col){
 }
 function bloodBurst(x,y){for(var i=0;i<3;i++)addParticle(x,y,"#8b0000",0.26,rand(-70,70),rand(-70,70),3,1);}
 function pushBolt(b){if(!game.bolts)game.bolts=[];game.bolts.push(b);if(game.bolts.length>8)game.bolts.splice(0,game.bolts.length-8);}
-function impactSpark(x,y){addParticle(x,y,"#e3f2fd",0.11,0,-10,9,4);var i;for(i=0;i<3;i++)addParticle(x,y,"#90caf9",0.13,rand(-100,100),rand(-100,100),rand(2,4),3);}
+function impactSpark(x,y){addParticle(x,y,"#e3f2fd",0.10,0,-8,8,4);if((game.particles||[]).length<120)addParticle(x,y,"#90caf9",0.12,rand(-70,70),rand(-70,70),rand(2,4),3);}
 function truenoLaserLen(p){var vw=(typeof layout!=="undefined"&&layout.viewW)||420;return vw*((p&&p.bigStorm)?0.45:0.42);}
 function explodeAt(x,y,r,dmg,opts){
   opts=opts||{};
@@ -56,12 +56,15 @@ function explodeAt(x,y,r,dmg,opts){
   if(typeof gfxBoom==="function")gfxBoom(x,y,r);else for(i=0;i<10;i++)addParticle(x,y,"#ff9800",0.4,rand(-140,140),rand(-140,140),5,2);
   if(typeof addBlood==="function")addBlood(x,y,4);
 }
-function findNearestZombie(p,range){
+function findNearestZombie(p,range,fast){
   var best=null,bestD=range||CFG.AUTO_RANGE*(p.rangeMul||1),i,z,d;
   for(i=0;i<game.zombies.length;i++){
     z=game.zombies[i];if(z.dead||z.dying)continue;d=dist(p.x,p.y,z.x,z.y);if(d>=bestD)continue;
-    if(d>36&&typeof inCamView==="function"&&!inCamView(z.x,z.y,-18))continue;
-    if(d>40&&hiddenInBush(z.x,z.y,p))continue;if(d>28&&!hasLOS(p.x,p.y,z.x,z.y))continue;bestD=d;best=z;
+    if(!fast){
+      if(d>36&&typeof inCamView==="function"&&!inCamView(z.x,z.y,-18))continue;
+      if(d>40&&hiddenInBush(z.x,z.y,p))continue;if(d>28&&!hasLOS(p.x,p.y,z.x,z.y))continue;
+    }
+    bestD=d;best=z;
   }
   return best;
 }
@@ -80,25 +83,28 @@ function fireLightning(p,first){
   if(p.berserk&&p.hp/p.maxHp<0.4)dmg*=1.5;
   if(p.bloodlust)dmg*=(1+0.04*p.bloodStacks);
   p.aimAng=Math.atan2(first.y-p.y,first.x-p.x);p.recoil=1;p.muzzle=0.1;p.boltFlash=0.1;
+  var gen=(game.litGen=(game.litGen||0)+1);first._lit=gen;
   for(i=1;i<jumps;i++){
     n=null;var best=140*(p.rangeMul||1),j,z,d;
-    for(j=0;j<game.zombies.length;j++){z=game.zombies[j];if(z.dead||z.dying||targets.indexOf(z)>=0)continue;d=dist(src.x,src.y,z.x,z.y);if(d<best){best=d;n=z;}}
-    if(!n)break;targets.push(n);src=n;
+    for(j=0;j<game.zombies.length;j++){z=game.zombies[j];if(z.dead||z.dying||z._lit===gen)continue;d=dist(src.x,src.y,z.x,z.y);if(d<best){best=d;n=z;}}
+    if(!n)break;n._lit=gen;targets.push(n);src=n;
   }
-  var pts=zigPts(p.x,p.y,targets[0].x,targets[0].y,8);
-  for(i=1;i<targets.length;i++)pts=pts.concat(zigPts(targets[i-1].x,targets[i-1].y,targets[i].x,targets[i].y,7).slice(1));
-  pushBolt({pts:pts,life:0.11,maxLife:0.11});
-  var forks=1+(Math.random()<0.55?1:0),k,a,b,ang,len;
-  for(i=0;i<forks&&pts.length>3;i++){
-    k=2+((Math.random()*(pts.length-3))|0);
-    a=pts[k];ang=Math.atan2(pts[Math.min(k+1,pts.length-1)].y-pts[Math.max(0,k-1)].y,pts[Math.min(k+1,pts.length-1)].x-pts[Math.max(0,k-1)].x);
+  var pts=zigPts(p.x,p.y,targets[0].x,targets[0].y,6);
+  for(i=1;i<targets.length;i++){
+    var more=zigPts(targets[i-1].x,targets[i-1].y,targets[i].x,targets[i].y,5);
+    for(j=1;j<more.length;j++)pts.push(more[j]);
+  }
+  pushBolt({pts:pts,life:0.10,maxLife:0.10});
+  if(pts.length>3&&Math.random()<0.5){
+    var k=2+((Math.random()*(pts.length-3))|0),a=pts[k],ang,len,b;
+    ang=Math.atan2(pts[Math.min(k+1,pts.length-1)].y-pts[Math.max(0,k-1)].y,pts[Math.min(k+1,pts.length-1)].x-pts[Math.max(0,k-1)].x);
     ang+=(Math.random()<0.5?-1:1)*rand(0.55,1.2);len=rand(16,32);
     b={x:a.x+Math.cos(ang)*len,y:a.y+Math.sin(ang)*len};
-    pushBolt({pts:zigPts(a.x,a.y,b.x,b.y,4),life:0.08,maxLife:0.08,fork:1});
+    pushBolt({pts:zigPts(a.x,a.y,b.x,b.y,3),life:0.07,maxLife:0.07,fork:1});
   }
   for(i=0;i<targets.length;i++){
     hurtZombie(targets[i],dmg*(i?0.7:1),p.x,0,{quiet:1,noCrit:i>0});
-    impactSpark(targets[i].x,targets[i].y);
+    if(i===0||i===targets.length-1||i%2===0)impactSpark(targets[i].x,targets[i].y);
     if(p.fireAmmo)targets[i].burn=1.4;if(p.iceAmmo)targets[i].slow=1.6;if(p.poisonAmmo)targets[i].poison=2;
   }
   sfx("zap");
@@ -206,16 +212,17 @@ function hurtZombie(z,dmg,fromX,noChain,opts){
   if(z.isBoss&&typeof gfxHitStop==="function")gfxHitStop(0.05,"big");
   p.super=Math.min(CFG.SUPER_COST*(p.superCD?0.75:1),(p.super||0)+Math.min(12,dmg*0.25)*(p.superCharge?1.35:1));
   if(p.lifesteal)p.hp=Math.min(p.maxHp,p.hp+dmg*p.lifesteal);
-  if(p.sparkOnHit&&!noChain){for(var i=0;i<game.zombies.length;i++){var o=game.zombies[i];if(o!==z&&!o.dead&&!o.dying&&dist(z.x,z.y,o.x,o.y)<50)hurtZombie(o,dmg*0.2,z.x,1);}}
-  if(p.hasChain&&!noChain){var n=findNearestZombie({x:z.x,y:z.y},140);if(n&&n!==z)hurtZombie(n,dmg*0.5,z.x,1);}
+  if(p.sparkOnHit&&!noChain){for(var i=0;i<game.zombies.length;i++){var o=game.zombies[i];if(o!==z&&!o.dead&&!o.dying&&dist(z.x,z.y,o.x,o.y)<50)hurtZombie(o,dmg*0.2,z.x,1,{quiet:1,noCrit:1});}}
+  if(p.hasChain&&!noChain){var n=findNearestZombie({x:z.x,y:z.y},140,1);if(n&&n!==z)hurtZombie(n,dmg*0.5,z.x,1,{quiet:1,noCrit:1});}
   if(z.hp<=0)killZombie(z);
 }
 function killZombie(z){
   if(z.dying||z.dead)return;z.dying=1;z.deathT=0.45;sfx("death");
   if(typeof onExtraKill==="function")onExtraKill(z);
   var p=game.player;game.kills++;game.score+=z.score||10;grantRunXP(p,z.xp||10);
-  for(var pi=0;pi<10;pi++)addParticle(z.x,z.y,pick(["#8bc34a","#a5d6a7","#6d4c41","#7a1f1a","#cfd8dc"]),0.55,rand(-110,110),rand(-140,-20),rand(5,13),3);
-  if(typeof addBlood==="function")addBlood(z.x,z.y,8);
+  var busy=(game.particles&&game.particles.length>120),pi,pn=busy?3:6;
+  for(pi=0;pi<pn;pi++)addParticle(z.x,z.y,pick(["#8bc34a","#a5d6a7","#6d4c41","#7a1f1a","#cfd8dc"]),0.45,rand(-110,110),rand(-140,-20),rand(5,11),3);
+  if(typeof addBlood==="function")addBlood(z.x,z.y,busy?2:4);
   if(p.bloodlust)p.bloodStacks=Math.min(10,(p.bloodStacks||0)+1);
   if(z.type==="exploder"||z.explode)explodeAt(z.x,z.y,70,28,{friendly:0});
   if(z.type==="splitter"){for(var i=0;i<2;i++){var m=spawnZombie("mini",z.x+rand(-16,16),z.y+rand(-16,16),game.wave);game.zombies.push(m);}}

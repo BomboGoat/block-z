@@ -140,7 +140,7 @@ function rngRange(rng,a,b){return a+rng()*(b-a);}
 var selectedHero="classic";
 var HEROES=[
 {id:"classic",name:"Eric",desc:"Equilibrado. Super Cañonazo: un abanico masivo con su arma.",hp:100,spd:100,dmg:100,wpn:"Pistola",col:"#1565c0"},
-{id:"trueno",name:"Trueno",desc:"Rayos en cadena y un láser dirigido.",hp:90,spd:105,dmg:115,wpn:"Rayos",col:"#ffd54f"},
+{id:"trueno",name:"Tro",desc:"Rayos en cadena y un láser dirigido.",hp:90,spd:105,dmg:115,wpn:"Rayos",col:"#ffd54f"},
 {id:"mr",name:"Mr.",desc:"Cuchillo ágil. Super: abanico de cuchillos en llamas.",hp:120,spd:115,dmg:100,wpn:"Cuchillo",col:"#37474f"},
 {id:"gompa",name:"Gompa",desc:"Culturista. Super Gigante: crece, salta y aplasta.",hp:140,spd:88,dmg:100,wpn:"Pesas",col:"#6d4c41"}
 ];

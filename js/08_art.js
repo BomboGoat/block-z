@@ -175,7 +175,6 @@ function tryDrawArt(wx,wy,look,ang,anim,opts){
   if(opts.dying){var dp=1-(opts.dieP||0);ctx.scale(1+dp*0.15,Math.max(0.22,1-dp*0.72));ctx.rotate(dp*0.5);ctx.globalAlpha=clamp((opts.dieP||0)*1.4,0,1);}
   else if(opts.spawnP!=null){var sp=opts.spawnP||0;ctx.translate(0,(1-sp)*32*sc);ctx.scale(0.85+0.15*sp,0.65+0.35*sp);}
   ctx.rotate(tilt);ctx.scale((e.flip?-1:1)*sx,sy);
-  if(opts.flash)ctx.filter="brightness(1.7) saturate(0.55)";
   var fx=m.fx!=null?m.fx:0.5, fy=m.fy!=null?m.fy:1;
   var skipLegs=!!(opts.air&&look&&look.kind==="home")||(look&&look.kind==="home")||(look&&look.type==="crawler")||opts.dying||opts.spawnP!=null;
   if(!skipLegs){
@@ -183,7 +182,13 @@ function tryDrawArt(wx,wy,look,ang,anim,opts){
   }else{
     ctx.drawImage(e.img,-W*fx,-H*fy,W,H);
   }
-  ctx.filter="none";ctx.restore();ctx.globalAlpha=1;
+  if(opts.flash){
+    ctx.globalCompositeOperation="lighter";ctx.globalAlpha=0.55;
+    if(typeof ensureFxSpr==="function"){var fls=ensureFxSpr(),flz=Math.max(16,W*0.55);ctx.drawImage(fls,-flz,-H*fy*0.7-flz*0.2,flz*2,flz*2);}
+    else{ctx.fillStyle="rgba(255,255,255,0.5)";ctx.beginPath();ctx.ellipse(0,-H*0.35,W*0.35,H*0.4,0,0,7);ctx.fill();}
+    ctx.globalCompositeOperation="source-over";ctx.globalAlpha=1;
+  }
+  ctx.restore();ctx.globalAlpha=1;
   /* anchors */
   var hx=(m.hx!=null?m.hx:0.78),hy=(m.hy!=null?m.hy:0.62);
   hx=0.5+(hx-0.5)*0.86; /* pull hand slightly inward to the palm */
@@ -289,7 +294,7 @@ function updateExtraAbilities(dt){
   if(p.stormCloud){
     if(!p.cloud)p.cloud={x:p.x,y:p.y-30,t:0};
     p.cloud.x+=(p.x-p.cloud.x)*Math.min(1,dt*3);p.cloud.y+=(p.y-40-p.cloud.y)*Math.min(1,dt*3);
-    p.cloud.t-=dt;if(p.cloud.t<=0){p.cloud.t=1.4;var n=findNearestZombie(p,200);if(n){hurtZombie(n,10*p.damageMul,p.x);if(typeof pushBolt==="function")pushBolt({pts:[{x:p.cloud.x,y:p.cloud.y},{x:n.x,y:n.y}],life:0.12,maxLife:0.12});else if(game.bolts)game.bolts.push({pts:[{x:p.cloud.x,y:p.cloud.y},{x:n.x,y:n.y}],life:0.12,maxLife:0.12});}}
+    p.cloud.t-=dt;if(p.cloud.t<=0){p.cloud.t=1.4;var n=findNearestZombie(p,200,1);if(n){hurtZombie(n,10*p.damageMul,p.x,1,{quiet:1,noCrit:1});if(typeof pushBolt==="function")pushBolt({pts:[{x:p.cloud.x,y:p.cloud.y},{x:n.x,y:n.y}],life:0.10,maxLife:0.10});else if(game.bolts)game.bolts.push({pts:[{x:p.cloud.x,y:p.cloud.y},{x:n.x,y:n.y}],life:0.10,maxLife:0.10});}}
   }
   if(p.shieldRegen&&p.hasShield&&!p.shieldReady){p.shieldCd=Math.max(0,(p.shieldCd||0)-dt*0.5);}
   if(p.dashFire&&p.dashT>0){
@@ -323,7 +328,7 @@ function extraFireCooldown(p,cd){
   return cd;
 }
 function extraCrit(p,z){
-  if(p.critBolt&&z){hurtZombie(z,(CFG.BULLET_DAMAGE||8)*0.6*p.damageMul,p.x,1);if(typeof pushBolt==="function")pushBolt({pts:[{x:p.x,y:p.y},{x:z.x,y:z.y}],life:0.11,maxLife:0.11});else if(game.bolts)game.bolts.push({pts:[{x:p.x,y:p.y},{x:z.x,y:z.y}],life:0.11,maxLife:0.11});}
+  if(p.critBolt&&z){hurtZombie(z,(CFG.BULLET_DAMAGE||8)*0.6*p.damageMul,p.x,1,{quiet:1,noCrit:1});if(typeof pushBolt==="function")pushBolt({pts:[{x:p.x,y:p.y},{x:z.x,y:z.y}],life:0.10,maxLife:0.10});else if(game.bolts)game.bolts.push({pts:[{x:p.x,y:p.y},{x:z.x,y:z.y}],life:0.10,maxLife:0.10});}
 }
 function maybeKnifeFan(p){
   if(!p.knifeFan)return;
