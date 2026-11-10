@@ -1,5 +1,6 @@
 var map={zones:[],solids:[],bushes:[],decos:[],spawns:[],chunks:{},chunkS:400,dirty:1,grid:null,cols:0,rows:0,flow:null,flowT:0,decals:[],birds:[],lamps:[],rats:[],papers:[]};
 function toScreen(wx,wy){return{x:layout.gameX+layout.gameDrawW/2+(wx-game.camX)*layout.scale,y:layout.gameY+layout.gameDrawH/2+(wy-game.camY)*CFG.YSCALE*layout.scale};}
+function toScreenH(wx,wy,lift){var s=toScreen(wx,wy);if(lift)s.y-=lift;return s;}
 function addSolid(o){o.solid=1;map.solids.push(o);}
 function addBush(o){o.bush=1;map.bushes.push(o);}
 function addDeco(o){map.decos.push(o);}
@@ -105,24 +106,35 @@ function buildMap(seed){
     if(k==="bush")addBush(o);else if(k==="canopy"||k==="fountain"||k==="sign"||k==="roadsign"||k==="cone"||k==="bag")addDeco(o);else addSolid(o);
     return o;
   }
-  function addDecal(k,x,y,w,d,extra){var o={k:k,x:x,y:y,w:w,d:d};if(extra)for(var p in extra)o[p]=extra[p];map.decals.push(o);}
+  function addDecal(k,x,y,w,d,extra){var o={k:k,x:x,y:y,w:w,d:d};if(extra)for(var p in extra)o[p]=extra[p];
+    if(o.k==="dirtpath"&&o.pts&&o.pts.length){var minx=1e9,miny=1e9,maxx=-1e9,maxy=-1e9,j,pad=(o.w||60)/2+16;
+      for(j=0;j<o.pts.length;j++){minx=Math.min(minx,o.pts[j][0]);miny=Math.min(miny,o.pts[j][1]);maxx=Math.max(maxx,o.pts[j][0]);maxy=Math.max(maxy,o.pts[j][1]);}
+      o.x=minx-pad;o.y=miny-pad;o.w=maxx-minx+pad*2;o.d=maxy-miny+pad*2;}
+    map.decals.push(o);}
   var CARS=["#1565c0","#c62828","#f5f5f5","#212121","#ef6c00","#1a237e","#00695c","#fff8e1","#37474f"];
   function carAt(x,y,w,d,ang,wreck,ex){var e={top:rngPick(rng,CARS),ang:ang||0,wreck:wreck||0};if(ex)for(var pk in ex)e[pk]=ex[pk];return place("car",x,y,w||70,d||30,22,e);}
   /* ===== PARK ===== */
-  addDecal("path",720,80,80,1360);addDecal("path",80,720,1360,80);
+  function meander(x0,y0,x1,y1,horiz,wid){
+    var pts=[],n=9,i,t,x,y,off;
+    for(i=0;i<=n;i++){t=i/n;x=x0+(x1-x0)*t;y=y0+(y1-y0)*t;off=(i&&i<n)?(rng()*2-1)*40:0;if(horiz)y+=off;else x+=off;pts.push([x,y]);}
+    addDecal("dirtpath",0,0,0,0,{pts:pts,w:wid||62});
+  }
+  meander(760,90,755,1410,0,64);meander(90,760,1410,755,1,64);
   place("fountain",728,728,64,64,16,{top:"#90caf9",side:"#1565c0",skipKeep:1,gap:8});
+  var kinds=["oak","pine","bushy"];
+  function tk(i,x){return kinds[(i+((x/17)|0))%3];}
   var trees=[[180,180,42],[330,190,38],[200,330,44],[1180,180,40],[1320,200,46],[1160,330,36],[180,1160,40],[330,1180,38],[200,1300,42],[1080,980,40],[960,1080,36],[500,160,38],[960,160,42],[160,500,40],[160,960,38],[500,1280,36],[1100,500,40],[500,1100,38],[400,400,42],[1000,400,36],[400,1000,40]];
   var i,t;
-  for(i=0;i<trees.length;i++){t=trees[i];place("tree",t[0],t[1],18,18,16,{top:"#5a3a1a",side:"#3a2410",canopy:t[2]});}
+  for(i=0;i<trees.length;i++){t=trees[i];place("tree",t[0],t[1],18,18,16,{top:"#5a3a1a",side:"#3a2410",canopy:t[2],treeKind:tk(i,t[0])});}
   place("bench",640,680,40,16,10,{top:"#8d6e4a",side:"#5d4030",tex:"wood"});
   place("bench",820,680,40,16,10,{top:"#8d6e4a",side:"#5d4030",tex:"wood"});
   place("bench",680,820,16,40,10,{top:"#8d6e4a",side:"#5d4030",tex:"wood"});
   place("bench",820,840,16,40,10,{top:"#8d6e4a",side:"#5d4030",tex:"wood"});
-  place("tree",600,520,18,18,16,{top:"#5a3a1a",side:"#3a2410",canopy:40});
-  place("tree",900,520,18,18,16,{top:"#5a3a1a",side:"#3a2410",canopy:44});
-  place("tree",600,1080,18,18,16,{top:"#5a3a1a",side:"#3a2410",canopy:38});
-  place("tree",920,1080,18,18,16,{top:"#5a3a1a",side:"#3a2410",canopy:42});
-  place("tree",860,980,18,18,16,{top:"#5a3a1a",side:"#3a2410",canopy:36});
+  place("tree",600,520,18,18,16,{top:"#5a3a1a",side:"#3a2410",canopy:40,treeKind:"oak"});
+  place("tree",900,520,18,18,16,{top:"#5a3a1a",side:"#3a2410",canopy:44,treeKind:"pine"});
+  place("tree",600,1080,18,18,16,{top:"#5a3a1a",side:"#3a2410",canopy:38,treeKind:"bushy"});
+  place("tree",920,1080,18,18,16,{top:"#5a3a1a",side:"#3a2410",canopy:42,treeKind:"oak"});
+  place("tree",860,980,18,18,16,{top:"#5a3a1a",side:"#3a2410",canopy:36,treeKind:"pine"});
   place("crate",420,420,26,26,22,{top:"#b07a3a",side:"#7a4e22",hp:18,maxHp:18,break:1});
   place("crate",500,420,26,26,22,{top:"#b07a3a",side:"#7a4e22",hp:18,maxHp:18,break:1});
   var bushes=[[100,100,40],[100,250,36],[250,100,38],[1300,100,42],[1300,260,36],[100,1300,40],[260,1300,34],[900,100,38],[100,900,36],[1100,1100,40],[600,200,34],[200,600,36],[600,1280,38]];
@@ -184,6 +196,18 @@ function buildMap(seed){
   carAt(1680,1660,70,30,0,0);carAt(1680,1750,70,30,0,0);
   place("barrel",1320,1230,16,16,24,{top:"#d35400",side:"#8e2c00"});
   addDecal("manhole",1500,1350,24,24);addDecal("puddle",1720,1500,40,22);
+  /* a few trees in every zone, edges only */
+  place("tree",2780,200,18,18,16,{canopy:38,treeKind:"pine",top:"#5a3a1a",side:"#3a2410"});
+  place("tree",2790,1180,18,18,16,{canopy:36,treeKind:"oak",top:"#5a3a1a",side:"#3a2410"});
+  place("tree",1600,1280,18,18,16,{canopy:34,treeKind:"bushy",top:"#5a3a1a",side:"#3a2410"});
+  place("tree",160,1860,18,18,16,{canopy:36,treeKind:"oak",top:"#5a3a1a",side:"#3a2410"});
+  place("tree",1360,1860,18,18,16,{canopy:34,treeKind:"pine",top:"#5a3a1a",side:"#3a2410"});
+  place("tree",160,2680,18,18,16,{canopy:38,treeKind:"bushy",top:"#5a3a1a",side:"#3a2410"});
+  place("tree",1360,2680,18,18,16,{canopy:36,treeKind:"oak",top:"#5a3a1a",side:"#3a2410"});
+  place("tree",2800,1880,18,18,16,{canopy:34,treeKind:"pine",top:"#5a3a1a",side:"#3a2410"});
+  place("tree",1880,2780,18,18,16,{canopy:32,treeKind:"bushy",top:"#5a3a1a",side:"#3a2410"});
+  place("tree",1210,1210,18,18,16,{canopy:30,treeKind:"bushy",top:"#5a3a1a",side:"#3a2410"});
+  place("tree",1740,1760,18,18,16,{canopy:32,treeKind:"oak",top:"#5a3a1a",side:"#3a2410"});
 
   /* v15 props — keep corridors clear (gap 16-40) */
   function pack(list){var j,a;for(j=0;j<list.length;j++){a=list[j];place(a[0],a[1],a[2],a[3],a[4],a[5],a[6]||{gap:16});}}

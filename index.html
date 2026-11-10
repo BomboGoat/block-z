@@ -4,14 +4,26 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#c62818">
+<meta name="apple-mobile-web-app-title" content="Block Z">
+<meta name="theme-color" content="#1a0708">
 <link rel="preload" as="audio" href="assets/mus/menu.mp3" type="audio/mpeg" fetchpriority="high">
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="manifest.json?v=19.7">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="shortcut icon" href="favicon.ico">
+<!-- Dark iOS launch images so the first paint is never a stale screenshot of an older build. -->
+<link rel="apple-touch-startup-image" href="assets/ui/splash-2532x1170.png?v=19.7" media="(device-width: 844px) and (device-height: 390px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)">
+<link rel="apple-touch-startup-image" href="assets/ui/splash-2532x1170.png?v=19.7" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)">
+<link rel="apple-touch-startup-image" href="assets/ui/splash-2556x1179.png?v=19.7" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)">
+<link rel="apple-touch-startup-image" href="assets/ui/splash-2796x1290.png?v=19.7" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)">
+<link rel="apple-touch-startup-image" href="assets/ui/splash-2778x1284.png?v=19.7" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)">
+<link rel="apple-touch-startup-image" href="assets/ui/splash-2436x1125.png?v=19.7" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)">
+<link rel="apple-touch-startup-image" href="assets/ui/splash-2340x1080.png?v=19.7" media="(device-width: 360px) and (device-height: 780px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)">
+<link rel="apple-touch-startup-image" href="assets/ui/splash-1792x828.png?v=19.7" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)">
+<link rel="apple-touch-startup-image" href="assets/ui/splash-2208x1242.png?v=19.7" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)">
+<link rel="apple-touch-startup-image" href="assets/ui/splash-1334x750.png?v=19.7" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)">
 <title>Block Z</title>
 <style>
 :root{
@@ -29,13 +41,13 @@ html,body{width:100%;height:100%;min-height:100%;min-height:100vh;min-height:100
 <body>
 <div id="bootError"></div>
 <canvas id="gameCanvas"></canvas>
-<script src="js/00_audio.js?v=19.6.3"></script>
-<script src="js/01_core.js?v=19.6.3"></script>
-<script src="js/02_map.js?v=19.6.3"></script>
-<script src="js/03_draw.js?v=19.6.3"></script>
-<script src="js/04_sim.js?v=19.6.3"></script>
-<script src="js/05_update.js?v=19.6.3"></script>
-<script src="js/07_gfx.js?v=19.6.3"></script>
-<script src="js/08_art.js?v=19.6.3"></script>
-<script src="js/06_ui.js?v=19.6.3"></script>
+<script src="js/00_audio.js?v=19.7"></script>
+<script src="js/01_core.js?v=19.7"></script>
+<script src="js/02_map.js?v=19.7"></script>
+<script src="js/03_draw.js?v=19.7"></script>
+<script src="js/04_sim.js?v=19.7"></script>
+<script src="js/05_update.js?v=19.7"></script>
+<script src="js/07_gfx.js?v=19.7"></script>
+<script src="js/08_art.js?v=19.7"></script>
+<script src="js/06_ui.js?v=19.7"></script>
 </body></html>

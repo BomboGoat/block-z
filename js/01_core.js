@@ -20,7 +20,31 @@ splitter:{hp:45,speed:64,damage:10,r:13,h:28,color:"#c0ca33",score:26,xp:20,spli
 mini:{hp:12,speed:120,damage:6,r:9,h:16,color:"#aed581",score:5,xp:6},
 boss:{hp:700,speed:58,damage:26,r:22,h:44,color:"#1b3d18",score:500,xp:200}
 };
-var WAVE_UNLOCKS=[[],["fast"],["tank"],["spitter"],["exploder","crawler"],["jumper"],["armored"],["screamer"],["splitter"],["boss"]];
+var WAVE_UNLOCKS=[["fast","crawler"],["tank"],["jumper"],[],["spitter"],[],["armored"],["exploder","screamer"],["splitter"],["boss"]];
+var ZTYPE_NAME={normal:"Zombi",fast:"Corredor",tank:"Tanque",crawler:"Reptador",spitter:"Escupidor",jumper:"Saltador",armored:"Acorazado",exploder:"Explosivo",screamer:"Gritón",splitter:"Divisor",mini:"Cría",boss:"Jefe"};
+var ZTYPE_BANNER={spitter:1,armored:1,exploder:1,screamer:1,splitter:1,jumper:1,tank:1};
+function waveDifficulty(idx){
+  idx=idx||0;
+  var hp=Math.pow(1.13,idx), dmg=Math.pow(1.09,idx);
+  return{
+    hp:hp,
+    speed:1+0.025*idx,
+    dmg:dmg,
+    count:Math.round(5+idx*2+(idx>=5?(idx-4)*0.8:0)),
+    maxAlive:Math.min(16,8+((idx*0.9)|0)),
+    interval:Math.max(0.50,1.15-idx*0.072),
+    burst:idx<3?1:idx<6?2:idx<8?3:4,
+    elite:idx<3?0:0.06+(idx-3)*0.045,
+    bossHp:1+0.03*Math.max(0,idx-2),
+    hpPct:Math.round((hp-1)*100),
+    dmgPct:Math.round((dmg-1)*100)
+  };
+}
+function waveBuffText(idx){
+  var wd=waveDifficulty(idx||0);
+  if(!wd.hpPct)return "";
+  return "Zombis +"+wd.hpPct+"% vida";
+}
 var UPGRADE_DEFS=[
 {id:"dmg",name:"Más daño",icon:"💥",kind:"mul",stat:"damageMul",tiers:[0.10,0.18,0.30,0.45,0.70],plus:["Daño"],minus:[]},
 {id:"firerate",name:"Cadencia",icon:"⚡",kind:"cd",stat:"fireCooldown",tiers:[0.10,0.16,0.24,0.32,0.42],plus:["Cadencia"],minus:[]},

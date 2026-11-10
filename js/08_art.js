@@ -2,7 +2,7 @@
 var ART={ready:0,imgs:{},meta:null,menuWide:null};
 var ART_MAP={
   classic:{f:"classic_f",b:"classic_b"},
-  trueno:{f:"trueno_f"},
+  trueno:{f:"trueno_f",laser:"trueno_laser_f"},
   mr:{f:"mr_f"},
   gompa:{f:"gompa_f"},
   colossus:{f:"colossus_f"},
@@ -35,13 +35,14 @@ function artLoad(done){
       im.src=(ART.meta[k]&&ART.meta[k].file)||("assets/spr/"+k+".webp");
     })(keys[i]);
   };
-  mj.onerror=tick;mj.open("GET","assets/spr/meta.json?v=19.1");mj.send();
-  var mw=new Image();mw.onload=function(){ART.menuWide=mw;tick();};mw.onerror=tick;mw.src="assets/ui/menu-wide.webp?v=19.1";
+  mj.onerror=tick;mj.open("GET","assets/spr/meta.json?v=19.7");mj.send();
+  var mw=new Image();mw.onload=function(){ART.menuWide=mw;tick();};mw.onerror=tick;mw.src="assets/ui/menu-wide.webp?v=19.7";
 }
-function artEntry(look,dir){
+function artEntry(look,dir,pose){
   if(!ART.ready||!ART.meta)return null;
   var k=artLookKey(look);if(!k||!ART_MAP[k])return null;
   var away=dir===5||dir===6||dir===7, name=away&&ART_MAP[k].b?ART_MAP[k].b:ART_MAP[k].f;
+  if(pose==="laser"&&k==="trueno"&&ART_MAP[k].laser)name=ART_MAP[k].laser;
   var img=ART.imgs[name],meta=ART.meta[name];
   if(!img||!img.width||!meta)return null;
   var fl=(dir<=1||dir===7)?1:(dir>=3&&dir<=5)?-1:1;
@@ -155,25 +156,33 @@ function drawWalkLegs(look,anim,pose,H,W,fx,fy,waist){ /* kept as a no-op alias 
 
 function tryDrawArt(wx,wy,look,ang,anim,opts){
   opts=opts||{};
-  var dir=angDir(ang||0),e=artEntry(look,dir);
+  var pose=opts.pose||(opts.dying?"die":opts.spawnP!=null?"spawn":opts.flash?"hurt":opts.atk?"atk":opts.moving?"walk":"idle");
+  var dir=angDir(ang||0),e=artEntry(look,dir,pose);
   if(!e)return 0;
   var s=toScreen(wx,wy),sc=layout.scale,m=e.meta;
-  var pose=opts.pose||(opts.dying?"die":opts.spawnP!=null?"spawn":opts.flash?"hurt":opts.atk?"atk":opts.moving?"walk":"idle");
-  if((opts.muzzle>0||opts.atk)&&pose!=="die"&&pose!=="spawn"){/* cheap aim kick, no new raster */}
   var ph=((anim||0)%1)*Math.PI*2;
   if(pose==="walk")ph=anim*3.4;
-  var bob=0,tilt=0,sx=1,sy=1;
+  var bob=0,tilt=0,sx=1,sy=1,lungeX=0,lungeY=0,atkFwd=0;
   if(opts.air||(look&&look.kind==="home")){bob=-((look.kind==="home")?16:10)*sc;if(look.kind==="home")bob-=Math.sin((game.time||0)*3.5)*4*sc;}
   else if(pose==="walk"){bob=-Math.abs(Math.sin(ph))*2.2*sc;tilt=Math.sin(ph)*0.035;sx=1+Math.sin(ph*2)*0.015;sy=1-Math.sin(ph*2)*0.015;}
   else if(pose==="idle"){bob=Math.sin((game.time||anim||0)*2)*1.4*sc;sy=1+Math.sin((game.time||0)*2)*0.015;}
   else if(pose==="hurt"){bob=2*sc;tilt=-0.08;}
   else if(pose==="atk"){tilt=0.05;sx=1.04;sy=0.96;}
-  if(opts.muzzle>0&&pose!=="die"&&pose!=="spawn"){tilt+=(0.03);sx=Math.max(sx,1.02);sy=Math.min(sy,0.98);}
+  if((opts.atkT>0||opts.meleeSwing>0||(opts.muzzle>0&&pose!=="laser"))&&pose!=="die"&&pose!=="spawn"&&pose!=="laser"){
+    var maxT=opts.atkMax||0.2,tLeft=opts.atkT||opts.meleeSwing||opts.muzzle||0,atkU=1-clamp(tLeft/Math.max(0.06,maxT),0,1);
+    if(atkU<0.28)atkFwd=-(atkU/0.28)*0.85;
+    else if(atkU<0.58)atkFwd=-0.85+((atkU-0.28)/0.30)*2.05;
+    else atkFwd=1.2*(1-(atkU-0.58)/0.42);
+    var aimA=opts.aim!=null?opts.aim:(ang||0),lsc=6.5*sc*(opts.scale||1);
+    lungeX=Math.cos(aimA)*atkFwd*lsc;
+    lungeY=Math.sin(aimA)*atkFwd*lsc*((typeof CFG!=="undefined"&&CFG.YSCALE)||0.7);
+    tilt+=atkFwd*0.14;sx*=1+0.07*Math.abs(atkFwd);sy*=1-0.05*atkFwd;
+  }
   var H=artTargetH(look,sc)*(opts.scale||1),W=H*(m.w/m.h);
   var hover=look&&look.kind==="home";
   if(!(opts.noShadow))drawArtShadow(s,e,W,H,look,bob,opts);
   ctx.save();
-  ctx.translate(s.x,s.y+bob-(opts.lift||0)*sc);
+  ctx.translate(s.x+lungeX,s.y+bob-(opts.lift||0)*sc+lungeY);
   if(opts.dying){var dp=1-(opts.dieP||0);ctx.scale(1+dp*0.15,Math.max(0.22,1-dp*0.72));ctx.rotate(dp*0.5);ctx.globalAlpha=clamp((opts.dieP||0)*1.4,0,1);}
   else if(opts.spawnP!=null){var sp=opts.spawnP||0;ctx.translate(0,(1-sp)*32*sc);ctx.scale(0.85+0.15*sp,0.65+0.35*sp);}
   ctx.rotate(tilt);ctx.scale((e.flip?-1:1)*sx,sy);
@@ -196,7 +205,19 @@ function tryDrawArt(wx,wy,look,ang,anim,opts){
   hx=0.5+(hx-0.5)*0.86; /* pull hand slightly inward to the palm */
   var ax=(hx-fx)*W;if(e.flip)ax=-ax;
   var ay=(hy-fy)*H+bob-(opts.lift||0)*sc;
-  opts._hand={x:s.x+ax,y:s.y+ay};
+  opts._hand={x:s.x+ax+lungeX,y:s.y+ay+lungeY};
+  if(opts.cacheHand&&game&&game.player){
+    game.player._handSx=opts._hand.x;game.player._handSy=opts._hand.y;
+    game.player._handLift=s.y-opts._hand.y;
+  }
+  if(opts.muzzle>0&&look&&look.kind==="player"&&opts._hand&&opts.wpn&&opts.wpn!=="knife"&&opts.wpn!=="fist"&&opts.wpn!=="bell"&&opts.wpn!=="bolt"&&opts.wpn!=="machete"){
+    if(typeof ensureMuzzleSpr==="function"){
+      var ms=ensureMuzzleSpr(),ma=Math.min(1,opts.muzzle*16),mz=16*sc*(opts.scale||1);
+      var max=opts._hand.x+Math.cos(opts.aim||ang||0)*10*sc,may=opts._hand.y+Math.sin(opts.aim||ang||0)*10*sc*((typeof CFG!=="undefined"&&CFG.YSCALE)||0.7);
+      ctx.save();ctx.globalCompositeOperation="lighter";ctx.globalAlpha=0.4+0.6*ma;
+      ctx.drawImage(ms,max-mz,may-mz,mz*2,mz*2);ctx.restore();ctx.globalAlpha=1;
+    }
+  }
   var ex=(m.ex!=null?m.ex:0.5),ey=(m.ey!=null?m.ey:0.2);
   var e1=(ex-0.06-fx)*W,e2=(ex+0.06-fx)*W,eh=(ey-fy)*H+bob;
   if(e.flip){e1=-e1;e2=-e2;}
@@ -330,13 +351,13 @@ function extraFireCooldown(p,cd){
   return cd;
 }
 function extraCrit(p,z){
-  if(p.critBolt&&z){hurtZombie(z,(CFG.BULLET_DAMAGE||8)*0.6*p.damageMul,p.x,1,{quiet:1,noCrit:1});if(typeof pushBolt==="function")pushBolt({pts:[{x:p.x,y:p.y},{x:z.x,y:z.y}],life:0.10,maxLife:0.10});else if(game.bolts)game.bolts.push({pts:[{x:p.x,y:p.y},{x:z.x,y:z.y}],life:0.10,maxLife:0.10});}
+  if(p.critBolt&&z){var ho=typeof heroHandWorld==="function"?heroHandWorld(p,p.aimAng):{x:p.x,y:p.y},hl=typeof heroHandLiftPx==="function"?heroHandLiftPx(p):0;hurtZombie(z,(CFG.BULLET_DAMAGE||8)*0.6*p.damageMul,p.x,1,{quiet:1,noCrit:1});if(typeof pushBolt==="function")pushBolt({pts:[ho,{x:z.x,y:z.y}],life:0.10,maxLife:0.10,lift:hl});else if(game.bolts)game.bolts.push({pts:[ho,{x:z.x,y:z.y}],life:0.10,maxLife:0.10,lift:hl});}
 }
 function maybeKnifeFan(p){
   if(!p.knifeFan)return;
   p._fanN=(p._fanN||0)+1;if(p._fanN%4)return;
-  var i,a0=p.aimAng||0;
-  for(i=-2;i<=2;i++){var a=a0+i*0.18,b=bulletPool.pop()||{};b.x=p.x;b.y=p.y;b.vx=Math.cos(a)*380;b.vy=Math.sin(a)*380;b.r=3;b.damage=8*p.damageMul;b.life=0.55;b.pierce=0;b.hit=new Set();b.knife=1;game.bullets.push(b);}
+  var i,a0=p.aimAng||0,ho=typeof heroHandWorld==="function"?heroHandWorld(p,a0):{x:p.x,y:p.y},hl=typeof heroHandLiftPx==="function"?heroHandLiftPx(p):0;
+  for(i=-2;i<=2;i++){var a=a0+i*0.18,b=bulletPool.pop()||{};b.x=ho.x;b.y=ho.y;b.lift=hl;b.vx=Math.cos(a)*380;b.vy=Math.sin(a)*380;b.r=3;b.damage=8*p.damageMul;b.life=0.55;b.pierce=0;b.hit=new Set();b.knife=1;game.bullets.push(b);}
 }
 function maybeShockN(p){
   if(!p.shockN)return;
@@ -346,7 +367,7 @@ function maybeShockN(p){
 }
 
 function drawMenuArt(){
-  var img=ART.menuWide||(typeof GFX!=="undefined"?GFX.menuBg:null),t=game?game.menuT||0:0;
+  var img=ART.menuWide,t=game?game.menuT||0:0;
   ctx.fillStyle="#1a0708";ctx.fillRect(0,0,SW,SH);
   if(!img||!img.width)return 0;
   var iw=img.width,ih=img.height;
