@@ -820,18 +820,22 @@ function drawBullet(b){
   }
   if(b.knife){
     ctx.rotate(b.spinA||0);
-    if(b.fire){
-      ctx.globalCompositeOperation="lighter";
-      ctx.fillStyle="rgba(255,120,20,0.5)";
-      ctx.beginPath();ctx.moveTo(14*sc,0);ctx.lineTo(-6*sc,5*sc);ctx.lineTo(-6*sc,-5*sc);ctx.closePath();ctx.fill();
-      ctx.globalCompositeOperation="source-over";
-    }
+    var fl=ensureFlameSpr(),t=(typeof performance!=="undefined"?performance.now():0)/1000,flick=0.82+0.18*Math.sin(t*28+(b.flick||0));
+    var fw=52*sc*flick,fh=28*sc*(0.85+0.2*Math.sin(t*22+(b.flick||0)+1));
+    ctx.save();ctx.globalCompositeOperation="lighter";ctx.globalAlpha=0.95;
+    ctx.drawImage(fl,-fw*0.72,-fh/2,fw,fh);
+    ctx.globalAlpha=0.7*flick;
+    ctx.drawImage(fl,-fw*0.85,-fh*0.62,fw*1.1,fh*1.15);
+    ctx.restore();
+    /* bigger readable blade */
+    ctx.fillStyle="#fafafa";
+    ctx.beginPath();ctx.moveTo(20*sc,0);ctx.lineTo(-4*sc,5.2*sc);ctx.lineTo(-4*sc,-5.2*sc);ctx.closePath();ctx.fill();
+    ctx.strokeStyle="#1a140c";ctx.lineWidth=Math.max(1.2,1.15*sc);ctx.stroke();
     ctx.fillStyle="#eceff1";
-    ctx.beginPath();ctx.moveTo(11*sc,0);ctx.lineTo(-3*sc,3.1*sc);ctx.lineTo(-3*sc,-3.1*sc);ctx.closePath();ctx.fill();
-    ctx.strokeStyle="#1a140c";ctx.lineWidth=Math.max(1,0.9*sc);ctx.stroke();
-    ctx.fillStyle="#5d4037";ctx.fillRect(-9*sc,-2.1*sc,6.5*sc,4.2*sc);
-    ctx.fillStyle="#8d6e63";ctx.fillRect(-9*sc,-2.1*sc,6.5*sc,1.3*sc);
-    ctx.fillStyle="#ffcc80";ctx.fillRect(-3.2*sc,-2.4*sc,1.4*sc,4.8*sc);
+    ctx.beginPath();ctx.moveTo(18*sc,0);ctx.lineTo(-2*sc,2.2*sc);ctx.lineTo(-2*sc,-2.2*sc);ctx.closePath();ctx.fill();
+    ctx.fillStyle="#5d4037";ctx.fillRect(-14*sc,-3.2*sc,11*sc,6.4*sc);
+    ctx.fillStyle="#8d6e63";ctx.fillRect(-14*sc,-3.2*sc,11*sc,2*sc);
+    ctx.fillStyle="#ffcc80";ctx.fillRect(-4.2*sc,-3.6*sc,2.2*sc,7.2*sc);
     ctx.restore();return;
   }
   var col=b.fire?"#ff5722":b.ice?"#81d4fa":b.poison?"#9ccc65":"#ffe082";
@@ -872,6 +876,32 @@ function ensureFxSpr(){
   grd.addColorStop(1,"rgba(13,71,161,0)");
   g.fillStyle=grd;g.fillRect(0,0,64,64);
   fxSpr=c;return c;
+}
+var flameSpr=null;
+function ensureFlameSpr(){
+  if(flameSpr)return flameSpr;
+  var c=document.createElement("canvas");c.width=64;c.height=64;
+  var g=c.getContext("2d");
+  /* elongated orange-yellow flame, tip to the right, body trailing left — no shadowBlur */
+  var grd=g.createRadialGradient(40,32,2,28,32,28);
+  grd.addColorStop(0,"rgba(255,255,240,1)");
+  grd.addColorStop(0.18,"rgba(255,238,88,0.98)");
+  grd.addColorStop(0.42,"rgba(255,152,0,0.85)");
+  grd.addColorStop(0.7,"rgba(255,87,34,0.4)");
+  grd.addColorStop(1,"rgba(183,28,28,0)");
+  g.fillStyle=grd;
+  g.beginPath();
+  g.moveTo(58,32);
+  g.bezierCurveTo(48,8,20,10,4,24);
+  g.quadraticCurveTo(16,32,4,40);
+  g.bezierCurveTo(20,54,48,56,58,32);
+  g.closePath();g.fill();
+  var core=g.createRadialGradient(42,32,0,42,32,12);
+  core.addColorStop(0,"rgba(255,255,255,0.95)");
+  core.addColorStop(0.45,"rgba(255,241,118,0.7)");
+  core.addColorStop(1,"rgba(255,241,118,0)");
+  g.fillStyle=core;g.beginPath();g.ellipse(42,32,14,7,0,0,7);g.fill();
+  flameSpr=c;return c;
 }
 function drawBolt(b){
   if(!b.pts||b.pts.length<2)return;

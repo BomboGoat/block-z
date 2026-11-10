@@ -498,6 +498,12 @@ function startMenuBuffer(cross){
   if(audio.droneBus)stopDrone(0.5);
   audio._soundPath=cross?"drone+mp3":"buffer";
   markSoundStarted();
+  /* If the HTMLAudio fallback is already playing, drop it once the buffer is audible. */
+  if(audio.ctx&&audio.ctx.state==="running"&&(audio._menuElHold||(audio.beds&&audio.beds.menu&&audio.beds.menu.wanted))){
+    audio._menuElHold=0;
+    var B=audio.beds.menu;
+    if(B){B.wanted=0;fadeBed(B,0,0.3);setTimeout(function(){if(!B.wanted){try{B.el.pause();}catch(e){}}},360);}
+  }
 }
 function stopMenuBuffer(fade){
   if(!audio.menuSrcG){audio.menuSrc=null;audio.menuSrcG=null;return;}
@@ -537,23 +543,88 @@ function preloadMenuBuf(){
     }
   }catch(e){bad();}
 }
+function getSilentBuf(){
+  if(audio.silentBuf||!audio.ctx)return audio.silentBuf||null;
+  try{audio.silentBuf=audio.ctx.createBuffer(1,1,audio.ctx.sampleRate||44100);}catch(e){return null;}
+  return audio.silentBuf;
+}
+function hookCtxState(){
+  if(!audio.ctx||audio._stateHooked)return;
+  audio._stateHooked=1;
+  audio.ctx.onstatechange=function(){
+    var st=audio.ctx&&audio.ctx.state;
+    if(st==="running"){
+      if(audio._wantMenuBuf&&audio.menuBuf&&!audio.menuSrc&&!audio.mutedMus)startMenuBuffer(audio._menuElHold?1:0);
+      if(audio.menuSrc&&audio._menuElHold){
+        audio._menuElHold=0;
+        var B=audio.beds&&audio.beds.menu;
+        if(B){B.wanted=0;fadeBed(B,0,0.35);setTimeout(function(){if(!B.wanted){try{B.el.pause();}catch(e){}}},400);}
+      }
+    }else if((st==="interrupted"||st==="suspended")&&typeof document!=="undefined"&&!document.hidden){
+      try{audio.ctx.resume();}catch(e){}
+    }
+  };
+}
+function unlockAudioSync(){
+  createAudioGraph();
+  hookCtxState();
+  if(!audio.ctx)return;
+  var st=audio.ctx.state;
+  if(st==="suspended"||st==="interrupted"){try{audio.ctx.resume();}catch(e){}}
+  try{
+    var silent=getSilentBuf();
+    if(silent){var s=audio.ctx.createBufferSource();s.buffer=silent;s.connect(audio.master||audio.ctx.destination);s.start(0);}
+  }catch(e){}
+  ensureMusicBeds();hookBedNodes();
+  try{
+    var el=audio.beds&&audio.beds.menu&&audio.beds.menu.el;
+    if(el){
+      var keep=!!(audio.beds.menu.wanted||audio._menuElHold);
+      el.muted=true;try{el.volume=0;}catch(e){}
+      var pr=el.play();
+      if(pr&&pr.then)pr.then(function(){if(!keep&&!(audio.beds.menu&&audio.beds.menu.wanted)&&!audio._menuElHold){try{el.pause();el.currentTime=0;}catch(e){}}el.muted=false;}).catch(function(){});
+    }
+  }catch(e){}
+}
+function playMenuElement(){
+  ensureMusicBeds();hookBedNodes();
+  var B=audio.beds&&audio.beds.menu,pr;
+  if(!B||!B.el)return 0;
+  B.wanted=1;audio._menuElHold=1;
+  try{B.el.muted=false;B.el.volume=B.el.volume||1;if(audio.ctx&&B.gain){/* musG already handles master mute */}pr=B.el.play();if(pr&&pr.catch)pr.catch(function(){});}catch(e){return 0;}
+  fadeBed(B,1,0.06);
+  if(!audio.menuSrc){audio._soundPath=audio._soundPath||"element";markSoundStarted();}
+  return 1;
+}
 function startMenuImmediate(){
   audio.musicMode="menu";
   audio._wantMenuBuf=1;
   if(audio.mutedMus)return;
   createAudioGraph();
-  if(audio.menuBuf){startMenuBuffer(audio.droneBus?1:0);return;}
+  hookCtxState();
+  /* HTMLAudio.play() in this same call stack — this is what actually starts music on iOS Safari. */
+  playMenuElement();
+  if(audio.menuBuf){
+    startMenuBuffer(audio.droneBus?1:0);
+    if(audio.menuSrc&&audio.ctx&&audio.ctx.state==="running"){
+      audio._menuElHold=0;
+      var B=audio.beds&&audio.beds.menu;
+      if(B){B.wanted=0;fadeBed(B,0,0.2);setTimeout(function(){if(!B.wanted){try{B.el.pause();}catch(e){}}},260);}
+    }
+    return;
+  }
   tryDecodeMenu();
   if(audio.menuBuf){startMenuBuffer(0);return;}
-  if(!audio._menuFailed){startDrone();return;}
-  ensureMusicBeds();hookBedNodes();unlockBeds();
-  var B=audio.beds&&audio.beds.menu,pr;
-  if(B){
-    B.wanted=1;
-    try{B.el.muted=false;if(B.el.paused){pr=B.el.play();if(pr&&pr.catch)pr.catch(function(){});}}catch(e){}
-    fadeBed(B,1,0.08);
-    audio._soundPath="element";
-    markSoundStarted();
+  if(!audio._menuFailed&&!(audio.beds&&audio.beds.menu&&audio.beds.menu.wanted))startDrone();
+}
+function resumeIfNeeded(){
+  if(!audio.ctx)return;
+  var st=audio.ctx.state;
+  if(st==="suspended"||st==="interrupted"){try{audio.ctx.resume();}catch(e){}}
+  if(audio.musicMode==="menu"&&!audio.mutedMus){
+    var B=audio.beds&&audio.beds.menu;
+    if(B&&(B.wanted||audio._menuElHold)&&B.el){try{var pr=B.el.play();if(pr&&pr.catch)pr.catch(function(){});}catch(e){}}
+    if(audio._wantMenuBuf&&audio.menuBuf&&!audio.menuSrc&&audio.ctx.state==="running")startMenuBuffer(1);
   }
 }
 function dismissTitleSplash(){
@@ -561,24 +632,35 @@ function dismissTitleSplash(){
   titleSplash=0;audio._splashEat=1;
   return 1;
 }
-function onFirstAudioGesture(){
-  if(audio._tapped){
-    if(titleSplash)dismissTitleSplash();
+function onFirstAudioGesture(e){
+  var typ=e&&e.type,valid=typ==="click"||typ==="touchend";
+  /* pointerdown/touchstart are not user-activation on iOS Safari — don't consume the unlock, don't dismiss the splash. */
+  if(!valid){
+    if(audio._unlocked)return;
     return;
   }
-  audio._tapped=1;
-  audio._tapT=(typeof performance!=="undefined"?performance.now():Date.now());
-  dismissTitleSplash();
-  createAudioGraph();
-  try{if(audio.ctx&&audio.ctx.state==="suspended")audio.ctx.resume();}catch(e){}
+  if(audio._unlocked){
+    if(titleSplash)dismissTitleSplash();
+    resumeIfNeeded();
+    return;
+  }
+  if(!audio._tapT)audio._tapT=(typeof performance!=="undefined"?performance.now():Date.now());
+  unlockAudioSync();
   audio.started=1;
   if(!audio.mutedMus&&(!audio.musicMode||audio.musicMode==="menu"))startMenuImmediate();
   else ensureAudio();
+  dismissTitleSplash();
+  audio._tapped=1;
+  audio._unlocked=1;
 }
 if(typeof window!=="undefined"){
-  window.addEventListener("pointerdown",onFirstAudioGesture,true);
-  window.addEventListener("touchstart",onFirstAudioGesture,{capture:true,passive:true});
+  /* iOS Safari only treats click and touchend as audio-activation gestures. */
+  window.addEventListener("click",onFirstAudioGesture,true);
+  window.addEventListener("touchend",onFirstAudioGesture,{capture:true,passive:true});
   window.__audio=audio;
-  try{createAudioGraph();}catch(e){}
+  try{createAudioGraph();hookCtxState();}catch(e){}
   preloadMenuBuf();
+  document.addEventListener("visibilitychange",function(){if(!document.hidden)resumeIfNeeded();});
+  window.addEventListener("pageshow",function(){resumeIfNeeded();});
+  window.addEventListener("focus",function(){resumeIfNeeded();});
 }

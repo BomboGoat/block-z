@@ -234,7 +234,7 @@ function drawSuperAim(){
     ctx.setLineDash([]);
   }else if(pr.kind==="knives"){
     s=toScreen(p.x,p.y);
-    var kn=pr.n||6,ksp=pr.spread||0.42,klen=pr.len||210,ki,ka,ke,tip,hx,hy;
+    var kn=pr.n||6,ksp=pr.spread||(48*Math.PI/180),klen=pr.len||210,ki,ka,ke,tip,hx,hy;
     ctx.strokeStyle="rgba(255,138,80,0.85)";ctx.fillStyle="rgba(255,87,34,0.2)";ctx.lineWidth=3;
     for(ki=0;ki<kn;ki++){
       ka=pr.ang+((ki/(kn-1))-0.5)*ksp;

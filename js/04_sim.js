@@ -276,7 +276,7 @@ function superKind(p){
 function superPreview(p,ang){
   var kind=superKind(p),wpn;
   if(kind==="laser")return{kind:kind,ang:ang,len:truenoLaserLen(p),w:15};
-  if(kind==="knives")return{kind:kind,ang:ang,len:210,n:6,spread:0.42};
+  if(kind==="knives")return{kind:kind,ang:ang,len:210,n:6,spread:48*Math.PI/180};
   if(kind==="giant")return{kind:kind,ang:ang,len:155,r:p.bigFlex?94:78};
   wpn=p&&p.weapon;
   if(wpn==="gl")return{kind:"cannon",ang:ang,len:230,n:10,spread:0.46,gl:1};
@@ -343,18 +343,31 @@ function fireCanonazo(p,ang){
   floatText(p.x,p.y-18,"CAÑONAZO","#ffecb3");
 }
 function fireFlameKnives(p,ang){
-  var n=6,spread=0.42,dmg=24*(p.damageMul||1),spd=510,i,originX=p.x+Math.cos(ang)*(p.r+8),originY=p.y+Math.sin(ang)*(p.r+8);
+  var n=6,spread=48*Math.PI/180,dmg=24*(p.damageMul||1),spd=510,i;
+  var ys=(typeof CFG!=="undefined"&&CFG.YSCALE)||0.7;
+  var originX=p.x+Math.cos(ang)*(p.r+10),originY=p.y+Math.sin(ang)*(p.r+10);
+  /* Fan in screen space so 48° reads clearly under 3/4 YSCALE, and offset spawns so they are spaced from frame 0. */
+  var sx=Math.cos(ang),sy=Math.sin(ang)*ys,sang=Math.atan2(sy,sx);
+  var px=-Math.sin(sang),py=Math.cos(sang);
   p.meleeSwing=0.18;p.slashAng=ang;
   for(i=0;i<n;i++){
-    var t=i/(n-1)-0.5,a=ang+t*spread,b=bulletPool.pop()||{};
-    b.x=originX;b.y=originY;b.vx=Math.cos(a)*spd;b.vy=Math.sin(a)*spd;b.r=5.2;
+    var t=n===1?0:(i/(n-1)-0.5),slot=i-(n-1)/2,sa=sang+t*spread,b=bulletPool.pop()||{};
+    var vx=Math.cos(sa),vy=Math.sin(sa)/ys,vl=Math.sqrt(vx*vx+vy*vy)||1;
+    b.x=originX+px*slot*12;b.y=originY+(py*slot*12)/ys;
+    b.vx=vx/vl*spd;b.vy=vy/vl*spd;b.r=6.2;
     b.damage=dmg;b.life=0.85*(p.rangeMul||1);b.pierce=0;b.pierceLeft=1+(Math.random()<0.55?1:0);
-    b.bounce=0;b.hit=new Set();b.knife=1;b.fire=1;b.trail=1;b.trailT=0;b.spinA=0;b.spinV=18;
+    b.bounce=0;b.hit=new Set();b.knife=1;b.fire=1;b.trail=1;b.trailT=0;b.spinA=0;b.spinV=2.2;
+    b.flick=Math.random()*6.28;
     b.pistol=0;b.revolver=0;b.rifle=0;b.smg=0;b.shot=0;b.gl=0;b.expl=0;b.bell=0;b.cannon=0;b.ice=0;b.poison=0;
     game.bullets.push(b);
   }
   p.knockT=0.1;p.knockVx=-Math.cos(ang)*80;p.knockVy=-Math.sin(ang)*80;
   shake(5);sfx("slash");sfx("shot_gl");
+}
+function fireHitBurst(x,y){
+  var i;
+  addParticle(x,y,"#fff3e0",0.14,0,-8,11,4);
+  for(i=0;i<6;i++)addParticle(x,y,i%2?"#ffd54f":"#ff6d00",0.22,rand(-90,90),rand(-110,20),rand(3,6),3);
 }
 function startGigante(p,ang){
   var len=155;

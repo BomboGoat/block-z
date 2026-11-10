@@ -98,12 +98,10 @@ function handleMenuClick(id,st){
 }
 function pointerToScreen(e){var r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)* (SW/r.width),y:(e.clientY-r.top)*(SH/r.height)};}
 function onPointerDown(e){
+  /* Keep the splash up through pointerdown — iOS will unlock audio on the following touchend/click. */
+  if(typeof titleSplash!=="undefined"&&titleSplash)return;
+  if(typeof audio!=="undefined"&&audio&&audio._splashEat){audio._splashEat=0;return;}
   ensureAudio();
-  if(typeof titleSplash!=="undefined"&&(titleSplash||(typeof audio!=="undefined"&&audio&&audio._splashEat))){
-    if(typeof dismissTitleSplash==="function")dismissTitleSplash();
-    if(typeof audio!=="undefined"&&audio)audio._splashEat=0;
-    return;
-  }
   var p=pointerToScreen(e),st=game&&game.state;
   if(st==="title"||st==="settings"||st==="howto"||st==="pause"||st==="dead"||st==="victory"||st==="select"){
     var btns=st==="title"||st==="dead"||st==="victory"||st==="select"?menuBtns:st==="settings"?settingsBtns:st==="pause"?pauseBtns:[];
@@ -629,7 +627,12 @@ function updateBullets(dt){
     b=game.bullets[i];b.life-=dt;b.x+=b.vx*dt;b.y+=b.vy*dt;if(b.spinV)b.spinA=(b.spinA||0)+b.spinV*dt;
     if(b.trail){
       b.trailT=(b.trailT||0)-dt;
-      if(b.trailT<=0){b.trailT=0.05;addParticle(b.x,b.y,"#ff8a50",0.16,rand(-16,16),rand(-28,-6),rand(3,5),3);}
+      if(b.trailT<=0){
+        b.trailT=0.028;
+        var bx=-(b.vx||0)*0.04,by=-(b.vy||0)*0.04;
+        addParticle(b.x,b.y,"#ffd54f",0.22,bx+rand(-18,18),by+rand(-22,8),rand(3,6),3);
+        addParticle(b.x,b.y,"#ff6d00",0.28,bx+rand(-28,28),by+rand(-36,4),rand(2,4),3);
+      }
     }
     if(b.life<=0||bulletHitsWall(b)){if(b.expl)explodeAt(b.x,b.y,b.explR||40,b.explDmg||b.damage*0.6,{friendly:1});game.bullets.splice(i,1);bulletPool.push(b);continue;}
     for(j=0;j<game.zombies.length;j++){
@@ -637,6 +640,7 @@ function updateBullets(dt){
       if(dist(b.x,b.y,z.x,z.y)<z.r+b.r){
         if(b.hit)b.hit.add(z);
         hurtZombie(z,b.damage,b.x,0,b.cannon||b.knife?{quiet:1}:undefined);
+        if(b.knife&&typeof fireHitBurst==="function")fireHitBurst(z.x,z.y);
         if(b.fire)z.burn=Math.max(z.burn||0,b.knife?1.6:1.4);if(b.ice)z.slow=1.6;if(b.poison)z.poison=2;
         if(b.expl)explodeAt(b.x,b.y,b.explR||42,b.explDmg||b.damage*0.5,{friendly:1});
         if(b.pierceLeft!=null){b.pierceLeft--;if(b.pierceLeft<0){game.bullets.splice(i,1);bulletPool.push(b);break;}}
