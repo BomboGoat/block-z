@@ -153,7 +153,7 @@ function drawSuperBtn(){
   var b=getSuperBtn(),p=game.player,ch=clamp((p.super||0)/CFG.SUPER_COST,0,1),cx=b.x+b.w/2,cy=b.y+b.h/2,R=b.w/2;
   var laserOn=p&&p.laserT>0,stick=ch>=1||laserOn,aiming=!!(input.super&&stick),cancel=aiming&&input.superCancel;
   var icon="💣",kind=typeof superKind==="function"?superKind(p):"";
-  if(kind==="laser")icon="⚡";else if(kind==="dash")icon="💨";else if(kind==="flex")icon="💪";
+  if(kind==="laser")icon="⚡";else if(kind==="knives")icon="🔥";else if(kind==="giant")icon="🦍";else if(kind==="cannon")icon="💥";else if(kind==="dash")icon="💨";else if(kind==="flex")icon="💪";
   ctx.save();
   if(stick){
     var rad=54,ringCol=cancel?"#ff8a80":(kind==="laser"||laserOn?"#81d4fa":"#ffe082");
@@ -215,6 +215,45 @@ function drawSuperAim(){
     ctx.strokeStyle="rgba(33,150,243,0.2)";ctx.lineWidth=w*1.15;ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(e.x,e.y);ctx.stroke();
     ctx.strokeStyle="rgba(144,202,249,0.7)";ctx.lineWidth=w*0.45;ctx.stroke();
     ctx.strokeStyle="rgba(227,242,253,0.95)";ctx.lineWidth=2;ctx.setLineDash([14,9]);ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(e.x,e.y);ctx.stroke();ctx.setLineDash([]);
+  }else if(pr.kind==="cannon"){
+    s=toScreen(p.x,p.y);
+    var n=pr.n||24,sp=pr.spread||0.44,len=pr.len||250,k,aa,ex,ey,es;
+    ctx.fillStyle="rgba(255,193,7,0.14)";
+    ctx.beginPath();ctx.moveTo(s.x,s.y);
+    for(k=0;k<=8;k++){
+      aa=pr.ang+((k/8)-0.5)*sp;ex=p.x+Math.cos(aa)*len;ey=p.y+Math.sin(aa)*len;es=toScreen(ex,ey);
+      if(k===0)ctx.moveTo(s.x,s.y);ctx.lineTo(es.x,es.y);
+    }
+    ctx.closePath();ctx.fill();
+    ctx.strokeStyle=pr.gl?"rgba(174,213,129,0.9)":"rgba(255,224,130,0.9)";ctx.lineWidth=2;ctx.setLineDash([8,6]);
+    for(k=0;k<Math.min(n,7);k++){
+      aa=pr.ang+((n<=1?0:k/(Math.min(n,7)-1))-0.5)*sp;
+      es=toScreen(p.x+Math.cos(aa)*len,p.y+Math.sin(aa)*len);
+      ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(es.x,es.y);ctx.stroke();
+    }
+    ctx.setLineDash([]);
+  }else if(pr.kind==="knives"){
+    s=toScreen(p.x,p.y);
+    var kn=pr.n||6,ksp=pr.spread||0.42,klen=pr.len||210,ki,ka,ke,tip,hx,hy;
+    ctx.strokeStyle="rgba(255,138,80,0.85)";ctx.fillStyle="rgba(255,87,34,0.2)";ctx.lineWidth=3;
+    for(ki=0;ki<kn;ki++){
+      ka=pr.ang+((ki/(kn-1))-0.5)*ksp;
+      ke=toScreen(p.x+Math.cos(ka)*klen,p.y+Math.sin(ka)*klen);
+      ctx.setLineDash([7,6]);ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(ke.x,ke.y);ctx.stroke();ctx.setLineDash([]);
+      hx=Math.cos(ka);hy=Math.sin(ka);
+      tip=toScreen(p.x+Math.cos(ka)*klen,p.y+Math.sin(ka)*klen);
+      var t1=toScreen(p.x+Math.cos(ka)*klen-hx*12+(-hy)*7,p.y+Math.sin(ka)*klen-hy*12+hx*7);
+      var t2=toScreen(p.x+Math.cos(ka)*klen-hx*12-(-hy)*7,p.y+Math.sin(ka)*klen-hy*12-hx*7);
+      ctx.fillStyle="#ffab40";ctx.beginPath();ctx.moveTo(ke.x,ke.y);ctx.lineTo(t1.x,t1.y);ctx.lineTo(t2.x,t2.y);ctx.closePath();ctx.fill();
+    }
+  }else if(pr.kind==="giant"){
+    x2=p.x+Math.cos(pr.ang)*pr.len;y2=p.y+Math.sin(pr.ang)*pr.len;
+    s=toScreen(p.x,p.y);e=toScreen(x2,y2);
+    ctx.strokeStyle="rgba(188,170,164,0.9)";ctx.lineWidth=6*sc;ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(e.x,e.y);ctx.stroke();
+    var ghx=Math.cos(pr.ang),ghy=Math.sin(pr.ang),g1=toScreen(x2-ghx*16+(-ghy)*10,y2-ghy*16+ghx*10),g2=toScreen(x2-ghx*16-(-ghy)*10,y2-ghy*16-ghx*10);
+    ctx.fillStyle="rgba(188,170,164,0.95)";ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(g1.x,g1.y);ctx.lineTo(g2.x,g2.y);ctx.closePath();ctx.fill();
+    ctx.fillStyle="rgba(188,170,164,0.22)";ctx.strokeStyle="rgba(255,224,178,0.9)";ctx.lineWidth=3;
+    ctx.beginPath();ctx.ellipse(e.x,e.y,pr.r*sc,pr.r*sc*ys,0,0,7);ctx.fill();ctx.stroke();
   }
   ctx.restore();
 }
@@ -319,7 +358,7 @@ function drawHowTo(){
   ctx.fillStyle="rgba(0,0,0,0.84)";ctx.fillRect(0,0,SW,SH);
   ctx.textAlign="center";ctx.fillStyle="#ffc107";ctx.font="bold 22px system-ui";ctx.fillText("Cómo jugar",SW/2,layout.safe.t+50);
   ctx.fillStyle="#ecf0f1";ctx.font="13px system-ui";ctx.textAlign="left";
-  var lines=["• Joystick izquierdo (donde pongas el pulgar)","• Elige personaje antes de jugar","• Atacas al enemigo más cercano","• Super (derecha): habilidad única","• El dash sigue el joystick de movimiento","• Arbustos: te esconden","• Jefes en las rondas 3, 6 y 10"];
+  var lines=["• Joystick izquierdo (donde pongas el pulgar)","• Elige personaje antes de jugar","• Atacas al enemigo más cercano","• Super (derecha): apúntala con su joystick","• Arbustos: te esconden","• Jefes en las rondas 3, 6 y 10"];
   var y=layout.safe.t+90;for(var i=0;i<lines.length;i++){ctx.fillText(lines[i],24+layout.safe.l,y);y+=24;}
   layoutMenuButtons();if(howToBack)drawUIButton(howToBack,"#95a5a6");
 }

@@ -139,10 +139,10 @@ function rngPick(rng,arr){return arr[(rng()*arr.length)|0];}
 function rngRange(rng,a,b){return a+rng()*(b-a);}
 var selectedHero="classic";
 var HEROES=[
-{id:"classic",name:"Eric",desc:"Equilibrado. Pistola y granada super.",hp:100,spd:100,dmg:100,wpn:"Pistola",col:"#1565c0"},
-{id:"trueno",name:"Trueno",desc:"Rayos en cadena que saltan entre zombis.",hp:90,spd:105,dmg:115,wpn:"Rayos",col:"#ffd54f"},
-{id:"mr",name:"Mr.",desc:"Cuchillo ágil y un buen corte.",hp:120,spd:115,dmg:100,wpn:"Cuchillo",col:"#37474f"},
-{id:"gompa",name:"Gompa",desc:"Culturista: puños y pesas. Super Flex que aturde.",hp:140,spd:88,dmg:100,wpn:"Pesas",col:"#6d4c41"}
+{id:"classic",name:"Eric",desc:"Equilibrado. Super Cañonazo: un abanico masivo con su arma.",hp:100,spd:100,dmg:100,wpn:"Pistola",col:"#1565c0"},
+{id:"trueno",name:"Trueno",desc:"Rayos en cadena y un láser dirigido.",hp:90,spd:105,dmg:115,wpn:"Rayos",col:"#ffd54f"},
+{id:"mr",name:"Mr.",desc:"Cuchillo ágil. Super: abanico de cuchillos en llamas.",hp:120,spd:115,dmg:100,wpn:"Cuchillo",col:"#37474f"},
+{id:"gompa",name:"Gompa",desc:"Culturista. Super Gigante: crece, salta y aplasta.",hp:140,spd:88,dmg:100,wpn:"Pesas",col:"#6d4c41"}
 ];
 function makePlayerLook(){return{kind:"player",hero:"classic",skin:"#d2a679",skinShadow:"#a67c52",skinLight:"#e8c4a0",hair:"#2c1810",brow:"#1a1008",eye:"#2e4a3e",eyeWhite:"#e8e4d9",hoodie:"#1565c0",hoodieDark:"#0d47a1",hoodieLight:"#42a5f5",pants:"#1a237e",pantsDark:"#0d1540",shoe:"#1a1a1a",cap:"#8b1a1a",capBrim:"#5c1010",stubble:1};}
 function makeHeroLook(id){

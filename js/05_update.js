@@ -213,7 +213,7 @@ function update(dt){
   var n=(p.grabbed||p.laserT>0)?null:findNearestZombie(p,heroRange(p));
   if(n)p.aimAng=Math.atan2(n.y-p.y,n.x-p.x);
   p.fireTimer-=dt;
-  if(!p.grabbed&&!(p.laserT>0)&&p.fireTimer<=0&&n){fireWeapon(p);var cd=p.weapon==="smg"?Math.min(p.fireCooldown,0.16):p.fireCooldown;if(p.lastStand&&p.hp<p.maxHp*0.35)cd*=0.8;if(typeof extraFireCooldown==="function")cd=extraFireCooldown(p,cd);p.fireTimer=cd;}
+  if(!p.grabbed&&!(p.laserT>0)&&!(p.giantLeapT>0)&&p.fireTimer<=0&&n){fireWeapon(p);var cd=p.weapon==="smg"?Math.min(p.fireCooldown,0.16):p.fireCooldown;if(p.lastStand&&p.hp<p.maxHp*0.35)cd*=0.8;if(typeof extraFireCooldown==="function")cd=extraFireCooldown(p,cd);p.fireTimer=cd;}
   if((p.hasMelee||p.weapon==="knife"||p.weapon==="fist")&&p.meleeSwing>0){
     if(!p.swingDone&&p.meleeSwing<=0.2){
       p.swingDone=1;
@@ -275,6 +275,12 @@ function updatePlayerMove(p,dt,safe){
   if(input.joy){mx+=input.jx;my+=input.jy;}
   var m=Math.sqrt(mx*mx+my*my);if(m>1){mx/=m;my/=m;m=1;}
   var spd=CFG.PLAYER_SPEED*(p.speedMul||1);if(p.laserT>0)spd*=0.4;
+  if(p.giantT>0&&!(p.giantLeapT>0))spd*=0.78;
+  if(p.giantLeapT>0){
+    if(typeof updateGigante==="function")updateGigante(p,dt);
+    p.anim+=dt*6;
+    return;
+  }
   if(p.dashT>0){
     p.dashT-=dt;p.x+=p.dashVx*dt;p.y+=p.dashVy*dt;p.invuln=Math.max(p.invuln,0.05);
     p.trailT=(p.trailT||0)+dt;
@@ -305,6 +311,12 @@ function updatePlayerMove(p,dt,safe){
   var ad=want-p.faceAng;
   while(ad>Math.PI)ad-=Math.PI*2;while(ad<-Math.PI)ad+=Math.PI*2;
   p.faceAng+=ad*Math.min(1,10*dt);
+  if(p.knockT>0){
+    p.knockT-=dt;p.x+=p.knockVx*dt;p.y+=p.knockVy*dt;
+    p.knockVx*=Math.max(0,1-8*dt);p.knockVy*=Math.max(0,1-8*dt);
+    p.x=clamp(p.x,60,CFG.MAP_W-60);p.y=clamp(p.y,60,CFG.MAP_H-60);resolveCircle(p);
+  }
+  if(p.giantT>0&&typeof updateGigante==="function")updateGigante(p,dt);
 }
 function bossCamDrop(b){
   if(!b||!layout)return 28;
@@ -615,15 +627,20 @@ function updateBullets(dt){
   var i,b,j,z;
   for(i=game.bullets.length-1;i>=0;i--){
     b=game.bullets[i];b.life-=dt;b.x+=b.vx*dt;b.y+=b.vy*dt;if(b.spinV)b.spinA=(b.spinA||0)+b.spinV*dt;
+    if(b.trail){
+      b.trailT=(b.trailT||0)-dt;
+      if(b.trailT<=0){b.trailT=0.05;addParticle(b.x,b.y,"#ff8a50",0.16,rand(-16,16),rand(-28,-6),rand(3,5),3);}
+    }
     if(b.life<=0||bulletHitsWall(b)){if(b.expl)explodeAt(b.x,b.y,b.explR||40,b.explDmg||b.damage*0.6,{friendly:1});game.bullets.splice(i,1);bulletPool.push(b);continue;}
     for(j=0;j<game.zombies.length;j++){
       z=game.zombies[j];if(z.dead||z.dying||(b.hit&&b.hit.has(z)))continue;
       if(dist(b.x,b.y,z.x,z.y)<z.r+b.r){
         if(b.hit)b.hit.add(z);
-        hurtZombie(z,b.damage,b.x);
-        if(b.fire)z.burn=1.4;if(b.ice)z.slow=1.6;if(b.poison)z.poison=2;
+        hurtZombie(z,b.damage,b.x,0,b.cannon||b.knife?{quiet:1}:undefined);
+        if(b.fire)z.burn=Math.max(z.burn||0,b.knife?1.6:1.4);if(b.ice)z.slow=1.6;if(b.poison)z.poison=2;
         if(b.expl)explodeAt(b.x,b.y,b.explR||42,b.explDmg||b.damage*0.5,{friendly:1});
-        if(!b.pierce){game.bullets.splice(i,1);bulletPool.push(b);break;}
+        if(b.pierceLeft!=null){b.pierceLeft--;if(b.pierceLeft<0){game.bullets.splice(i,1);bulletPool.push(b);break;}}
+        else if(!b.pierce){game.bullets.splice(i,1);bulletPool.push(b);break;}
       }
     }
   }
