@@ -110,17 +110,49 @@ function onPointerDown(e){
   if(st==="upgrade"){handleUpgradeClick(p.x,p.y);return;}
   if(inBtn(getPauseBtn(),p.x,p.y)){game.state="pause";layoutMenuButtons();sfx("click");return;}
   if(game.player&&game.player.grabbed){registerMash();return;}
-  if(inBtn(getSuperBtn(),p.x,p.y)){fireSuper(game.player);return;}
+  if(inBtn(getSuperBtn(),p.x,p.y)){beginSuperAim(e,p);return;}
   /* left half joystick */
   if(p.x<SW*0.58){
     input.joy=1;input.joyX=p.x;input.joyY=p.y;input.joyId=e.pointerId!=null?e.pointerId:1;input.jx=0;input.jy=0;
     try{canvas.setPointerCapture(e.pointerId);}catch(err){}
   }
 }
+function beginSuperAim(e,pt){
+  var b=getSuperBtn(),pl=game&&game.player;
+  if(!pl)return;
+  if((pl.super||0)<CFG.SUPER_COST&&!(pl.laserT>0))return;
+  input.super=1;input.superId=e.pointerId!=null?e.pointerId:2;
+  input.superX=b.x+b.w/2;input.superY=b.y+b.h/2;
+  input.sjx=0;input.sjy=0;input.superDragged=0;input.superMaxMag=0;input.superCancel=0;
+  try{canvas.setPointerCapture(e.pointerId);}catch(err){}
+}
+function updateSuperStick(pt){
+  var rad=72,dx=pt.x-input.superX,dy=pt.y-input.superY,m=Math.sqrt(dx*dx+dy*dy);
+  if(m>rad){dx=dx/m*rad;dy=dy/m*rad;m=rad;}
+  input.sjx=dx/rad;input.sjy=dy/rad;
+  var mag=m/rad;
+  if(mag>input.superMaxMag)input.superMaxMag=mag;
+  if(input.superMaxMag>0.28)input.superDragged=1;
+  input.superCancel=input.superDragged&&mag<0.22;
+}
+function endSuperAim(){
+  var pl=game&&game.player,ang=null;
+  input.super=0;input.superId=-1;
+  if(!pl){input.sjx=0;input.sjy=0;input.superDragged=0;input.superCancel=0;return;}
+  if(pl.laserT>0){input.sjx=0;input.sjy=0;input.superDragged=0;input.superCancel=0;return;}
+  if(input.superCancel){sfx("click");input.sjx=0;input.sjy=0;input.superDragged=0;input.superCancel=0;return;}
+  if(input.superDragged)ang=Math.atan2(input.sjy,input.sjx);
+  input.sjx=0;input.sjy=0;input.superDragged=0;input.superCancel=0;input.superMaxMag=0;
+  fireSuper(pl,ang);
+}
 function onPointerMove(e){
+  var p,dx,dy,m,rad;
+  if(input.super&&(e.pointerId==null||input.superId===-1||e.pointerId===input.superId)){
+    updateSuperStick(pointerToScreen(e));
+  }
   if(!input.joy)return;
   if(e.pointerId!=null&&input.joyId!==-1&&e.pointerId!==input.joyId)return;
-  var p=pointerToScreen(e),dx=p.x-input.joyX,dy=p.y-input.joyY,m=Math.sqrt(dx*dx+dy*dy),rad=56;
+  p=pointerToScreen(e);dx=p.x-input.joyX;dy=p.y-input.joyY;m=Math.sqrt(dx*dx+dy*dy);rad=56;
   if(m>rad){dx=dx/m*rad;dy=dy/m*rad;m=rad;}
   input.jx=dx/rad;input.jy=dy/rad;
 }
@@ -131,6 +163,7 @@ function onPointerUp(e){
     var cards=game.selectCards||[],i;for(i=0;i<cards.length;i++)if(inBtn(cards[i],p.x,p.y)){game.selectIdx=cards[i].idx;selectedHero=HEROES[game.selectIdx].id;layoutSelect();sfx("click");return;}
     return;
   }
+  if(input.super&&(e.pointerId==null||input.superId===-1||e.pointerId===input.superId)){endSuperAim();return;}
   if(e.pointerId!=null&&input.joyId!==-1&&e.pointerId!==input.joyId)return;
   input.joy=0;input.jx=0;input.jy=0;input.joyId=-1;
 }
@@ -170,11 +203,12 @@ function update(dt){
   }
   if(game.state!=="playing")return;
   updatePlayerMove(p,dt,0);
+  if(typeof updateTruenoLaser==="function")updateTruenoLaser(p,dt);
   /* fire */
-  var n=p.grabbed?null:findNearestZombie(p,heroRange(p));
+  var n=(p.grabbed||p.laserT>0)?null:findNearestZombie(p,heroRange(p));
   if(n)p.aimAng=Math.atan2(n.y-p.y,n.x-p.x);
   p.fireTimer-=dt;
-  if(!p.grabbed&&p.fireTimer<=0&&n){fireWeapon(p);var cd=p.weapon==="smg"?Math.min(p.fireCooldown,0.16):p.fireCooldown;if(p.lastStand&&p.hp<p.maxHp*0.35)cd*=0.8;if(typeof extraFireCooldown==="function")cd=extraFireCooldown(p,cd);p.fireTimer=cd;}
+  if(!p.grabbed&&!(p.laserT>0)&&p.fireTimer<=0&&n){fireWeapon(p);var cd=p.weapon==="smg"?Math.min(p.fireCooldown,0.16):p.fireCooldown;if(p.lastStand&&p.hp<p.maxHp*0.35)cd*=0.8;if(typeof extraFireCooldown==="function")cd=extraFireCooldown(p,cd);p.fireTimer=cd;}
   if((p.hasMelee||p.weapon==="knife"||p.weapon==="fist")&&p.meleeSwing>0){
     if(!p.swingDone&&p.meleeSwing<=0.2){
       p.swingDone=1;
@@ -235,7 +269,7 @@ function updatePlayerMove(p,dt,safe){
   if(input.keys.ArrowDown||input.keys.s||input.keys.S)my+=1;
   if(input.joy){mx+=input.jx;my+=input.jy;}
   var m=Math.sqrt(mx*mx+my*my);if(m>1){mx/=m;my/=m;m=1;}
-  var spd=CFG.PLAYER_SPEED*(p.speedMul||1);
+  var spd=CFG.PLAYER_SPEED*(p.speedMul||1);if(p.laserT>0)spd*=0.4;
   if(p.dashT>0){
     p.dashT-=dt;p.x+=p.dashVx*dt;p.y+=p.dashVy*dt;p.invuln=Math.max(p.invuln,0.05);
     p.trailT=(p.trailT||0)+dt;

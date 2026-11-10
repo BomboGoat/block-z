@@ -145,16 +145,78 @@ function drawJoystick(){
 }
 function drawSuperBtn(){
   var b=getSuperBtn(),p=game.player,ch=clamp((p.super||0)/CFG.SUPER_COST,0,1),cx=b.x+b.w/2,cy=b.y+b.h/2,R=b.w/2;
+  var aiming=input.super&&ch>=1,cancel=aiming&&input.superCancel,icon="💣",kind=typeof superKind==="function"?superKind(p):"";
+  if(kind==="laser")icon="⚡";else if(kind==="dash")icon="💨";else if(kind==="flex")icon="💪";
   ctx.save();
-  if(ch>=1){ctx.shadowColor="#ffc107";ctx.shadowBlur=18;}
-  ctx.fillStyle="rgba(20,16,12,0.7)";ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.fill();
-  ctx.strokeStyle="#1a140c";ctx.lineWidth=3;ctx.stroke();
+  if(ch>=1&&!cancel){ctx.shadowColor=kind==="laser"?"#40c4ff":"#ffc107";ctx.shadowBlur=aiming?26:18;}
+  ctx.fillStyle=cancel?"rgba(80,16,16,0.85)":"rgba(20,16,12,0.7)";ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.fill();
+  ctx.strokeStyle=cancel?"#ff5252":"#1a140c";ctx.lineWidth=3;ctx.stroke();
   ctx.shadowBlur=0;
-  ctx.strokeStyle="#ffe082";ctx.lineWidth=5;
+  ctx.strokeStyle=cancel?"#ff8a80":(kind==="laser"?"#81d4fa":"#ffe082");ctx.lineWidth=5;
   ctx.beginPath();ctx.arc(cx,cy,R-4,-Math.PI/2,-Math.PI/2+ch*Math.PI*2);ctx.stroke();
-  ctx.fillStyle=ch>=1?"#fff8e1":"#cfd8dc";ctx.font="bold "+Math.max(18,(b.w*0.3)|0)+"px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";
-  ctx.fillText(p.hasDash||p.doubleJump?"💨":"💣",cx,cy);
+  ctx.fillStyle=cancel?"#ffcdd2":(ch>=1?"#fff8e1":"#cfd8dc");ctx.font="bold "+Math.max(18,(b.w*0.3)|0)+"px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";
+  ctx.fillText(cancel?"✕":icon,cx,cy);
+  if(aiming){
+    var nx=cx+(input.sjx||0)*72,ny=cy+(input.sjy||0)*72;
+    ctx.strokeStyle="rgba(255,255,255,0.35)";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(nx,ny);ctx.stroke();
+    ctx.fillStyle=cancel?"#ef5350":"#fff8e1";ctx.beginPath();ctx.arc(nx,ny,11,0,7);ctx.fill();
+    ctx.strokeStyle="#1a140c";ctx.lineWidth=2;ctx.stroke();
+  }
   ctx.restore();ctx.textAlign="left";ctx.textBaseline="alphabetic";
+}
+function drawSuperAim(){
+  var p=game&&game.player;if(!p||!input.super||input.superCancel)return;
+  if((p.super||0)<CFG.SUPER_COST&&!(p.laserT>0))return;
+  var ang=input.superDragged?Math.atan2(input.sjy,input.sjx):autoSuperAng(p);
+  var pr=typeof superPreview==="function"?superPreview(p,ang):null;if(!pr)return;
+  var a=toScreen(p.x,p.y),sc=layout.scale,ys=CFG.YSCALE,i,s,e,x2,y2;
+  ctx.save();ctx.lineCap="round";ctx.lineJoin="round";
+  if(pr.kind==="flex"){
+    s=toScreen(p.x,p.y);
+    ctx.fillStyle="rgba(188,170,164,0.22)";ctx.strokeStyle="rgba(255,224,178,0.85)";ctx.lineWidth=3;
+    ctx.beginPath();ctx.ellipse(s.x,s.y,pr.r*sc,pr.r*sc*ys,0,0,7);ctx.fill();ctx.stroke();
+  }else if(pr.kind==="grenade"){
+    x2=p.x+Math.cos(pr.ang)*pr.len;y2=p.y+Math.sin(pr.ang)*pr.len;
+    s=toScreen(p.x,p.y);e=toScreen(x2,y2);
+    ctx.strokeStyle="rgba(255,235,59,0.85)";ctx.setLineDash([10,8]);ctx.lineWidth=3;
+    ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(e.x,e.y);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle="rgba(255,193,7,0.22)";ctx.strokeStyle="#ffeb3b";ctx.lineWidth=2;
+    ctx.beginPath();ctx.ellipse(e.x,e.y,pr.r*sc,pr.r*sc*ys,0,0,7);ctx.fill();ctx.stroke();
+    ctx.fillStyle="#ffeb3b";ctx.beginPath();ctx.arc(e.x,e.y,5,0,7);ctx.fill();
+  }else if(pr.kind==="dash"){
+    x2=p.x+Math.cos(pr.ang)*pr.len;y2=p.y+Math.sin(pr.ang)*pr.len;
+    s=toScreen(p.x,p.y);e=toScreen(x2,y2);
+    ctx.strokeStyle=pr.slash?"rgba(224,224,224,0.9)":"rgba(129,212,250,0.9)";ctx.lineWidth=6*sc;
+    ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(e.x,e.y);ctx.stroke();
+    var hx=Math.cos(pr.ang),hy=Math.sin(pr.ang),px=-hy,py=hx,tip=14;
+    var t1=toScreen(x2-hx*16+px*10,y2-hy*16+py*10),t2=toScreen(x2-hx*16-px*10,y2-hy*16-py*10);
+    ctx.fillStyle=ctx.strokeStyle;ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(t1.x,t1.y);ctx.lineTo(t2.x,t2.y);ctx.closePath();ctx.fill();
+  }else if(pr.kind==="laser"){
+    x2=p.x+Math.cos(pr.ang)*pr.len;y2=p.y+Math.sin(pr.ang)*pr.len;
+    s=toScreen(p.x,p.y);e=toScreen(x2,y2);
+    var w=(pr.w||34)*sc;
+    ctx.strokeStyle="rgba(33,150,243,0.22)";ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(e.x,e.y);ctx.stroke();
+    ctx.strokeStyle="rgba(144,202,249,0.7)";ctx.lineWidth=w*0.45;ctx.stroke();
+    ctx.strokeStyle="rgba(227,242,253,0.95)";ctx.lineWidth=3;ctx.setLineDash([16,10]);ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(e.x,e.y);ctx.stroke();ctx.setLineDash([]);
+  }
+  ctx.restore();
+}
+function drawTruenoLaser(){
+  var p=game&&game.player;if(!p||!(p.laserT>0))return;
+  var x2=p.x+Math.cos(p.laserAng)*p.laserLen,y2=p.y+Math.sin(p.laserAng)*p.laserLen;
+  var s=toScreen(p.x,p.y),e=toScreen(x2,y2),sc=layout.scale,w=(p.laserW||34)*sc;
+  var pulse=1+Math.sin((game.time||0)*38)*0.1,life=clamp(p.laserT/(p.laserMax||3),0,1);
+  ctx.save();ctx.lineCap="round";ctx.globalAlpha=0.35+0.65*Math.min(1,life*4);
+  ctx.strokeStyle="rgba(13,71,161,0.35)";ctx.lineWidth=w*1.55*pulse;ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(e.x,e.y);ctx.stroke();
+  ctx.strokeStyle="rgba(30,136,229,0.55)";ctx.lineWidth=w*0.95*pulse;ctx.stroke();
+  ctx.strokeStyle="rgba(100,181,246,0.9)";ctx.lineWidth=w*0.45;ctx.stroke();
+  ctx.strokeStyle="#e3f2fd";ctx.lineWidth=Math.max(2,w*0.16);ctx.stroke();
+  ctx.globalAlpha=1;
+  /* tip flare */
+  var grd=ctx.createRadialGradient(e.x,e.y,2,e.x,e.y,18*sc);
+  grd.addColorStop(0,"rgba(255,255,255,0.95)");grd.addColorStop(0.4,"rgba(130,200,255,0.55)");grd.addColorStop(1,"rgba(13,71,161,0)");
+  ctx.fillStyle=grd;ctx.beginPath();ctx.arc(e.x,e.y,18*sc,0,7);ctx.fill();
+  ctx.restore();
 }
 function drawUIButton(b,fill){ctx.fillStyle=fill||"#2ecc71";roundRect(ctx,b.x,b.y,b.w,b.h,14);ctx.fill();ctx.strokeStyle="#1a140c";ctx.lineWidth=3;roundRect(ctx,b.x,b.y,b.w,b.h,14);ctx.stroke();ctx.strokeStyle="rgba(255,255,255,0.25)";ctx.lineWidth=1.5;roundRect(ctx,b.x+3,b.y+3,b.w-6,b.h-6,11);ctx.stroke();ctx.fillStyle="#0a0a12";ctx.font="bold 18px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(b.label,b.x+b.w/2,b.y+b.h/2+1);ctx.textBaseline="alphabetic";ctx.textAlign="left";}
 function drawLogo(cx,y,scale){
@@ -365,6 +427,8 @@ function draw(){
   if(game.state==="settings"){drawSettings();return;}
   if(game.state==="howto"){drawHowTo();return;}
   drawWorld();
+  if(typeof drawTruenoLaser==="function")drawTruenoLaser();
+  if(typeof drawSuperAim==="function")drawSuperAim();
   if(typeof drawExtraAbilities==="function")drawExtraAbilities();
   drawZoneTint();if(typeof drawLighting==="function")drawLighting();drawVignette();
   if(typeof drawBossMenace==="function")drawBossMenace();

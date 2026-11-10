@@ -162,7 +162,10 @@ function sfx(name,extra){
     case"zap":beep(980,0.05,"square",0.1,220);beep(1400,0.08,"sawtooth",0.08,400);noiseBurst(0.06,0.08);break;
     case"slash":beep(240,0.06,"sawtooth",0.16,90);beep(520,0.05,"triangle",0.08,200);break;
     case"flame":noiseBurst(0.12,0.1);beep(90,0.1,"sawtooth",0.06,50);break;
-    case"storm":beep(80,0.25,"sawtooth",0.16,40);beep(1200,0.2,"square",0.1,300);noiseBurst(0.25,0.18);break;
+    case"storm":beep(80,0.25,"sawtooth",0.16,40);beep(1200,0.2,"sawtooth",0.08,400);noiseBurst(0.25,0.18);break;
+    case"laser_hum":startLaserHum();break;
+    case"laser_hum_off":stopLaserHum();break;
+    case"crackle":if(Math.random()<0.65){musOsc(audio.sfxG,"sawtooth",900+Math.random()*700,audio.ctx.currentTime,0.05,0.07,200);noiseBurst(0.04,0.07);}break;
   }
 }
 /* ===== v8 procedural tracks (menu / play / boss) with crossfade ===== */
@@ -228,6 +231,29 @@ function fadeOutBus(bus,sec){
   var t=audio.ctx.currentTime;
   try{bus.gain.cancelScheduledValues(t);bus.gain.setValueAtTime(Math.max(0.0001,bus.gain.value),t);bus.gain.linearRampToValueAtTime(0,t+sec);}catch(e){}
   setTimeout(function(){try{bus.disconnect();}catch(e){}}, (sec*1000)+80);
+}
+function startLaserHum(){
+  if(!ensureAudio()||audio.mutedSfx||!audio.sfxG)return;
+  stopLaserHum();
+  var ctx=audio.ctx,t=ctx.currentTime,g=ctx.createGain(),f=ctx.createBiquadFilter(),o1=ctx.createOscillator(),o2=ctx.createOscillator(),src,buf,n,i,d,nf,ng;
+  g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(0.2,t+0.1);
+  f.type="lowpass";f.frequency.value=1400;f.Q.value=0.7;
+  o1.type="sawtooth";o1.frequency.value=62;o2.type="sawtooth";o2.frequency.value=67;
+  o1.connect(f);o2.connect(f);f.connect(g);g.connect(audio.sfxG);
+  o1.start();o2.start();
+  buf=getNoiseBuf(2)||(function(){n=(ctx.sampleRate*2)|0;buf=ctx.createBuffer(1,n,ctx.sampleRate);d=buf.getChannelData(0);for(i=0;i<n;i++)d[i]=Math.random()*2-1;return buf;})();
+  src=ctx.createBufferSource();src.buffer=buf;src.loop=true;
+  nf=ctx.createBiquadFilter();nf.type="bandpass";nf.frequency.value=1800;nf.Q.value=0.6;
+  ng=ctx.createGain();ng.gain.value=0.08;src.connect(nf);nf.connect(ng);ng.connect(g);src.start();
+  audio.laserHum={g:g,os:[o1,o2],src:src,ng:ng};
+}
+function stopLaserHum(){
+  var h=audio.laserHum,t;
+  if(!h)return;audio.laserHum=null;
+  try{t=audio.ctx?audio.ctx.currentTime:0;h.g.gain.cancelScheduledValues(t);h.g.gain.setValueAtTime(Math.max(0.0001,h.g.gain.value),t);h.g.gain.linearRampToValueAtTime(0.0001,t+0.12);}catch(e){}
+  setTimeout(function(){
+    try{h.os.forEach(function(o){o.stop();});h.src.stop();h.g.disconnect();}catch(e){}
+  },160);
 }
 function startMusic(mode){
   if(!mode){stopMusic();return;}

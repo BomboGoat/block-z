@@ -1,4 +1,4 @@
-var input={jx:0,jy:0,joy:0,joyX:0,joyY:0,joyId:-1,keys:{},super:0,pause:0};
+var input={jx:0,jy:0,joy:0,joyX:0,joyY:0,joyId:-1,keys:{},super:0,superId:-1,superX:0,superY:0,sjx:0,sjy:0,superDragged:0,superMaxMag:0,superCancel:0,pause:0};
 function createPlayer(){
   return{x:CFG.MAP_W/2,y:CFG.MAP_H/2,vx:0,vy:0,r:CFG.PLAYER_R,hp:CFG.MAX_HP,maxHp:CFG.MAX_HP,invuln:0,fireTimer:0,fireCooldown:CFG.FIRE_COOLDOWN,damageMul:1,speedMul:1,rangeMul:1,weapon:"pistol",pellets:1,extraShots:0,pierce:0,doubleJump:0,tripleJump:0,hasMelee:0,meleeRange:70,meleeDmg:20,meleeTimer:0,meleeSwing:0,hasShield:0,shieldReady:1,shieldCd:0,lifesteal:0,flash:0,anim:0,recoil:0,muzzle:0,aimAng:0,luck:0,hasOrbit:0,orbitAngle:0,hasChain:0,hasRevive:0,revived:0,runXP:0,runLevel:1,runXPNext:50,levelFlash:0,fireAmmo:0,iceAmmo:0,poisonAmmo:0,explosiveAmmo:0,thorns:0,hasDash:0,dashCd:0,dashT:0,dashLeft:0,regen:0,critChance:0,critMul:1.5,bounce:0,xpMagnet:0,hasDrone:0,droneAngle:0,droneX:0,droneY:0,hasDog:0,dog:{x:0,y:0,anim:0},fireAura:0,berserk:0,stomp:0,bloodlust:0,bloodStacks:0,sparkOnHit:0,overcharge:0,armorMul:1,evasion:0,abilities:[],scale:1,look:makePlayerLook(),super:0,facing:0,hero:"classic",lastMoveX:1,lastMoveY:0,dashSlash:0};
 }
@@ -166,8 +166,13 @@ function hurtZombie(z,dmg,fromX,noChain,opts){
   if(p.hunter&&z.isBoss)dmg*=1.18;
   if(p.lastStand&&p.hp<p.maxHp*0.35)dmg*=1.25;
   if(!opts.noCrit&&!noChain&&p.critChance&&Math.random()<p.critChance){dmg*=(p.critMul||2);floatText(z.x,z.y-8,"CRÍT","#ffeb3b");if(typeof extraCrit==="function")extraCrit(p,z);}
-  z.hp-=dmg;z.hitFlash=0.12;floatText(z.x,z.y,""+Math.round(dmg),"#ffe066");bloodBurst(z.x,z.y);sfx("hit");
-  if(typeof addBlood==="function")addBlood(z.x,z.y,z.hp<=0?7:2);
+  z.hp-=dmg;z.hitFlash=0.12;
+  if(opts.quiet){
+    if(!z._laserTxt||game.time-z._laserTxt>0.2){floatText(z.x,z.y,""+Math.round(dmg),"#82b1ff");z._laserTxt=game.time;}
+  }else{
+    floatText(z.x,z.y,""+Math.round(dmg),"#ffe066");bloodBurst(z.x,z.y);sfx("hit");
+    if(typeof addBlood==="function")addBlood(z.x,z.y,z.hp<=0?7:2);
+  }
   if(z.isBoss&&typeof gfxHitStop==="function")gfxHitStop(0.05,"big");
   p.super=Math.min(CFG.SUPER_COST*(p.superCD?0.75:1),(p.super||0)+Math.min(12,dmg*0.25)*(p.superCharge?1.35:1));
   if(p.lifesteal)p.hp=Math.min(p.maxHp,p.hp+dmg*p.lifesteal);
@@ -215,26 +220,47 @@ function dashDir(p){
   if(m<0.05){mx=Math.cos(p.facing||0);my=Math.sin(p.facing||0);m=Math.sqrt(mx*mx+my*my)||1;}
   return{x:mx/m,y:my/m};
 }
-function startDash(p,len,slash){
-  if(p.grabbed)return;
+function startDash(p,len,slash,ang){
+  if(p.grabbed||(p.laserT>0))return;
   len*=(p.dashLenMul||1);
-  var d=dashDir(p);
+  var d=(ang!=null&&isFinite(ang))?{x:Math.cos(ang),y:Math.sin(ang)}:dashDir(p);
   p.dashT=0.18;p.dashVx=d.x*len/0.18;p.dashVy=d.y*len/0.18;
   p.invuln=Math.max(p.invuln,0.18);p.dashSlash=slash||0;p.facing=Math.atan2(d.y,d.x);
   var i,z;for(i=0;i<game.zombies.length;i++){z=game.zombies[i];z.dashHit=0;}
   sfx("dash");
 }
-function fireSuper(p){
-  if(p.grabbed||(p.super||0)<CFG.SUPER_COST)return;
-  p.super=0;
-  if(typeof gfxHitStop==="function")gfxHitStop(0.055,"big");
-  if(p.hero==="trueno"){
-    var r=p.bigStorm?170:130,i,z,ang;
-    for(i=0;i<game.zombies.length;i++){z=game.zombies[i];if(!z.dead&&!z.dying&&dist(p.x,p.y,z.x,z.y)<r+z.r){hurtZombie(z,38*p.damageMul,p.x);z.burn=0.4;}}
-    for(i=0;i<8;i++){ang=i*0.785;game.bolts.push({pts:zigPts(p.x+Math.cos(ang)*10,p.y+Math.sin(ang)*10,p.x+Math.cos(ang)*r,p.y+Math.sin(ang)*r,5),life:0.28,maxLife:0.28});}
-    game.novas.push({x:p.x,y:p.y,r:20,vr:420,life:0.45,maxLife:0.45,col:"#82b1ff"});shake(7);sfx("storm");return;
+function autoSuperAng(p){
+  var n=typeof findNearestZombie==="function"?findNearestZombie(p,540):null;
+  if(n)return Math.atan2(n.y-p.y,n.x-p.x);
+  if(p.aimAng!=null)return p.aimAng;
+  if(p.faceAng!=null)return p.faceAng;
+  return p.facing||0;
+}
+function superKind(p){
+  if(!p)return "grenade";
+  if(p.hero==="trueno")return "laser";
+  if(p.hero==="mr")return "dash";
+  if(p.hero==="gompa")return "flex";
+  if(p.hasDash||p.doubleJump||p.stomp)return "dash";
+  return "grenade";
+}
+function superPreview(p,ang){
+  var kind=superKind(p),len,r;
+  if(kind==="laser")return{kind:kind,ang:ang,len:p.bigStorm?520:460,w:34};
+  if(kind==="dash"){
+    len=(p.hero==="mr"?190:p.tripleJump?220:p.doubleJump?180:150)*(p.dashLenMul||1);
+    return{kind:kind,ang:ang,len:len,slash:p.hero==="mr"?1:0};
   }
-  if(p.hero==="mr"){startDash(p,190,1);return;}
+  if(kind==="flex")return{kind:kind,r:p.bigFlex?130:100};
+  return{kind:"grenade",ang:ang,len:220,r:95};
+}
+function fireSuper(p,ang){
+  if(!p||p.grabbed||(p.laserT>0)||(p.super||0)<CFG.SUPER_COST)return;
+  if(ang==null||!isFinite(ang))ang=autoSuperAng(p);
+  p.super=0;p.facing=ang;p.aimAng=ang;if(p.faceAng!=null)p.faceAng=ang;
+  if(typeof gfxHitStop==="function")gfxHitStop(0.055,"big");
+  if(p.hero==="trueno"){startTruenoLaser(p,ang);return;}
+  if(p.hero==="mr"){startDash(p,190,1,ang);return;}
   if(p.hero==="gompa"){
     var i,z,r=p.bigFlex?130:100;
     explodeAt(p.x,p.y,r,36*p.damageMul,{friendly:1});
@@ -243,15 +269,67 @@ function fireSuper(p){
   }
   if(p.hasDash||p.doubleJump||p.stomp){
     var len=p.tripleJump?220:p.doubleJump?180:150;
-    startDash(p,len,0);
+    startDash(p,len,0,ang);
     if(p.stomp)explodeAt(p.x,p.y,90,28*p.damageMul,{friendly:1});
   }else{
-    var ang=p.aimAng,tx=p.x+Math.cos(ang)*220,ty=p.y+Math.sin(ang)*220;
+    var tx=p.x+Math.cos(ang)*220,ty=p.y+Math.sin(ang)*220;
     game.grenades.push({x:p.x,y:p.y,tx:tx,ty:ty,t:0,life:0.55});
     sfx("wave");
   }
 }
-function goToMenu(){stopMusic();game=createTitleState();skipDtClamp=1;layoutMenuButtons();startMusic("menu");}
+function startTruenoLaser(p,ang){
+  p.laserT=3;p.laserMax=3;p.laserAng=ang;p.laserLen=p.bigStorm?520:460;p.laserW=34;p.laserDps=72;p.laserTick=0;
+  shake(6);sfx("laser_hum");sfx("storm");
+}
+function stopTruenoLaser(p){
+  if(!p)return;
+  if(p.laserT>0||audio.laserHum)sfx("laser_hum_off");
+  p.laserT=0;
+}
+function updateTruenoLaser(p,dt){
+  if(!p)return;
+  if(!(p.laserT>0))return;
+  if(p.grabbed||(game&&game.state!=="playing")){stopTruenoLaser(p);return;}
+  p.laserT-=dt;
+  var want=null,rate=6.5;
+  /* Dedicated super stick (right thumb put back on the button) aims only and is snappier. */
+  if(input.super&&Math.sqrt((input.sjx||0)*(input.sjx||0)+(input.sjy||0)*(input.sjy||0))>0.2){
+    want=Math.atan2(input.sjy,input.sjx);rate=11;
+  }else if(input.joy&&Math.sqrt((input.jx||0)*(input.jx||0)+(input.jy||0)*(input.jy||0))>0.2){
+    /* Common case after release-to-fire: left move stick steers the beam. */
+    want=Math.atan2(input.jy,input.jx);rate=7;
+  }
+  if(want!=null){
+    var d=Math.atan2(Math.sin(want-p.laserAng),Math.cos(want-p.laserAng));
+    p.laserAng+=d*(1-Math.exp(-rate*dt));
+  }
+  p.facing=p.laserAng;p.aimAng=p.laserAng;p.faceAng=p.laserAng;
+  var x2=p.x+Math.cos(p.laserAng)*p.laserLen,y2=p.y+Math.sin(p.laserAng)*p.laserLen,half=(p.laserW||34)*0.5,i,z,dseg,hit=0;
+  p.laserTick-=dt;
+  if(p.laserTick<=0){
+    p.laserTick=0.1;
+    var tick=p.laserDps*(p.damageMul||1)*0.1;
+    for(i=0;i<game.zombies.length;i++){
+      z=game.zombies[i];if(z.dead||z.dying)continue;
+      dseg=distSeg(z.x,z.y,p.x,p.y,x2,y2);
+      if(dseg<half+z.r){
+        hurtZombie(z,tick,p.x,1,{quiet:1,noCrit:1});
+        z.burn=Math.max(z.burn||0,0.35);hit=1;
+        if(Math.random()<0.7)addParticle(z.x+rand(-6,6),z.y+rand(-6,6),"#e3f2fd",0.28,rand(-40,40),rand(-50,20),rand(4,8),3);
+      }
+    }
+    if(hit){sfx("crackle");shake(2);}
+  }
+  /* beam crackle bolts + tip sparks */
+  if(Math.random()<0.55){
+    var t=Math.random(),px=p.x+(x2-p.x)*t,py=p.y+(y2-p.y)*t,nx=-Math.sin(p.laserAng),ny=Math.cos(p.laserAng),off=(Math.random()-0.5)*20;
+    if(!game.bolts)game.bolts=[];
+    game.bolts.push({pts:zigPts(px-nx*8,py-ny*8,px+nx*8+off,py+ny*8-off,3),life:0.08,maxLife:0.08,col:"#90caf9"});
+  }
+  if(Math.random()<0.4)addParticle(x2,y2,"#bbdefb",0.22,rand(-30,30),rand(-30,30),rand(5,10),3);
+  if(p.laserT<=0)stopTruenoLaser(p);
+}
+function goToMenu(){if(game&&game.player)stopTruenoLaser(game.player);stopMusic();game=createTitleState();skipDtClamp=1;layoutMenuButtons();startMusic("menu");}
 function emptyFX(){return{zombies:[],bullets:[],particles:[],floatTexts:[],projectiles:[],grenades:[],bolts:[],slashes:[],novas:[],lasers:[],scorches:[],bloods:[],meteors:[],fires:[],timeScale:1,hitStop:0,hitStopCd:0};}
 function createTitleState(){buildMap(2026);var p=createPlayer();applyHero(p,selectedHero||"classic");p.x=760;p.y=900;var g=emptyFX();g.state="title";g.player=p;g.camX=p.x;g.camY=p.y;g.shake=0;g.wave=0;g.kills=0;g.score=0;g.waveSpawned=0;g.upgradeChoices=[];g.upgradeCards=[];g.time=0;g.bossSpawned=0;g.bossFight=0;g.message=null;g.messageTimer=0;g.titleZ=[];g.seed=2026;g.menuT=0;g.countdown=0;g.colossus=null;g.boss=null;g.home=null;g.spawnQueue=[];g.spawnTimer=0;return g;}
 function startGame(){
