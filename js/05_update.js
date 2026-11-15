@@ -371,6 +371,17 @@ function updateCam(dt){
     want=base*(1-zin);
   }
   /* v20.2.1: after the intro the camera follows ONLY the player, like normal play */
+  /* v20.2.2: hell arena only — gentle bias (max 15% of the view) so Thanos stays fully visible under the HUD */
+  if(typeof HELL!=="undefined"&&HELL.active&&game.state==="playing"&&b&&b.isThanos&&!b.dead){
+    var vw=worldW(),vh=worldH(),hh2=vh*0.5,headH=typeof artTargetH==="function"?artTargetH(b.look||{kind:"thanos"},layout.scale)/(CFG.YSCALE*Math.max(0.5,layout.scale)):100;
+    var headY=b.y-headH*1.05,footY=b.y+8,lim=vh*0.15;
+    if(Math.abs(b.y-p.y)<vh*1.2&&Math.abs(b.x-p.x)<vw){
+      var hi=headY+hh2-vh*0.2;          /* camY at which the head clears the top HUD band */
+      var lo=footY-hh2+vh*0.1;          /* camY at which the feet clear the bottom */
+      if(ty>hi)ty=Math.max(hi,p.y-lim);else if(ty<lo)ty=Math.min(lo,p.y+lim);
+      tx+=clamp((b.x-p.x)*0.2,-vw*0.08,vw*0.08);
+    }
+  }
   if(layout.viewW!==want){
     layout.viewW=want;
     layout.scale=layout.gameDrawW/layout.viewW;

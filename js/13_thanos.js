@@ -3,7 +3,7 @@
    own painted ground, minimap and walk grid (HELL_DATA). Thanos arrives with a cinematic, the hero
    picks ONE mega-power from 3 pedestals, and the fight is Thanos alone (no zombies). */
 var HELL={img:null,island:null,islandImg:null,building:0,active:0};
-(function(){try{var im=new Image();im.onload=function(){HELL.img=im;if(HELL.active&&typeof ART!=="undefined"){ART.arena=im;if(map){map.chunks={};}}};im.src="assets/env/hell.webp?v=20.2.1";}catch(e){}})();
+(function(){try{var im=new Image();im.onload=function(){HELL.img=im;if(HELL.active&&typeof ART!=="undefined"){ART.arena=im;if(map){map.chunks={};}}};im.src="assets/env/hell.webp?v=20.2.2";}catch(e){}})();
 var GEMS={
   power:{c:"#c77dff",n:"PODER"},space:{c:"#4d8dff",n:"ESPACIO"},reality:{c:"#ff2d4a",n:"REALIDAD"},
   soul:{c:"#ff9a1f",n:"ALMA"},time:{c:"#2fe37a",n:"TIEMPO"},mind:{c:"#ffe14a",n:"MENTE"}
