@@ -71,17 +71,17 @@ function gfxZoneEdges(g,x0,y0,S){
 }
 function addBlood(x,y,n){
   if(!game.bloods)game.bloods=[];
-  var i;n=n||5;
-  for(i=0;i<n;i++)game.bloods.push({x:x+rand(-14,14),y:y+rand(-10,10),w:rand(8,18),d:rand(5,11),life:6+rand(0,3),maxLife:8,a:rand(0,3)});
-  if(game.bloods.length>80)game.bloods.splice(0,game.bloods.length-80);
+  var i;n=Math.min(n||3,4);
+  for(i=0;i<n;i++)game.bloods.push({x:x+rand(-6,6),y:y+rand(-4,4),w:rand(3,6.5),d:rand(2,4),life:3.2+rand(0,1.5),maxLife:5,a:rand(0,3)});
+  if(game.bloods.length>36)game.bloods.splice(0,game.bloods.length-36);
 }
 function drawBlood(){
   var i,b,s,sc=layout.scale,ys=CFG.YSCALE;if(!game||!game.bloods)return;
   for(i=0;i<game.bloods.length;i++){
     b=game.bloods[i];s=toScreen(b.x,b.y);ctx.save();ctx.translate(s.x,s.y);ctx.rotate(b.a||0);
-    ctx.globalAlpha=clamp(b.life/(b.maxLife||6),0,1)*0.55;
-    ctx.fillStyle="#4a0808";fillEllipse(ctx,0,0,b.w*sc,b.d*sc*ys);
-    ctx.fillStyle="#2a0404";fillEllipse(ctx,-2,-1,b.w*0.45*sc,b.d*0.45*sc*ys);
+    ctx.globalAlpha=clamp(b.life/(b.maxLife||5),0,1)*0.28;
+    ctx.fillStyle="#6a1818";fillEllipse(ctx,0,0,b.w*sc,b.d*sc*ys);
+    ctx.fillStyle="#4a0c0c";fillEllipse(ctx,-1,-0.5,b.w*0.4*sc,b.d*0.4*sc*ys);
     ctx.restore();
   }
   ctx.globalAlpha=1;

@@ -1,13 +1,13 @@
 /* v20 temporary round events */
 var EVENT_DEFS={
-  niebla:{name:"Niebla",banner:"¡Niebla espesa!",mild:1,dur:[18,26],col:"#b0bec5"},
-  tormenta:{name:"Tormenta",banner:"¡Tormenta!",mild:0,dur:[16,24],col:"#90caf9"},
-  fuego:{name:"Fuego en el trigal",banner:"¡El trigal arde!",mild:0,dur:[16,24],col:"#ff8a50"},
-  riada:{name:"Riada",banner:"¡Riada! El puente de piedra está cortado",mild:0,dur:[14,20],col:"#4fc3f7"},
-  caja:{name:"Caja de suministros",banner:"¡Caja de suministros!",mild:1,dur:[20,28],col:"#ffd54f"},
-  toxica:{name:"Zona tóxica",banner:"¡Charco tóxico!",mild:0,dur:[16,24],col:"#9ccc65"},
-  luna:{name:"Luna de sangre",banner:"¡Luna de sangre!",mild:0,dur:[18,26],col:"#e53935"},
-  tesoro:{name:"Tesoro",banner:"¡Tesoro en las ruinas!",mild:1,dur:[20,28],col:"#ffe082"}
+  niebla:{name:"Niebla",banner:"¡Niebla espesa!",icon:"🌫️",mild:1,dur:[18,26],col:"#b0bec5"},
+  tormenta:{name:"Tormenta",banner:"¡Tormenta!",icon:"⚡",mild:0,dur:[16,24],col:"#90caf9"},
+  fuego:{name:"Fuego en el trigal",banner:"¡El trigal arde!",icon:"🔥",mild:0,dur:[16,24],col:"#ff8a50"},
+  riada:{name:"Riada",banner:"¡Riada en el puente!",icon:"🌊",mild:0,dur:[14,20],col:"#4fc3f7"},
+  caja:{name:"Caja de suministros",banner:"¡Caja de suministros!",icon:"📦",mild:1,dur:[20,28],col:"#ffd54f"},
+  toxica:{name:"Zona tóxica",banner:"¡Charco tóxico!",icon:"☠️",mild:0,dur:[16,24],col:"#9ccc65"},
+  luna:{name:"Luna de sangre",banner:"¡Luna de sangre!",icon:"🔴",mild:0,dur:[18,26],col:"#e53935"},
+  tesoro:{name:"Tesoro",banner:"¡Tesoro en las ruinas!",icon:"💎",mild:1,dur:[20,28],col:"#ffe082"}
 };
 function randRange(a,b){return a+Math.random()*(b-a);}
 function eventSpeedMul(x,y){
@@ -66,7 +66,7 @@ function beginRoundEvents(waveIdx){
   var ids=pickEventIds(waveIdx),delay=waveIdx<=0?randRange(10,16):randRange(6,12),i,id,def,ev,spot,wh;
   for(i=0;i<ids.length;i++){
     id=ids[i];def=EVENT_DEFS[id];if(!def)continue;
-    ev={id:id,alive:0,delay:delay+i*randRange(5,9),dur:randRange(def.dur[0],def.dur[1]),t:0,telegraph:1.2,col:def.col,banner:def.banner};
+    ev={id:id,alive:0,delay:delay+i*randRange(5,9),dur:randRange(def.dur[0],def.dur[1]),t:0,telegraph:1.2,col:def.col,banner:def.banner,icon:def.icon};
     if(id==="fuego"){
       wh=(map.bushes||[]).filter(function(b){return b.k==="wheat";});
       ev.field=wh.length?(Math.random()<0.5||wh.length===1?wh[0]:wh[1]):null;
@@ -107,7 +107,7 @@ function blockStoneBridge(){
 }
 function activateEvent(ev){
   ev.alive=1;ev.t=ev.dur;
-  game.eventBanner=ev.banner;game.eventBannerT=2.4;
+  game.eventBanner=ev.banner;game.eventIcon=ev.icon||(ev.def&&ev.def.icon)||"";game.eventBannerT=2.4;
   if(ev.id==="riada"){blockStoneBridge();if(typeof sfx==="function")sfx("splash");}
   if(ev.id==="tormenta"||ev.id==="luna"){if(typeof sfx==="function")sfx("storm");}
   if(ev.id==="fuego"&&ev.field){ev.field.burned=1;game._burnedWheat=ev.field;if(typeof sfx==="function")sfx("explode");}
@@ -268,13 +268,15 @@ function drawEventsOver(){
 }
 function drawEventBanner(){
   if(!game||!game.eventBanner||game.eventBannerT<=0)return;
-  var bt=clamp(game.eventBannerT/2.4,0,1),ba=bt>0.8?(1-(bt-0.8)/0.2):bt<0.12?bt/0.12:1;
-  var by=layout.safe.t+8,bh=30,bw,tx=game.eventBanner;
+  var T=game.eventBannerT,ba=T>2.22?(2.4-T)/0.18:T<0.28?T/0.28:1;
+  var by=layout.safe.t+8,bh=36,bw,tx=game.eventBanner,icon=game.eventIcon||"";
+  var label=icon?icon+"  "+tx:tx;
   ctx.save();ctx.globalAlpha=ba;ctx.textAlign="center";ctx.textBaseline="middle";
-  ctx.font="bold 14px system-ui,Segoe UI,sans-serif";
-  bw=Math.min(SW-80, Math.max(180, ctx.measureText(tx).width+28));
-  ctx.fillStyle="rgba(10,6,8,0.92)";roundRect(ctx,(SW-bw)/2,by,bw,bh,8);ctx.fill();
-  ctx.strokeStyle="#ffd54f";ctx.lineWidth=2;roundRect(ctx,(SW-bw)/2,by,bw,bh,8);ctx.stroke();
-  ctx.fillStyle="#fff8e1";ctx.shadowColor="rgba(0,0,0,0.8)";ctx.shadowBlur=3;ctx.fillText(tx,SW/2,by+bh/2+1);ctx.shadowBlur=0;
+  ctx.font="bold 16px system-ui,Segoe UI,sans-serif";
+  bw=Math.min(SW-48, Math.max(220, ctx.measureText(label).width+40));
+  ctx.fillStyle="rgba(6,4,6,0.94)";roundRect(ctx,(SW-bw)/2,by,bw,bh,10);ctx.fill();
+  ctx.strokeStyle="#ffe082";ctx.lineWidth=2.5;roundRect(ctx,(SW-bw)/2,by,bw,bh,10);ctx.stroke();
+  ctx.fillStyle="#fffde7";ctx.shadowColor="#000";ctx.shadowBlur=4;ctx.shadowOffsetY=1;
+  ctx.fillText(label,SW/2,by+bh/2+1);ctx.shadowBlur=0;ctx.shadowOffsetY=0;
   ctx.restore();ctx.textAlign="left";ctx.textBaseline="alphabetic";
 }

@@ -61,8 +61,11 @@ function drawBox3D(o,alpha){
   ctx.globalAlpha=1;
 }
 function treeHides(o,x,y){
-  var cx=o.x+o.w/2,cy=o.y+o.d/2,R=o.canopy||40,d=dist(x,y,cx,cy);
-  return d<R+12||(y<cy&&d<R+28);
+  /* Only fade the canopy when the actor is SOUTH of the trunk (in front).
+     Walking north puts them behind the foliage, which stays opaque. */
+  var cx=o.x+o.w/2,cy=o.y+o.d/2,R=o.canopy||40;
+  if(y<cy)return 0;
+  return dist(x,y,cx,cy)<R+12;
 }
 function drawTree(o){
   var s=toScreen(o.x+o.w/2,o.y+o.d/2),sc=layout.scale,R=(o.canopy||40)*sc,h=(o.h||16)*sc;
@@ -237,8 +240,9 @@ function drawFence(o){
 }
 function drawProp(o,ghost){
   if(o.dead)return;
-  /* ruins/crates/barrels/rocks are already painted on the arena; keep collision only */
-  if(o.k==='ruin'||o.k==='pillar'||o.k==='rock'||o.k==='crate'||o.k==='barrel')return;
+  /* Arena painting already has ruins, crates, barrels, rocks and pillars.
+     Only draw trees (and nothing else as a grey 3D box). */
+  if(o.k!=="tree")return;
   if(o.k==="fence"||o.k==="wall"){drawFence(o);return;}
   if(o.k==="tree")drawTree(o);
   else if(o.k==="bench")drawBench(o);

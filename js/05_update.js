@@ -662,7 +662,7 @@ function updateHome(z,dt){
   }
 }
 function bulletHitsWall(b){
-  var hit=circleHitSolid(b.x,b.y,b.r||3);
+  var hit=circleHitSolid(b.x,b.y,b.r||3,"proj");
   if(!hit||hit.climbable)return 0;
   if(hit.break){hit.hp=(hit.hp||10)-12;if(hit.hp<=0){hit.dead=1;map.dirty=1;map.chunks={};buildGrid();sfx("explode");}return 1;}
   if(b.bounce>0){
@@ -689,7 +689,8 @@ function updateBullets(dt){
       z=game.zombies[j];if(z.dead||z.dying||(b.hit&&b.hit.has(z)))continue;
       if(dist(b.x,b.y,z.x,z.y)<z.r+b.r){
         if(b.hit)b.hit.add(z);
-        hurtZombie(z,b.damage,b.x,0,b.cannon||b.knife?{quiet:1}:undefined);
+        hurtZombie(z,b.damage,b.x,0,b.cannon||b.knife||b.bell?{quiet:1}:undefined);
+        if(b.bell)sfx("thud");
         if(b.knife&&typeof fireHitBurst==="function")fireHitBurst(z.x,z.y);
         if(b.fire)z.burn=Math.max(z.burn||0,b.knife?1.6:1.4);if(b.ice)z.slow=1.6;if(b.poison)z.poison=2;
         if(b.expl)explodeAt(b.x,b.y,b.explR||42,b.explDmg||b.damage*0.5,{friendly:1});
@@ -716,7 +717,7 @@ function updateProjectiles(dt){
   var i,q,p=game.player,a;
   for(i=game.projectiles.length-1;i>=0;i--){
     q=game.projectiles[i];q.life-=dt;q.x+=q.vx*dt;q.y+=q.vy*dt;
-    if(q.life<=0||circleHitSolid(q.x,q.y,q.r||5)){if(q.acid)dropAcid(q.x,q.y);game.projectiles.splice(i,1);continue;}
+    if(q.life<=0||circleHitSolid(q.x,q.y,q.r||5,"proj")){if(q.acid)dropAcid(q.x,q.y);game.projectiles.splice(i,1);continue;}
     if(dist(q.x,q.y,p.x,p.y)<p.r+q.r){hurtPlayer(p,q.dmg||10);if(q.acid)dropAcid(q.x,q.y);game.projectiles.splice(i,1);}
   }
   if(game.acids){

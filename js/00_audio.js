@@ -15,7 +15,7 @@ function ensureMusicBeds(){
   if(audio.beds)return;
   audio.beds={};
   Object.keys(MUS_BEDS).forEach(function(k){
-    var a=new Audio(MUS_BEDS[k]+(MUS_BEDS[k].indexOf("?")>=0?"":"?v=20.0.1"));
+    var a=new Audio(MUS_BEDS[k]+(MUS_BEDS[k].indexOf("?")>=0?"":"?v=20.1"));
     a.loop=true;a.preload="auto";a.crossOrigin="anonymous";a.volume=0;a.setAttribute("playsinline","playsinline");
     audio.beds[k]={el:a,gain:null,wanted:0,src:null};
   });
@@ -97,6 +97,8 @@ var SFX_FILES={
   shot_smg:"assets/sfx/shot_smg.mp3",shot_shotgun:"assets/sfx/shot_shotgun.mp3",
   shot_rifle:"assets/sfx/shot_rifle.mp3",shot_revolver:"assets/sfx/shot_revolver.mp3",
   shot_pistol:"assets/sfx/shot_pistol.mp3",melee:"assets/sfx/melee.mp3",jump:"assets/sfx/jump.mp3",
+  whoosh:"assets/sfx/whoosh.mp3",fire_whoosh:"assets/sfx/fire_whoosh.mp3",
+  grunt:"assets/sfx/grunt.mp3",thud:"assets/sfx/thud.mp3",
   clear:"assets/sfx/clear.mp3",card:"assets/sfx/card.mp3",storm:"assets/sfx/storm.mp3",
   mash:"assets/sfx/mash.mp3",level:"assets/sfx/level.mp3",laugh:"assets/sfx/laugh.mp3",
   hurt:"assets/sfx/hurt.mp3",hit:"assets/sfx/hit.mp3",crackle:"assets/sfx/crackle.mp3",
@@ -129,7 +131,7 @@ function prefetchSfx(){
     if(audio.sfxRaw[k])return;
     var ctrl=typeof AbortController==="function"?new AbortController():null;
     var to=setTimeout(function(){try{if(ctrl)ctrl.abort();}catch(e){}},8000);
-    fetch(SFX_FILES[k]+"?v=20.0.1",ctrl?{signal:ctrl.signal}:undefined).then(function(r){return r&&r.ok?r.arrayBuffer():null;}).then(function(ab){
+    fetch(SFX_FILES[k]+"?v=20.1",ctrl?{signal:ctrl.signal}:undefined).then(function(r){return r&&r.ok?r.arrayBuffer():null;}).then(function(ab){
       clearTimeout(to);
       if(ab)audio.sfxRaw[k]=ab;
       if(audio.ctx)decodeFetchedSfx();

@@ -431,8 +431,17 @@ function decodeMapData(){
   if(!MAP_DATA||MAP_DATA._decoded)return MAP_DATA;
   MAP_DATA.walk=b64ToU8(MAP_DATA.walk_b64);
   MAP_DATA.sdf=b64ToI16(MAP_DATA.sdf_b64);
+  if(MAP_DATA.type_b64)MAP_DATA.typemap=b64ToU8(MAP_DATA.type_b64);
   MAP_DATA._decoded=1;
   return MAP_DATA;
+}
+function sampleType(x,y){
+  var D=decodeMapData(),c,r;
+  if(!D||!D.typemap)return 0;
+  c=Math.floor(x/D.cell);r=Math.floor(y/D.cell);
+  if(c<0)c=0;else if(c>=D.cols)c=D.cols-1;
+  if(r<0)r=0;else if(r>=D.rows)r=D.rows-1;
+  return D.typemap[r*D.cols+c];
 }
 function sampleSDF(x,y){
   var D=decodeMapData();if(!D||!D.sdf)return 40;
@@ -535,8 +544,17 @@ function circleHitSolid(cx,cy,rad,ent){
       if(!best||rad-d>bestD){best=s;bestD=rad-d;best.nx=dx/d;best.ny=dy/d;best.pen=rad-d;}
     }
   }
-  hit=terrainHit(cx,cy,rad);
-  if(hit&&(!best||hit.pen>bestD))best=hit;
+  /* Projectiles fly over water and over the watery shore SDF.
+     Only forest / map-edge (typemap 2) plus physical props block shots. */
+  if(mode==="proj"){
+    if(typeof sampleType==="function"&&sampleType(cx,cy)===2){
+      hit=terrainHit(cx,cy,rad);
+      if(hit&&(!best||hit.pen>bestD))best=hit;
+    }
+  }else{
+    hit=terrainHit(cx,cy,rad);
+    if(hit&&(!best||hit.pen>bestD))best=hit;
+  }
   return best;
 }
 function _bestSdfDir(x,y){
@@ -655,9 +673,21 @@ function pickBossSpawn(p){
   return pickSpawn(p||(game&&game.player)||{x:552,y:430});
 }
 function zoneAt(x,y){
-  var i,z,best=null;
-  for(i=0;i<(map.zones||[]).length;i++){z=map.zones[i];if(x>=z.x&&x<=z.x+z.w&&y>=z.y&&y<=z.y+(z.h||z.d||0))best=z;}
-  return best;
+  var i,z,best=null,ba=1e15,a,t,n=10;
+  for(i=0;i<(map.zones||[]).length;i++){
+    z=map.zones[i];
+    if(x>=z.x&&x<=z.x+z.w&&y>=z.y&&y<=z.y+(z.h||z.d||0)){
+      a=z.w*(z.h||z.d||1);
+      if(a<ba){ba=a;best=z;}
+    }
+  }
+  if(best)return best;
+  t=typeof sampleType==="function"?sampleType(x,y):0;
+  if(t===1)return {k:"pond",name:"Lago"};
+  if(t===2)return {k:"forest",name:"Bosque"};
+  if(typeof sampleType==="function"&&(sampleType(x+n,y)===2||sampleType(x-n,y)===2||sampleType(x,y+n)===2||sampleType(x,y-n)===2))
+    return {k:"forest",name:"Bosque"};
+  return {k:"path",name:"Camino"};
 }
 function inWheat(x,y){
   var i,b=map.bushes;

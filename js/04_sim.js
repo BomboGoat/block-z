@@ -164,7 +164,7 @@ function fireGompa(p,n){
   b.damage=(16+(p.heavyBell?5:0))*p.damageMul;b.life=1.15*(p.rangeMul||1);
   b.pierce=0;b.bounce=0;b.bell=1;b.spinA=Math.random()*6;b.spinV=16;b.hit=new Set();
   if(p.fireAmmo)b.fire=1;if(p.iceAmmo)b.ice=1;if(p.poisonAmmo)b.poison=1;
-  game.bullets.push(b);sfx("melee");
+  game.bullets.push(b);sfx("grunt");
 }
 function fireMeleeHero(p,n){
   var range=(p.meleeRange||100)*(p.rangeMul||1)*(p.wideSlash?1.3:1);
@@ -174,7 +174,7 @@ function fireMeleeHero(p,n){
   p.meleeSwing=0.24;p.swingDone=0;p.slashAng=p.aimAng;markAttack(p,"slash",0.24);
   var ho=heroHandWorld(p,p.aimAng);
   game.slashes.push({x:ho.x,y:ho.y,ang:p.aimAng,r:range*0.7,life:0.18,maxLife:0.18,lift:heroHandLiftPx(p)});
-  sfx("slash");
+  sfx("whoosh");sfx("slash");
 }
 var ERIC_WPN={
   pistol:{cd:0.38,dmg:12,spd:624,r:2.2,kind:"pistol"},
@@ -425,7 +425,7 @@ function fireFlameKnives(p,ang){
     game.bullets.push(b);
   }
   p.knockT=0.1;p.knockVx=-Math.cos(ang)*80;p.knockVy=-Math.sin(ang)*80;
-  shake(5);sfx("slash");sfx("shot_gl");
+  shake(5);sfx("fire_whoosh");
 }
 function fireHitBurst(x,y){
   var i;
@@ -456,7 +456,7 @@ function giantSlam(p,rad,dmg,heavy){
     }
   }
   pushNova(p.x,p.y,heavy?18:10,heavy?340:260,heavy?0.4:0.24,heavy?"#bcaaa4":"#d7ccc8");
-  if(heavy){shake(8);sfx("explode");sfx("foot_heavy");}
+  if(heavy){shake(8);sfx("stomp");}
   else{shake(3);sfx("foot_heavy");}
   var k,maxP=heavy?6:3;
   for(k=0;k<maxP;k++)addParticle(p.x,p.y,"#bcaaa4",0.22,rand(-70,70),rand(-50,20),rand(4,8),3);

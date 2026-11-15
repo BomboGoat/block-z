@@ -20,7 +20,7 @@ function drawWorld(){
   /* y-sort all props + actors */
   var list=[],i,o,p=game.player,pad=140;
   function vis(x,y,w,d){var s1=toScreen(x,y),s2=toScreen(x+w,y+d);return!(s2.x<-pad||s1.x>SW+pad||s2.y<-pad||s1.y>SH+pad);}
-  for(i=0;i<map.solids.length;i++){o=map.solids[i];if(o.dead)continue;if(vis(o.x,o.y,o.w,o.d))list.push({y:o.y+o.d+(o.canopy||0)*0.35,k:"p",o:o});}
+  for(i=0;i<map.solids.length;i++){o=map.solids[i];if(o.dead)continue;if(vis(o.x,o.y,o.w,o.d))list.push({y:o.y+o.d,k:"p",o:o});}
   for(i=0;i<(map.decos||[]).length;i++){o=map.decos[i];if(vis(o.x,o.y,o.w,o.d))list.push({y:o.y+o.d,k:"p",o:o});}
   if(p)list.push({y:p.y+p.r,k:"pl"});
   var zs=game.state==="title"?game.titleZ:game.zombies;

@@ -28,66 +28,167 @@ Colossus boss: "Battle Theme"
   Source: https://opengameart.org/content/battle-theme-0
   License: CC0 1.0 Universal
   File: assets/mus/colo.mp3
+  Verified v20.1: the source page describes the track as "Orchestral."
+  Not chiptune / not procedural.
 
 Homelander (phase 1): "Determined Pursuit (epic orchestra loop)"
   Author: Emma_MA
   Source: https://opengameart.org/content/determined-pursuit-epic-orchestra-loop
   License: CC0 1.0 Universal
   File: assets/mus/home.mp3
+  Verified v20.1: listed as "Frantic strings, determined horns and busy drums."
+  Recorded orchestral production, not retro / not chiptune.
 
 Homelander (phase 2): "Fall of Nightmares [Epic, Orchestral]"
   Author: nene  (voices: Helena Kesti, Matias Lindgren)
   Source: https://opengameart.org/content/fall-of-nightmares-epic-orchestral
   License: CC0 1.0 Universal
   File: assets/mus/home2.mp3
+  Verified v20.1: source titles it "[Epic, Orchestral]" and credits recorded
+  voices by Helena Kesti and Matias Lindgren (choir). Kept as-is.
 
 Final boss: "The Final Battle"
   Author: skrjablin
   Source: https://opengameart.org/content/the-final-battle
   License: CC0 1.0 Universal
   File: assets/mus/final.mp3
+  Verified v20.1: described as "Generic orchestral drama-filled epic battle
+  music" for a final boss. Recorded orchestra, not chiptune. Kept as-is.
 
 
 Sound effects (recorded samples, encoded mono 96 kbps MP3)
 ----------------------------------------------------------
-Gunshots (pistol, revolver, rifle, SMG, shotgun):
-  "Gunshot Sounds" recorded while target shooting
+Eric — pistola (shot_pistol):
+  "Gunshot Sounds" — CZ-52 pistol, recorded while target shooting
   Author: Tabasco
   Source: https://opengameart.org/content/gunshot-sounds
   License: CC0 1.0 Universal
-  Original files: cz.wav, mosin.wav, sks.wav, shotty.wav
-  Files: assets/sfx/shot_pistol.mp3, shot_revolver.mp3, shot_rifle.mp3,
-         shot_smg.mp3, shot_shotgun.mp3
+  Original: cz.wav
+  File: assets/sfx/shot_pistol.mp3
 
-Melee punches, heavy impacts, stomps:
+Eric — subfusil (shot_smg):
+  Same pack, SKS recording, short window for a rapid report
+  Author: Tabasco
+  Source: https://opengameart.org/content/gunshot-sounds
+  License: CC0 1.0 Universal
+  Original: sks.wav
+  File: assets/sfx/shot_smg.mp3
+
+Eric — escopeta (shot_shotgun):
+  Same pack, shotgun recording
+  Author: Tabasco
+  Source: https://opengameart.org/content/gunshot-sounds
+  License: CC0 1.0 Universal
+  Original: shotty.wav
+  File: assets/sfx/shot_shotgun.mp3
+
+Eric — rifle (shot_rifle):
+  Same pack, Mosin Nagant rifle recording
+  Author: Tabasco
+  Source: https://opengameart.org/content/gunshot-sounds
+  License: CC0 1.0 Universal
+  Original: mosin.wav
+  File: assets/sfx/shot_rifle.mp3
+
+Eric — revólver (shot_revolver):
+  "Gunshots" — .22 Magnum recording (distinct from the CZ pistol)
+  Author: kurt
+  Source: https://opengameart.org/content/gunshots
+  License: CC0 1.0 Universal
+  Original: 22 Magnum.wav
+  File: assets/sfx/shot_revolver.mp3
+
+Eric — lanzagranadas (shot_gl):
+  "Grenade Launcher" — recording of an M203 / M320 40 mm under-barrel
+  grenade launcher firing (shot only, no explosion)
+  Author: LeMudCrab
+  Source: https://freesound.org/people/LeMudCrab/sounds/163458/
+  License: CC0 1.0 Universal
+  File: assets/sfx/shot_gl.mp3
+
+Tro — zap and crackle:
+  "Electricity Sound Effects" recorded from a small Tesla generator
+  Author: BMacZero (Brian MacIntosh)
+  Source: https://opengameart.org/content/electricity-sound-effects-0
+  License: CC0 1.0 Universal
+  Original: spark.wav, continuousspark.wav
+  Files: assets/sfx/zap.mp3, assets/sfx/crackle.mp3
+
+Tro — laser hum (laser_loop):
+  The same Tesla-generator recording, looped and pitched down into a
+  continuous electric hum (still from the recorded spark, not a synth beep)
+  Author: BMacZero (Brian MacIntosh)
+  Source: https://opengameart.org/content/electricity-sound-effects-0
+  License: CC0 1.0 Universal
+  File: assets/sfx/laser_loop.mp3
+
+Mr. — knife whoosh:
+  Kenney — RPG Audio (knife draw) mixed with an organic air whoosh
+  Authors: Kenney; Jan Schupke (Vehicle) for the air whoosh
+  Sources: https://kenney.nl/assets/rpg-audio
+           https://opengameart.org/content/fantasy-sound-effects-tinysized-sfx
+           (tube-plastic-whoosh-02.wav)
+  License: CC0 1.0 Universal
+  File: assets/sfx/whoosh.mp3
+
+Mr. — knife slash:
+  Kenney — RPG Audio (knife slice) mixed with an organic cut
+  Authors: Kenney; Jan Schupke (Vehicle) for apple-cut-01.wav
+  Sources: https://kenney.nl/assets/rpg-audio
+           https://opengameart.org/content/fantasy-sound-effects-tinysized-sfx
+  License: CC0 1.0 Universal
+  File: assets/sfx/slash.mp3
+
+Mr. — flaming-knives ulti (fire_whoosh):
+  Knife / air whoosh layered with a fire-impact body
+  Authors: Kenney; Jan Schupke (Vehicle); lentikula (Fire Spell Impact 3)
+  Sources: https://kenney.nl/assets/rpg-audio
+           https://opengameart.org/content/fantasy-sound-effects-tinysized-sfx
+           https://lentikula.itch.io/freecc0-basic-spell-impacts-sfx
+  License: CC0 1.0 Universal
+  File: assets/sfx/fire_whoosh.mp3
+
+Gompa — heavy throw grunt:
+  "Male Grunt/Yelling sounds" — recorded effort grunt (Neumann mic)
+  Author: HaelDB
+  Source: https://opengameart.org/content/male-gruntyelling-sounds
+  License: CC0 1.0 Universal (also offered as OGA-BY 3.0)
+  Original: 3grunt3.wav
+  File: assets/sfx/grunt.mp3
+
+Gompa — metal dumbbell thud:
+  "Metal Impact Sounds" (thud2) mixed with an organic metal hammer hit
+  Authors: BMacZero (Brian MacIntosh); Jan Schupke (Vehicle)
+  Sources: https://opengameart.org/content/metal-impact-sounds
+           https://opengameart.org/content/fantasy-sound-effects-tinysized-sfx
+           (metal-hammer-hit-02.wav)
+  License: CC0 1.0 Universal
+  File: assets/sfx/thud.mp3
+
+Gompa — giant stomp (ulti landing):
+  Metal thud and hammer hit plus a heavy impact and low-frequency boom
+  Authors: BMacZero; Jan Schupke (Vehicle); Kenney (Impact Sounds / Sci-fi Sounds)
+  Sources: https://opengameart.org/content/metal-impact-sounds
+           https://opengameart.org/content/fantasy-sound-effects-tinysized-sfx
+           https://kenney.nl/assets/impact-sounds
+           https://kenney.nl/assets/sci-fi-sounds
+  License: CC0 1.0 Universal
+  File: assets/sfx/stomp.mp3
+
+Explosions (separate from the grenade-launcher shot):
+  Kenney — Sci-fi Sounds
+  Author: Kenney
+  Source: https://kenney.nl/assets/sci-fi-sounds
+  License: CC0 1.0 Universal
+  Files: assets/sfx/explode.mp3, splash.mp3
+
+Melee punches and leftover heavy impacts:
   Kenney — Impact Sounds (via "150 Combat Sound Effects")
   Author: Kenney
   Source: https://kenney.nl/assets/impact-sounds
   Also listed at: https://opengameart.org/content/150-combat-sound-effects
   License: CC0 1.0 Universal
-  Files: assets/sfx/melee.mp3, hit.mp3, stomp.mp3, foot_heavy.mp3
-
-Knife slashes and dash whoosh:
-  Kenney — RPG Audio (via the same combat pack, source id s03)
-  Author: Kenney
-  Source: https://kenney.nl/assets/rpg-audio
-  License: CC0 1.0 Universal
-  Files: assets/sfx/slash.mp3, dash.mp3
-
-Explosions and grenade launcher:
-  Kenney — Sci-fi Sounds (source id s04 in the combat pack)
-  Author: Kenney
-  Source: https://kenney.nl/assets/sci-fi-sounds
-  License: CC0 1.0 Universal
-  Files: assets/sfx/explode.mp3, shot_gl.mp3, splash.mp3
-
-Lightning / zap / crackle / boss sting:
-  "Basic Spell Impacts"
-  Author: lentikula
-  Source: included in https://opengameart.org/content/150-combat-sound-effects
-          (source id s06)
-  License: CC0 1.0 Universal
-  Files: assets/sfx/zap.mp3, crackle.mp3, sting.mp3, boss.mp3
+  Files: assets/sfx/melee.mp3, hit.mp3, foot_heavy.mp3
 
 Thunder / storm:
   "Thunder"
@@ -95,8 +196,6 @@ Thunder / storm:
   Source: https://opengameart.org/content/thunder
   License: CC-BY 3.0
   File: assets/sfx/storm.mp3
-  The laser hum loop (assets/sfx/laser_loop.mp3) is a crossfaded excerpt
-  of this recording.
 
 Zombie groans, death and laugh:
   "Scorchers Foley Sounds" — zombie_moaning.wav
@@ -112,21 +211,27 @@ Player pain:
   License: CC-BY 4.0
   File: assets/sfx/hurt.mp3
 
-UI clicks, cards, rarities, wave, clear, level, jump, mash:
-  "51 UI Sound Effects"
+UI clicks, cards, rarities, wave, clear, level, jump, mash, dash:
+  "51 UI Sound Effects" and Kenney RPG Audio (dash / knife draw)
   Author: Kenney Vleugels (www.kenney.nl)
   Source: https://opengameart.org/content/51-ui-sound-effects-buttons-switches-and-clicks
+          https://kenney.nl/assets/rpg-audio
   License: CC0 1.0 Universal
   Files: assets/sfx/click.mp3, card.mp3, rarity0-4.mp3, wave.mp3,
-         clear.mp3, level.mp3, jump.mp3, mash.mp3
+         clear.mp3, level.mp3, jump.mp3, mash.mp3, dash.mp3
 
-Footstep (optional / reserved):
-  "Footsteps"
-  Source: https://opengameart.org/content/footsteps-0
+Boss sting / sting stinger:
+  "Basic Spell Impacts" (Lightning Spell Impact)
+  Author: lentikula
+  Source: https://lentikula.itch.io/freecc0-basic-spell-impacts-sfx
+          also in https://opengameart.org/content/150-combat-sound-effects
   License: CC0 1.0 Universal
+  Files: assets/sfx/sting.mp3, boss.mp3
 
 The in-game 8-voice pooled playback system and the iOS "Toca para empezar"
 audio unlock are original to Block Z. No procedural synth beeps remain.
+v20.1 checked the baked SFX for chiptune-like spectra (very peaky, thin
+high-frequency buzz); the hero attacks above are recorded sources.
 
 CC0: https://creativecommons.org/publicdomain/zero/1.0/
 CC-BY 3.0: https://creativecommons.org/licenses/by/3.0/
