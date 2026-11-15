@@ -3,7 +3,7 @@
    own painted ground, minimap and walk grid (HELL_DATA). Thanos arrives with a cinematic, the hero
    picks ONE mega-power from 3 pedestals, and the fight is Thanos alone (no zombies). */
 var HELL={img:null,island:null,islandImg:null,building:0,active:0};
-(function(){try{var im=new Image();im.onload=function(){HELL.img=im;if(HELL.active&&typeof ART!=="undefined"){ART.arena=im;if(map){map.chunks={};}}};im.src="assets/env/hell.webp?v=20.2.2";}catch(e){}})();
+(function(){try{var im=new Image();im.onload=function(){HELL.img=im;if(HELL.active&&typeof ART!=="undefined"){ART.arena=im;if(map){map.chunks={};}}};im.src="assets/env/hell.webp?v=20.2.3";}catch(e){}})();
 var GEMS={
   power:{c:"#c77dff",n:"PODER"},space:{c:"#4d8dff",n:"ESPACIO"},reality:{c:"#ff2d4a",n:"REALIDAD"},
   soul:{c:"#ff9a1f",n:"ALMA"},time:{c:"#2fe37a",n:"TIEMPO"},mind:{c:"#ffe14a",n:"MENTE"}
@@ -148,7 +148,7 @@ function hellEnter(){
   var z=spawnThanos(D.thanos.x,D.thanos.y);
   game.zombies.push(z);game.boss=z;game.bossSpawned=1;game.bossFight=1;game.graceT=1e9;
   game.hell={t:0,phase:"cine",peds:D.pedestals.map(function(q,i){return{x:q.x,y:q.y,id:["hammer","armor","hulk"][i],prog:0,gone:0};}),
-    rings:[],orbs:[],clones:[],zones:[],safe:[],bolts:[],shots:[],hammer:null,beam:null,flash:0,fx:[],embers:[],debris:[],exit:null,clock:[]};
+    rings:[],orbs:[],clones:[],zones:[],safe:[],bolts:[],shots:[],hammer:null,beam:null,flash:0,fx:[],embers:[],debris:[],exit:null,glove:null,won:0,clock:[]};
   var i;for(i=0;i<34;i++)game.hell.embers.push({x:Math.random(),y:Math.random(),v:0.04+Math.random()*0.08,s:1+Math.random()*2.2,ph:Math.random()*6});
   var deb=[[40,60],[600,70],[30,300],[610,250],[90,470],[560,470],[320,20],[200,495]];
   for(i=0;i<deb.length;i++)game.hell.debris.push({x:deb[i][0],y:deb[i][1],s:6+((i*7)%5)*2,ph:i*1.3});
@@ -182,6 +182,7 @@ function hellPreUpdate(dt){
     return 1;
   }
   if(st==="hell_cine"){hellCineUpdate(dt);return 1;}
+  if(st==="hell_final"){hellFinalUpdate(dt);return 1;}
   if(st==="level_done"){game.hell&&(game.hell.t+=dt);updateFX(dt);return 1;}
   return 0;
 }
@@ -236,7 +237,7 @@ function hellSkipTap(){
   if(game&&game.state==="hell_cine"&&HELL.cineT>1){HELL._said=1;hellCineEnd();return 1;}
   return 0;
 }
-document.addEventListener("pointerdown",function(e){try{if(game&&game.state==="hell_cine")hellSkipTap();}catch(err){}},true);
+document.addEventListener("pointerdown",function(e){try{if(game&&game.state==="hell_cine")hellSkipTap();else if(game&&game.state==="hell_final"){hellFinalSkip();e.stopPropagation();}}catch(err){}},true);
 /* ---------- per-frame gameplay in the island (portal) and hell ---------- */
 function hellTick(dt){
   var p=game.player,h=game.hell;
@@ -252,10 +253,10 @@ function hellTick(dt){
   if(h.phase==="pick")hellPickTick(p,dt);
   if(h.transformT>0){h.transformT-=dt;if(h.transformT<=0)hellFightStart();}
   hellAttacksTick(p,dt);
-  if(h.exit){
-    h.exit.t+=dt;
-    if(Math.random()<0.5)hellPart(h.exit.x+rand(-18,18),h.exit.y+rand(-8,4),Math.random()<0.5?"#ffd54f":"#fff59d",0.8,rand(-10,10),rand(-70,-30),rand(2,4),3);
-    if(h.exit.t>0.8&&dist(p.x,p.y,h.exit.x,h.exit.y)<20)hellStartTrans("out",h.exit.x,h.exit.y);
+  if(h.glove){
+    var gv=h.glove;gv.t+=dt;
+    if(gv.t>0.6&&Math.random()<0.45)hellPart(gv.x+rand(-10,10),gv.y+rand(-6,3),GEMS[GEM_ORDER[(Math.random()*6)|0]].c,0.8,rand(-10,10),rand(-60,-25),rand(2,3.5),3);
+    if(gv.t>0.8&&dist(p.x,p.y,gv.x,gv.y)<20)hellFinalStart();
   }
 }
 function hellPickTick(p,dt){
@@ -362,7 +363,7 @@ function thanosDie(z){
   var h=game.hell;
   if(z.ts==="dying")return;
   if(!z.snapDone){z.hp=z.maxHp*0.12;z.dying=0;thanosStartSnap(z);return;}
-  z.ts="dying";z.tt=3.4;z.noHurt=1;z.hp=0;z.tele=0;z.dyingT=0;
+  z.ts="dying";z.tt=3.4;z.noHurt=1;z.hp=0;z.tele=0;z.dyingT=0;h.won=1;
   h.orbs.length=0;h.clones.length=0;h.zones.length=0;h.rings.length=0;h.safe=[];h.beam=null;
   game.kills++;game.score+=z.score;try{grantRunXP(game.player,z.xp);}catch(e){}
   sfx("thanos_boom",1);shake(20);h.flash=0.6;stopMusic();
@@ -380,7 +381,7 @@ function updateThanos(z,dt){
     z.tt-=dt;z.dyingT+=dt;
     if(Math.random()<0.9)hellPart(z.x+rand(-18,18),z.y-rand(0,60),Math.random()<0.6?"#3e2723":"#6d4c41",1.0,rand(-20,40),rand(-70,-20),rand(3,6),3);
     if(z.dyingT>0.4&&!z.gemsOut){z.gemsOut=1;for(i=0;i<6;i++){var g=GEM_ORDER[i];hellPart(z.x,z.y-46,GEMS[g].c,1.4,Math.cos(i*1.05)*110,Math.sin(i*1.05)*70-80,6,3);}sfx("zap",1);}
-    if(z.tt<=0){z.dead=1;z.dying=0;game.boss=null;game.bossFight=0;hellOpenExit(z.x,z.y);}
+    if(z.tt<=0){z.dead=1;z.dying=0;game.boss=null;game.bossFight=0;hellDropGlove(z.x,z.y);}
     return;
   }
   z.glow=z.tele?1.1:z.p2?0.9:0.6;
@@ -585,15 +586,119 @@ hellAttacksTick=function(p,dt){
   for(i=h.fx.length-1;i>=0;i--){o=h.fx[i];if(o.k==="delay"&&o.t-dt<=0){o.fn();h.fx.splice(i,1);}}
   _hellFxTick(p,dt);
 };
-/* ---------- exit portal + level complete ---------- */
-function hellOpenExit(x,y){
-  var h=game.hell,sp=hellSpot(HELL_DATA.center.x,HELL_DATA.center.y,0,40,24)||{x:HELL_DATA.center.x,y:HELL_DATA.center.y};
-  h.exit={x:sp.x,y:sp.y,t:0};h.phase="won";
-  game.message="¡Has derrotado a THANOS! Entra en el portal";game.messageTimer=5;
-  sfx("portal",1);sfx("clear",1);startMusic("menu");
+/* ---------- v20.2.3: Thanos drops the Infinity Gauntlet -> final cinematic -> level complete ---------- */
+var _hellHurtPlayer=hurtPlayer;
+hurtPlayer=function(p){if(HELL.active&&game&&game.hell&&game.hell.won)return;return _hellHurtPlayer.apply(this,arguments);};
+function hellDropGlove(x,y){
+  var h=game.hell,sp=(sampleType(x,y)===0&&sampleSDF(x,y)>=10)?{x:x,y:y}:(hellSpot(x,y,0,40,14)||hellSpot(HELL_DATA.center.x,HELL_DATA.center.y,0,40,24)||{x:HELL_DATA.center.x,y:HELL_DATA.center.y});
+  h.glove={x:sp.x,y:sp.y,t:0};h.phase="won";h.won=1;
+  game.message="¡Coge el Guantelete!";game.messageTimer=6;
+  sfx("zap",1);sfx("clear",1);shake(6);
+  for(var i=0;i<12;i++){var g=GEM_ORDER[i%6];hellPart(sp.x,sp.y-20,GEMS[g].c,1.0,rand(-90,90),rand(-120,-20),rand(3,5),3);}
+}
+function hellOpenExit(x,y){hellDropGlove(x,y);} /* legacy name */
+var FIN={snap:6.5,white:6.62,done:8.0,raise0:5.6,raise1:6.3};
+function heroName(p){return (HEROES.filter(function(x){return x.id===p.hero;})[0]||{}).name||"Héroe";}
+function hellPlayBuf(name,gain){
+  try{
+    if(!audio.ctx||audio.mutedSfx||!audio.sfxBuf||!audio.sfxBuf[name])return null;
+    var src=audio.ctx.createBufferSource(),g=audio.ctx.createGain();src.buffer=audio.sfxBuf[name];g.gain.value=gain||1;
+    src.connect(g);g.connect(audio.sfxG||audio.master);src.start();return src;
+  }catch(e){return null;}
+}
+function hellFinalStart(){
+  var p=game.player,h=game.hell;
+  h.glove=null;game.state="hell_final";HELL.finT=0;HELL.finVoice=null;HELL.finSaid=0;HELL.finSnap=0;HELL.finRaise=0;HELL.finName=0;
+  p.vx=p.vy=0;p.dashT=0;p.knockT=0;p.airH=0;p.leap=null;p.beamT=0;p.invuln=0;p.flash=0;p.atkT=0;p.meleeSwing=0;p.muzzle=0;
+  if(h.hammer)h.hammer=null;
+  p.aimAng=p.facing=p.faceAng=Math.PI/2;p.gauntlet=1;
+  HELL.finCam={x:game.camX,y:game.camY};
+  game.message="";game.messageTimer=0;
+  sfx("thanos_boom",0.45);shake(4);
+}
+function hellFinalUpdate(dt){
+  var p=game.player,h=game.hell,T=(HELL.finT+=dt),base=layout.baseViewW||380,i;
+  if(!p||!h){hellFinalEnd();return;}
+  h.t+=dt;
+  if(!HELL.finSaid&&T>=1.0){HELL.finSaid=1;HELL.finVoice=hellPlayBuf("final_voice_"+(p.hero||"classic"),1.35);}
+  if(!HELL.finName&&T>=3.88){HELL.finName=1;shake(5);}
+  if(!HELL.finRaise&&T>=FIN.raise0){HELL.finRaise=1;sfx("thanos_boom",0.55);shake(8);}
+  if(T>FIN.raise0&&T<FIN.snap&&Math.random()<0.6){var g=GEM_ORDER[(Math.random()*6)|0];hellPart(p.x+rand(-14,14),p.y-rand(10,40),GEMS[g].c,0.7,rand(-30,30),rand(-80,-20),rand(2,4),3);}
+  if(!HELL.finSnap&&T>=FIN.snap){HELL.finSnap=1;if(HELL.finVoice){try{HELL.finVoice.stop();}catch(e){}HELL.finVoice=null;}if(!hellPlayBuf("final_snap",1.4))sfx("thanos_boom",1);shake(16);}
+  var u=smooth01(T/1.6),vw=base*(1-0.75*u);
+  if(T>FIN.raise0)vw*=1-0.05*smooth01((T-FIN.raise0)/0.9);
+  hellSetView(vw);
+  var tx=p.x,ty=p.y-17*(p.scale||1)-3*smooth01((T-FIN.raise0)/0.7),c=HELL.finCam;
+  var k=1-Math.exp(-3.2*dt);c.x+=(tx-c.x)*k;c.y+=(ty-c.y)*k;
+  game.camX=c.x;game.camY=c.y;
+  var hw=worldW()*0.5,hh=worldH()*0.5;
+  game.camX=clamp(game.camX,hw+2,CFG.MAP_W-hw-2);game.camY=clamp(game.camY,hh+2,CFG.MAP_H-hh-2);
+  if(game.shake>0){game.camX+=(Math.random()-0.5)*game.shake;game.camY+=(Math.random()-0.5)*game.shake;game.shake=Math.max(0,game.shake-dt*30);}
+  p.aimAng=p.facing=p.faceAng=Math.PI/2;p.vx=p.vy=0;p.anim=(p.anim||0)+dt*1.5;
+  updateFX(dt);
+  if(T>=FIN.done||T>12)hellFinalEnd();
+}
+function hellFinalSkip(){
+  if(game&&game.state==="hell_final"&&HELL.finT>1&&HELL.finT<FIN.snap-0.15){
+    if(HELL.finVoice){try{HELL.finVoice.stop();}catch(e){}HELL.finVoice=null;}
+    HELL.finSaid=1;HELL.finName=1;HELL.finRaise=1;HELL.finT=FIN.snap-0.15;return 1;}
+  return 0;
+}
+function hellFinalEnd(){
+  if(HELL.finVoice){try{HELL.finVoice.stop();}catch(e){}HELL.finVoice=null;}
+  hellSetView(layout.baseViewW||380);
+  if(game.player){game.camX=game.player.x;game.camY=game.player.y-30;}
+  HELL.finWhite=1;hellLevelDone();
+}
+function drawGauntletAt(cx,by,hgt,glow,t,rot){
+  var im=typeof ART!=="undefined"&&ART.imgs?ART.imgs.gauntlet:null,w=hgt*(127/200),i;
+  ctx.save();ctx.translate(cx,by);if(rot)ctx.rotate(rot);
+  ctx.globalCompositeOperation="lighter";ctx.globalAlpha=Math.min(0.8,0.3+0.3*glow);
+  var cyc=GEMS[GEM_ORDER[((t*2)|0)%6]].c,gr=hgt*(0.9+0.25*glow);
+  ctx.drawImage(glowSpr(cyc),-gr,-hgt*0.55-gr*0.8,gr*2,gr*1.6);
+  ctx.globalCompositeOperation="source-over";ctx.globalAlpha=1;
+  if(im&&im.width)ctx.drawImage(im,-w/2,-hgt,w,hgt);
+  else{ctx.fillStyle="#d4a017";ctx.strokeStyle="#3e2a00";ctx.lineWidth=2;roundRect(ctx,-w*0.35,-hgt,w*0.7,hgt,w*0.2);ctx.fill();ctx.stroke();}
+  var G=[[0.19,0.26,"power"],[0.31,0.26,"space"],[0.45,0.28,"reality"],[0.58,0.31,"mind"],[0.30,0.43,"time"],[0.86,0.43,"soul"]];
+  ctx.globalCompositeOperation="lighter";
+  for(i=0;i<6;i++){var a=0.35+0.65*glow*(0.7+0.3*Math.sin(t*7+i*1.7)),r=hgt*(0.07+0.07*glow);ctx.globalAlpha=Math.min(1,a);
+    ctx.drawImage(glowSpr(GEMS[G[i][2]].c),-w/2+G[i][0]*w-r,-hgt+G[i][1]*hgt-r,r*2,r*2);}
+  ctx.restore();
+}
+function drawHellFinal(){
+  var T=HELL.finT,p=game.player,sc=layout.scale,s=toScreen(p.x,p.y),t=game.time||0;
+  var la=clamp(T/0.8,0,1),hb=hellLetterbox(la);
+  /* focus vignette */
+  ctx.save();var vg=ctx.createRadialGradient(s.x,s.y-SH*0.2,SH*0.18,s.x,s.y-SH*0.2,SH*0.85);vg.addColorStop(0,"rgba(0,0,0,0)");vg.addColorStop(1,"rgba(10,0,8,"+(0.55*la)+")");ctx.fillStyle=vg;ctx.fillRect(0,0,SW,SH);ctx.restore();
+  /* gauntlet on the hero's hand */
+  var ch=artTargetH(p.look,sc)*(p.scale||1),hx=p._handSx!=null?p._handSx:s.x+ch*0.2,hy=p._handSy!=null?p._handSy:s.y-ch*0.4;
+  var ru=smooth01((T-FIN.raise0)/(FIN.raise1-FIN.raise0)),glow=0.45+0.35*smooth01((T-3.88)/0.6)+0.6*ru+(T>FIN.raise1?0.5*smooth01((T-FIN.raise1)/0.2):0);
+  var gh=ch*(0.36+0.08*ru),gx=hx+ch*0.1*ru,gy=hy+gh*0.42-ch*0.34*ru;
+  drawGauntletAt(gx,gy,gh,glow,t,-0.12*ru);
+  if(T>FIN.raise1&&T<FIN.snap+0.1){var fl=smooth01((T-FIN.raise1)/(FIN.snap-FIN.raise1)),fr=gh*(0.6+2.2*fl);ctx.save();ctx.globalCompositeOperation="lighter";ctx.globalAlpha=0.5+0.5*fl;ctx.drawImage(glowSpr("#ffffff"),gx-fr,gy-gh*0.7-fr,fr*2,fr*2);ctx.restore();}
+  /* subtitles */
+  ctx.save();ctx.textAlign="center";ctx.lineJoin="round";
+  var fade=T<FIN.snap?1:0,fs=Math.round(Math.min(28,SH*0.07)),ly=SH-hb*0.42;
+  if(T>=1.0&&fade){
+    var parts=["Y yo..."];if(T>=2.48)parts.push("soy...");
+    var line=parts.join(" "),sa=clamp((T-1.0)/0.3,0,1);
+    ctx.globalAlpha=sa;ctx.font="italic 800 "+fs+"px Georgia,serif";ctx.strokeStyle="rgba(0,0,0,0.95)";ctx.lineWidth=6;ctx.strokeText(line,SW/2,ly);ctx.fillStyle="#fff3e0";ctx.fillText(line,SW/2,ly);
+  }
+  if(T>=3.88&&fade){
+    var nm=heroName(p).toUpperCase(),nu=clamp((T-3.88)/0.35,0,1),pu=1.7-0.7*smooth01(nu),ns=Math.round(Math.min(62,SH*0.16));
+    ctx.save();ctx.globalAlpha=nu;ctx.translate(SW/2,SH-hb-ns*0.35);ctx.scale(pu,pu);ctx.font="900 "+ns+"px Georgia,serif";
+    ctx.strokeStyle="rgba(20,8,0,0.95)";ctx.lineWidth=9;ctx.strokeText(nm,0,0);
+    var ng=ctx.createLinearGradient(0,-ns*0.8,0,ns*0.1);ng.addColorStop(0,"#fff8d0");ng.addColorStop(0.5,"#ffd54f");ng.addColorStop(1,"#ff8f00");ctx.fillStyle=ng;ctx.fillText(nm,0,0);
+    ctx.globalCompositeOperation="lighter";ctx.globalAlpha=0.25*nu*(0.7+0.3*Math.sin(t*4));ctx.fillText(nm,0,0);ctx.restore();
+  }
+  if(T>1&&T<FIN.snap-0.15){ctx.globalAlpha=0.55;ctx.font="12px system-ui";ctx.fillStyle="#fff";ctx.textAlign="right";ctx.fillText("Toca para saltar",SW-layout.safe.r-14,SH-8);}
+  ctx.restore();
+  /* snap: white */
+  if(T>=FIN.snap){var wa=clamp((T-FIN.snap)/(FIN.white-FIN.snap),0,1);ctx.fillStyle="rgba(255,255,255,"+wa+")";ctx.fillRect(0,0,SW,SH);}
 }
 function hellLevelDone(){
   game.state="level_done";game.hell.t=0;game.hell.doneTime=game.time;
+  try{startMusic("menu");}catch(e){}
   try{grantAccountXP(((game.player.runXP*0.3)|0)+120);}catch(e){}
   sfx("level",1);layoutMenuButtons();
 }
@@ -710,7 +815,11 @@ function hellDrawUnder(){
     ctx.save();ctx.globalCompositeOperation="lighter";ctx.globalAlpha=0.55+0.25*Math.sin(t*8);ctx.drawImage(glowSpr("#ffd54f"),s.x-o.r*1.6*sc,s.y-o.r*1.1*sc,o.r*3.2*sc,o.r*2.2*sc);ctx.restore();
     ctx.strokeStyle="#fff59d";ctx.lineWidth=3*sc;ctx.beginPath();ctx.ellipse(s.x,s.y,o.r*sc,o.r*CFG.YSCALE*sc,0,0,7);ctx.stroke();}
   if(h.phase==="pick")for(i=0;i<h.peds.length;i++)if(!h.peds[i].gone)drawPedestal(h.peds[i],t);
-  if(h.exit)drawHellPortalAt(h.exit.x,h.exit.y,t,28,"#ffb300","#fff59d");
+  if(h.glove){var gv=h.glove,gs=toScreen(gv.x,gv.y),du=clamp(gv.t/0.6,0,1),gl=(1-du)*60*sc+(du>=1?Math.sin(t*3)*3*sc+5*sc:Math.abs(Math.sin(du*Math.PI*1.5))*14*sc*(1-du));
+    ctx.save();ctx.globalCompositeOperation="lighter";ctx.globalAlpha=0.45+0.15*Math.sin(t*5);ctx.drawImage(glowSpr("#ffd54f"),gs.x-28*sc,gs.y-12*sc,56*sc,24*sc);
+    ctx.globalAlpha=0.22+0.08*Math.sin(t*3);ctx.drawImage(glowSpr("#fff59d"),gs.x-10*sc,gs.y-90*sc,20*sc,90*sc);ctx.restore();
+    ctx.fillStyle="rgba(0,0,0,0.35)";fillEllipse(ctx,gs.x,gs.y,9*sc,3.5*sc);
+    drawGauntletAt(gs.x,gs.y-gl,26*sc,0.7+0.3*Math.sin(t*4),t,0);}
 }
 function hellDrawOver(){
   var h=game.hell,t=game.time||0,i,o,s,sc=layout.scale,p=game.player;
@@ -733,7 +842,7 @@ function hellDrawOver(){
         for(k2=1;k2<=7;k2++){yy=y0-k2*(SH/7);xx=x0+Math.sin(o.seed*13+k2*2.7)*16*sc;ctx.lineTo(xx,yy);}ctx.stroke();}
       ctx.restore();}}
   /* hammer in flight / in hand */
-  if(p.mega==="hammer"){
+  if(p.mega==="hammer"&&game.state!=="hell_final"){
     var hx,hy,rot;
     if(h.hammer){s=toScreen(h.hammer.x,h.hammer.y);hx=s.x;hy=s.y-18*sc;rot=h.hammer.spin;}
     else{hx=p._handSx!=null?p._handSx:toScreen(p.x,p.y).x+8*sc;hy=p._handSy!=null?p._handSy:toScreen(p.x,p.y).y-20*sc;rot=-0.4+(p.atkT>0?-1.4*(p.atkT/0.25):0);}
@@ -741,7 +850,7 @@ function hellDrawOver(){
     ctx.fillStyle="#6d4c41";ctx.fillRect(-1.5,-2,3,15);ctx.fillStyle="#b0bec5";ctx.fillRect(-8,-9,16,8);ctx.fillStyle="#eceff1";ctx.fillRect(-8,-9,16,2.5);ctx.fillStyle="#ffca28";ctx.fillRect(-2,-9,4,8);
     ctx.strokeStyle="#1a140c";ctx.lineWidth=1.2;ctx.strokeRect(-8,-9,16,8);ctx.restore();
   }
-  if(p.mega==="armor"){s=toScreen(p.x,p.y);var cy2=s.y-artTargetH(p.look,sc)*0.62;ctx.save();ctx.globalCompositeOperation="lighter";ctx.globalAlpha=0.8+0.2*Math.sin(t*10);ctx.drawImage(glowSpr("#80deea"),s.x-7*sc,cy2-7*sc,14*sc,14*sc);ctx.restore();
+  if(p.mega==="armor"&&game.state!=="hell_final"){s=toScreen(p.x,p.y);var cy2=s.y-artTargetH(p.look,sc)*0.62;ctx.save();ctx.globalCompositeOperation="lighter";ctx.globalAlpha=0.8+0.2*Math.sin(t*10);ctx.drawImage(glowSpr("#80deea"),s.x-7*sc,cy2-7*sc,14*sc,14*sc);ctx.restore();
     if(p.beamT>0){var e2=toScreen(p.x+Math.cos(p.beamA)*380,p.y+Math.sin(p.beamA)*380);ctx.save();ctx.globalCompositeOperation="lighter";ctx.lineCap="round";
       ctx.strokeStyle="rgba(128,222,234,0.55)";ctx.lineWidth=(16+3*Math.sin(t*40))*sc;ctx.beginPath();ctx.moveTo(s.x,cy2);ctx.lineTo(e2.x,e2.y-16*sc);ctx.stroke();
       ctx.strokeStyle="rgba(255,255,255,0.95)";ctx.lineWidth=5*sc;ctx.stroke();ctx.drawImage(glowSpr("#e0f7fa"),s.x-22*sc,cy2-22*sc,44*sc,44*sc);ctx.restore();}}
@@ -750,7 +859,7 @@ function hellDrawOver(){
   var z=game.boss;
   if(z&&(z.ts==="soul"||(z.ts==="wind"&&z.gem==="soul"))){var a3=toScreen(z.x,z.y),b3=toScreen(p.x,p.y);ctx.save();ctx.globalCompositeOperation="lighter";ctx.strokeStyle=z.ts==="soul"?"rgba(255,154,31,0.85)":"rgba(255,154,31,"+(0.3+0.3*Math.sin(t*20))+")";ctx.lineWidth=(z.ts==="soul"?5:2)*sc;
     ctx.beginPath();ctx.moveTo(a3.x,a3.y-46*sc);ctx.quadraticCurveTo((a3.x+b3.x)/2,(a3.y+b3.y)/2-40*sc+Math.sin(t*12)*8,b3.x,b3.y-16*sc);ctx.stroke();ctx.restore();}
-  if(h.exit)drawPortalArrow(h.exit.x,h.exit.y,"#ffd54f");
+  if(h.glove&&h.glove.t>0.6&&game.state==="playing")drawPortalArrow(h.glove.x,h.glove.y-6,"#ffd54f");
 }
 var _hellUnder=typeof drawEventsUnder==="function"?drawEventsUnder:null,_hellOver=typeof drawEventsOver==="function"?drawEventsOver:null;
 drawEventsUnder=function(){if(_hellUnder&&!HELL.active)_hellUnder();hellDrawUnder();};
@@ -774,7 +883,7 @@ function hellAtmosphere(){
 function hellLetterbox(a){var hb=SH*0.13*a;ctx.fillStyle="#000";ctx.fillRect(0,0,SW,hb);ctx.fillRect(0,SH-hb,SW,hb);return hb;}
 function hellDrawScreen(){
   var st=game.state,h=game.hell,t,i;
-  if(HELL.active&&h&&(st==="playing"||st==="hell_cine"||st==="pause"||st==="hell_trans"||st==="dead"||st==="level_done"))hellAtmosphere();
+  if(HELL.active&&h&&(st==="playing"||st==="hell_cine"||st==="pause"||st==="hell_trans"||st==="dead"||st==="level_done"||st==="hell_final"))hellAtmosphere();
   if(HELL.active&&h&&h.flash>0){ctx.fillStyle="rgba(255,255,240,"+clamp(h.flash*1.4,0,0.8)+")";ctx.fillRect(0,0,SW,SH);}
   if(st==="hell_trans"){
     t=clamp(HELL.transT/1.05,0,1);var P=toScreen(HELL.transP.x,HELL.transP.y),R=Math.max(SW,SH)*1.3*t*t;
@@ -806,6 +915,7 @@ function hellDrawScreen(){
     ctx.restore();
     return 1;
   }
+  if(st==="hell_final"){drawHellFinal();return 1;}
   if(st==="level_done"){drawLevelDone();return 1;}
   return 0;
 }
@@ -833,9 +943,9 @@ function drawLevelDone(){
   ctx.save();ctx.textAlign="center";ctx.globalAlpha=a;
   var pu=t<0.6?1.6-0.6*(t/0.6):1+0.02*Math.sin(t*3);
   ctx.save();ctx.translate(SW/2,SH*0.22);ctx.scale(pu,pu);ctx.font="900 "+Math.round(Math.min(40,SW*0.05))+"px system-ui";ctx.lineJoin="round";
-  ctx.strokeStyle="#1a0f00";ctx.lineWidth=8;ctx.strokeText("¡NIVEL 1 COMPLETADO!",0,0);
-  var g=ctx.createLinearGradient(0,-30,0,8);g.addColorStop(0,"#fff59d");g.addColorStop(1,"#ffb300");ctx.fillStyle=g;ctx.fillText("¡NIVEL 1 COMPLETADO!",0,0);ctx.restore();
-  hudFont("italic",14);ctx.fillStyle="#e1bee7";ctx.fillText("Has derrotado a Thanos y salvado la isla",SW/2,SH*0.22+26);
+  ctx.strokeStyle="#1a0f00";ctx.lineWidth=8;ctx.strokeText("¡PRIMER MUNDO COMPLETADO!",0,0);
+  var g=ctx.createLinearGradient(0,-30,0,8);g.addColorStop(0,"#fff59d");g.addColorStop(1,"#ffb300");ctx.fillStyle=g;ctx.fillText("¡PRIMER MUNDO COMPLETADO!",0,0);ctx.restore();
+  hudFont("italic",14);ctx.fillStyle="#e1bee7";ctx.fillText("Has derrotado a Thanos. El Guantelete es tuyo.",SW/2,SH*0.22+26);
   var hero=(HEROES.filter(function(x){return x.id===p.hero;})[0]||{}).name||"—";
   var tt=(h&&h.doneTime)||game.time||0,mm=Math.floor(tt/60),ss=Math.floor(tt%60);
   var rows=[["Bajas",""+(game.kills||0)],["Tiempo",mm+":"+(ss<10?"0":"")+ss],["Héroe",hero],["Megapoder",p.mega?MEGA[p.mega].n:"—"]];
@@ -846,10 +956,11 @@ function drawLevelDone(){
   for(i=0;i<menuBtns.length;i++){var b=menuBtns[i];ctx.fillStyle=b.id==="again"?"#ffb300":"rgba(255,255,255,0.12)";roundRect(ctx,b.x,b.y,b.w,b.h,10);ctx.fill();
     ctx.strokeStyle=b.id==="again"?"#5d3a00":"rgba(255,255,255,0.4)";ctx.lineWidth=2;roundRect(ctx,b.x,b.y,b.w,b.h,10);ctx.stroke();
     hudFont("bold",15);ctx.fillStyle=b.id==="again"?"#2a1600":"#fff";ctx.fillText(b.label,b.x+b.w/2,b.y+b.h/2+5);}
-  hudFont("italic",13);ctx.fillStyle="#ffcc80";ctx.globalAlpha=a*(0.7+0.3*Math.sin(t*3));ctx.fillText("Nivel 2 próximamente",SW/2,SH*0.72+66);
+  hudFont("italic",13);ctx.fillStyle="#ffcc80";ctx.globalAlpha=a*(0.7+0.3*Math.sin(t*3));ctx.fillText("Mundo 2 próximamente",SW/2,SH*0.72+66);
   ctx.restore();ctx.textAlign="left";
+  if(HELL.finWhite){var wa=1-clamp(t/1.2,0,1);if(wa<=0)HELL.finWhite=0;else{ctx.fillStyle="rgba(255,255,255,"+wa+")";ctx.fillRect(0,0,SW,SH);}}
 }
 /* test hooks */
-window.__hell={enter:function(){hellEnter();},pick:function(id){var p=game.player;megaPick(p,id);},state:function(){return{st:game.state,h:game.hell&&game.hell.phase,boss:game.boss&&{hp:game.boss.hp,max:game.boss.maxHp,ts:game.boss.ts}};},openPortal:hellOpenPortal,cineEnd:function(){hellCineEnd();},snap:function(){thanosStartSnap(game.boss);}};
+window.__hell={enter:function(){hellEnter();},pick:function(id){var p=game.player;megaPick(p,id);},state:function(){return{st:game.state,h:game.hell&&game.hell.phase,boss:game.boss&&{hp:game.boss.hp,max:game.boss.maxHp,ts:game.boss.ts}};},openPortal:hellOpenPortal,cineEnd:function(){hellCineEnd();},snap:function(){thanosStartSnap(game.boss);},kill:function(){var z=game.boss;if(!z)return;z.snapDone=1;thanosDie(z);},glove:function(){return game.hell&&game.hell.glove;},final:function(){hellFinalStart();},finT:function(){return HELL.finT;}};
 var _hellZoneAt=typeof zoneAt==="function"?zoneAt:null;
 zoneAt=function(x,y){if(HELL.active)return{name:"Planeta perdido"};return _hellZoneAt?_hellZoneAt(x,y):null;};

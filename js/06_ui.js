@@ -72,7 +72,8 @@ function drawHero(){
   if(p.fireAura){var s=toScreen(p.x,p.y);ctx.fillStyle="rgba(255,87,34,0.18)";fillEllipse(ctx,s.x,s.y,50*layout.scale,36*layout.scale);}
   if(p.hasOrbit){for(var i=0;i<3;i++){var a=p.orbitAngle+i*2.094,ox=p.x+Math.cos(a)*36,oy=p.y+Math.sin(a)*36,os=toScreen(ox,oy);ctx.fillStyle="#eceff1";ctx.beginPath();ctx.arc(os.x,os.y,4*layout.scale,0,7);ctx.fill();}}
   var heroOpts={h:40,r:p.r,scale:p.scale||1,moving:Math.abs(p.vx)+Math.abs(p.vy)>20,wpn:wpn,aim:p.aimAng,twoHand:two,muzzle:p.muzzle,flash:p.flash>0,lift:(p.grabbed?26:0)+(p.airH||0),cacheHand:1};
-  if(p.laserT>0){heroOpts.pose="laser";heroOpts.wpn=null;heroOpts.moving=0;}
+  if(game.state==="hell_final"){heroOpts.wpn=null;heroOpts.moving=0;}
+  else if(p.laserT>0){heroOpts.pose="laser";heroOpts.wpn=null;heroOpts.moving=0;}
   else if(p.atkT>0||p.meleeSwing>0||p.muzzle>0){heroOpts.pose="atk";heroOpts.atk=1;heroOpts.atkT=p.atkT||p.meleeSwing||p.muzzle;heroOpts.atkMax=p.atkMax||0.2;heroOpts.atkKind=p.atkKind;heroOpts.meleeSwing=p.meleeSwing||0;}
   drawChar34(p.x,p.y,p.look,p.faceAng!=null?p.faceAng:(p.facing||p.aimAng),p.anim,heroOpts);
   if(p.hasShield&&p.shieldReady){var s2=toScreen(p.x,p.y);ctx.strokeStyle="rgba(33,150,243,0.7)";ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(s2.x,s2.y,22*layout.scale,16*layout.scale,0,0,7);ctx.stroke();}

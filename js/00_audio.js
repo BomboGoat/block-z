@@ -17,7 +17,7 @@ function ensureMusicBeds(){
   if(audio.beds)return;
   audio.beds={};
   Object.keys(MUS_BEDS).forEach(function(k){
-    var a=new Audio(MUS_BEDS[k]+(MUS_BEDS[k].indexOf("?")>=0?"":"?v=20.2.2"));
+    var a=new Audio(MUS_BEDS[k]+(MUS_BEDS[k].indexOf("?")>=0?"":"?v=20.2.3"));
     a.loop=true;a.preload="auto";a.crossOrigin="anonymous";a.volume=0;a.setAttribute("playsinline","playsinline");
     audio.beds[k]={el:a,gain:null,wanted:0,src:null};
   });
@@ -109,7 +109,9 @@ var SFX_FILES={
   rarity3:"assets/sfx/rarity3.mp3",rarity4:"assets/sfx/rarity4.mp3",
   gorgon_roar:"assets/sfx/gorgon_roar.mp3",gorgon_growl:"assets/sfx/gorgon_growl.mp3",portal:"assets/sfx/portal.mp3",
   fire_loop:"assets/sfx/fire_loop.mp3",fire_ignite:"assets/sfx/fire_ignite.mp3",
-  thanos_voice:"assets/sfx/thanos_voice.mp3",thanos_boom:"assets/sfx/thanos_boom.mp3"
+  thanos_voice:"assets/sfx/thanos_voice.mp3",thanos_boom:"assets/sfx/thanos_boom.mp3",
+  final_snap:"assets/sfx/final_snap.mp3",final_voice_classic:"assets/sfx/final_voice_classic.mp3",final_voice_trueno:"assets/sfx/final_voice_trueno.mp3",
+  final_voice_mr:"assets/sfx/final_voice_mr.mp3",final_voice_gompa:"assets/sfx/final_voice_gompa.mp3"
 };
 function combatLive(){return typeof game!=="undefined"&&game&&game.state==="playing";}
 function sfxAllowed(name){
@@ -117,7 +119,7 @@ function sfxAllowed(name){
   if(SFX_UI[name])return 1;
   if(typeof game==="undefined"||!game)return 0;
   if(game.state==="playing")return 1;
-  if(game.state==="hell_cine"||game.state==="hell_trans"||game.state==="level_done")return 1;
+  if(game.state==="hell_cine"||game.state==="hell_trans"||game.state==="level_done"||game.state==="hell_final")return 1;
   if(game.state==="boss_intro"&&SFX_BOSS[name])return 1;
   return 0;
 }
@@ -137,7 +139,7 @@ function prefetchSfx(){
     if(audio.sfxRaw[k])return;
     var ctrl=typeof AbortController==="function"?new AbortController():null;
     var to=setTimeout(function(){try{if(ctrl)ctrl.abort();}catch(e){}},8000);
-    fetch(SFX_FILES[k]+"?v=20.2.2",ctrl?{signal:ctrl.signal}:undefined).then(function(r){return r&&r.ok?r.arrayBuffer():null;}).then(function(ab){
+    fetch(SFX_FILES[k]+"?v=20.2.3",ctrl?{signal:ctrl.signal}:undefined).then(function(r){return r&&r.ok?r.arrayBuffer():null;}).then(function(ab){
       clearTimeout(to);
       if(ab)audio.sfxRaw[k]=ab;
       if(audio.ctx)decodeFetchedSfx();

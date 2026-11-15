@@ -296,7 +296,7 @@ function updatePlayerMove(p,dt,safe){
   if(input.keys.ArrowDown||input.keys.s||input.keys.S)my+=1;
   if(input.joy){mx+=input.jx;my+=input.jy;}
   var m=Math.sqrt(mx*mx+my*my);if(m>1){mx/=m;my/=m;m=1;}
-  var spd=CFG.PLAYER_SPEED*(p.speedMul||1);if(p.laserT>0)spd*=0.4;if(typeof terrainSpeedMul==='function')spd*=terrainSpeedMul(p.x,p.y);
+  var spd=CFG.PLAYER_SPEED*(CFG.MOVE||1)*(p.speedMul||1);if(p.laserT>0)spd*=0.4;if(typeof terrainSpeedMul==='function')spd*=terrainSpeedMul(p.x,p.y);
   if(p.giantT>0&&!(p.giantLeapT>0))spd*=0.78;
   if(p.giantLeapT>0){
     if(typeof updateGigante==="function")updateGigante(p,dt);
@@ -330,7 +330,7 @@ function updatePlayerMove(p,dt,safe){
     if(fh&&fh.climbable){p._fp=(p._fp||0)+dt;if(p._fp>0.18){p.jumpT=0.42;p.jumpMax=0.42;p._fp=0;sfx("jump");}}
     else p._fp=0;
   }
-  p.anim+=dt*(m>0.15?10:4);
+  p.anim+=dt*(m>0.15?10*(CFG.MOVE||1):4);
   if(m>0.15){p.facing=Math.atan2(my,mx);p.lastMoveX=mx;p.lastMoveY=my;}
   if(p.aimAng==null)p.aimAng=p.facing||0;
   var want=p.facing||0;
@@ -431,7 +431,7 @@ function updateZombies(dt){
     if(z.burn>0){z.burn-=dt;z.hp-=8*dt;if(z.hp<=0)killZombie(z);}
     if(z.poison>0){z.poison-=dt;z.hp-=6*dt;if(z.hp<=0)killZombie(z);}
     if(z.slow>0)z.slow-=dt;if(z.stun>0)z.stun-=dt;
-    z.anim+=dt*8;
+    z.anim+=dt*8*(CFG.MOVE||1);
     if(z.vaultT>0){
       z.vaultT-=dt;
       var vu=1-z.vaultT/(z.vaultMax||0.65);vu=clamp(vu,0,1);
@@ -459,7 +459,7 @@ function updateZombies(dt){
         var ang=Math.atan2(p.y-z.y,p.x-z.x),lx=z.x+Math.cos(ang)*420*0.28,ly=z.y+Math.sin(ang)*420*0.28,okLand=1;
         if(typeof sampleSDF==="function"&&sampleSDF(lx,ly)<(z.r||12)+8)okLand=0;
         if(typeof circleHitSolid==="function"&&circleHitSolid(lx,ly,(z.r||12)+4,"solid"))okLand=0;
-        if(okLand){z.leapT=0.28;z.leapVx=Math.cos(ang)*420;z.leapVy=Math.sin(ang)*420;z.leapCd=rand(1.6,2.8);}
+        if(okLand){z.leapT=0.28;z.leapVx=Math.cos(ang)*420*CFG.MOVE;z.leapVy=Math.sin(ang)*420*CFG.MOVE;z.leapCd=rand(1.6,2.8);}
         else z.leapCd=0.4;
       }
       /* v20.2: walk the flow path between leaps (they used to stand frozen when far away) */
@@ -527,7 +527,7 @@ function updateColossus(z,dt){
     if(th.t>=th.life){explodeAt(th.tx,th.ty,70,26,{friendly:0});z.throws.splice(i,1);}
   }
   if(z.chargeT>0){
-    z.chargeT-=dt;if(typeof moveWithSlide==="function")moveWithSlide(z,Math.cos(z.chargeAng)*380*dt,Math.sin(z.chargeAng)*380*dt);else{z.x+=Math.cos(z.chargeAng)*380*dt;z.y+=Math.sin(z.chargeAng)*380*dt;resolveCircle(z);}
+    z.chargeT-=dt;if(typeof moveWithSlide==="function")moveWithSlide(z,Math.cos(z.chargeAng)*380*CFG.MOVE*dt,Math.sin(z.chargeAng)*380*CFG.MOVE*dt);else{z.x+=Math.cos(z.chargeAng)*380*CFG.MOVE*dt;z.y+=Math.sin(z.chargeAng)*380*CFG.MOVE*dt;resolveCircle(z);}
     if(dist(z.x,z.y,p.x,p.y)<p.r+z.r+6)hurtPlayer(p,z.damage+8);
     z.aimAng=z.chargeAng;return;
   }

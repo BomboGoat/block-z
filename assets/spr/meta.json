@@ -268,5 +268,12 @@
     "ey": 0.15,
     "gx": 0.08,
     "gy": 0.13
+  },
+  "gauntlet": {
+    "file": "assets/spr/gauntlet.webp",
+    "w": 127,
+    "h": 200,
+    "fx": 0.5,
+    "fy": 0.99
   }
 }
