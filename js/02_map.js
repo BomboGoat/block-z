@@ -622,18 +622,106 @@ function moveWithSlide(ent,dx,dy){
   for(i=0;i<steps;i++){ent.x+=dx*s;ent.y+=dy*s;resolveCircle(ent);}
   if(typeof sampleSDF==="function" && sampleSDF(ent.x,ent.y)<(ent.r||13)*0.35 && ent._gx!=null){ent.x=ent._gx;ent.y=ent._gy;resolveCircle(ent);}
 }
-function pickSpawn(p){
+/* v20.1.2: safe spawns — every spawn point is validated against all props
+   (trees, ruins, crates, barrels, rocks), water / forest edge (typemap + SDF)
+   and the baked walk grid, with clearance for the biggest unit. */
+var SPAWN_CLEAR_Z=22,SPAWN_CLEAR_BOSS=30;
+function spawnBlocked(x,y,rad){
+  rad=rad||SPAWN_CLEAR_Z;
+  if(!(x>=rad+4&&y>=rad+4&&x<=CFG.MAP_W-rad-4&&y<=CFG.MAP_H-rad-4))return 1;
+  if(typeof sampleType==="function"&&sampleType(x,y)!==0)return 1;
+  if(typeof sampleSDF==="function"&&sampleSDF(x,y)<rad)return 1;
+  /* props: test every solid, including climbable ones, with full radius */
+  var i,s,a=map.solids||[],qx,qy,dx,dy,cr;
+  for(i=0;i<a.length;i++){
+    s=a[i];if(!s||s.dead)continue;
+    if(s.shape==="circle"){
+      cr=s.cr||Math.min(s.w,s.d)/2;dx=x-(s.x+s.w/2);dy=y-(s.y+s.d/2);
+      if(dx*dx+dy*dy<(rad+cr)*(rad+cr))return 1;
+      continue;
+    }
+    qx=clamp(x,s.x,s.x+s.w);qy=clamp(y,s.y,s.y+s.d);dx=x-qx;dy=y-qy;
+    if(dx*dx+dy*dy<rad*rad)return 1;
+  }
+  if(spawnHidden(x,y,rad))return 1;
+  if(map.grid){
+    var need=Math.ceil(rad/CFG.CELL)+1,cc,rr,c0,r0,px,py,lim=(rad+CFG.CELL*0.4)*(rad+CFG.CELL*0.4);
+    c0=(x/CFG.CELL)|0;r0=(y/CFG.CELL)|0;
+    for(rr=r0-need;rr<=r0+need;rr++){
+      for(cc=c0-need;cc<=c0+need;cc++){
+        px=(cc+0.5)*CFG.CELL;py=(rr+0.5)*CFG.CELL;
+        if((px-x)*(px-x)+(py-y)*(py-y)>lim)continue;
+        if(rr<0||rr>=map.rows||cc<0||cc>=map.cols)return 1;
+        if(map.grid[rr*map.cols+cc])return 1;
+      }
+    }
+  }
+  return 0;
+}
+/* Spots that look "inside" a structure on screen: behind a tree sprite
+   (drawn tall above its trunk, opaque from the north), under its canopy,
+   or tucked into the painted ruin / crate walls just north of a footprint. */
+function spawnHidden(x,y,rad){
+  var i,s,a=map.solids||[],cx,cy,R,mul,hy,hw,dx,dy,ys=CFG.YSCALE||0.7,m=rad*0.5;
+  for(i=0;i<a.length;i++){
+    s=a[i];if(!s||s.dead)continue;
+    if(s.k==="tree"){
+      cx=s.x+s.w/2;cy=s.y+s.d/2;R=s.canopy||34;dx=x-cx;dy=y-cy;
+      if(dx*dx+dy*dy<(R*0.6+m)*(R*0.6+m))return 1;
+      mul=s.treeKind==="pine"?2.85:s.treeKind==="bushy"?2.25:2.55;
+      hy=R*mul/ys;hw=R*mul*0.78*(s.treeKind==="pine"?0.32:0.4);
+      if(dy<0&&dy>-hy*0.92&&Math.abs(dx)<hw+m*0.5)return 1;
+      continue;
+    }
+    if(s.k==="ruin"||s.k==="crate"||s.k==="barrel"||s.k==="rock"){
+      hy=(s.h||16)/ys+m;
+      if(x>s.x-m&&x<s.x+s.w+m&&y<s.y+s.d&&y>s.y-hy)return 1;
+    }
+  }
+  return 0;
+}
+function _freeCells(rad){
+  map._freeCache=map._freeCache||{};
+  var key=rad+":"+(map.solids?map.solids.length:0);
+  if(map._freeCache[key])return map._freeCache[key];
+  var out=[],c,r,wx,wy;
+  for(r=1;r<map.rows-1;r++)for(c=1;c<map.cols-1;c++){
+    if(map.grid&&map.grid[r*map.cols+c])continue;
+    wx=(c+0.5)*CFG.CELL;wy=(r+0.5)*CFG.CELL;
+    if(!spawnBlocked(wx,wy,rad))out.push({x:wx,y:wy});
+  }
+  map._freeCache[key]=out;return out;
+}
+function placeOnGround(ent){
+  if(!ent)return ent;
+  var rad=ent.isBoss?Math.max(ent.r||26,SPAWN_CLEAR_BOSS):(ent.r||13)+2,i,ang,d,px,py,best=null,bd=1e18,f;
+  if(!spawnBlocked(ent.x,ent.y,rad))return ent;
+  for(d=6;d<=150;d+=6){
+    for(i=0;i<24;i++){
+      ang=i*(6.28318530718/24);
+      px=ent.x+Math.cos(ang)*d;py=ent.y+Math.sin(ang)*d;
+      if(!spawnBlocked(px,py,rad)){ent.x=px;ent.y=py;return ent;}
+    }
+  }
+  f=_freeCells(rad);
+  for(i=0;i<f.length;i++){d=(f[i].x-ent.x)*(f[i].x-ent.x)+(f[i].y-ent.y)*(f[i].y-ent.y);if(d<bd){bd=d;best=f[i];}}
+  if(best){ent.x=best.x;ent.y=best.y;}
+  return ent;
+}
+function pickSpawn(p,radOpt){
   if(!map.flowDist)updateFlow(p.x,p.y);
   var hw=worldW()*0.5,hh=worldH()*0.5,diag=Math.sqrt(hw*hw+hh*hh);
-  var r0=diag+24,i,sp,best=null,bestD=0,s,d,ok;
+  var r0=diag+24,i,best=null,bestD=0,s,d,rad=radOpt||SPAWN_CLEAR_Z;
+  function reach(x,y){
+    if(!map.flowDist)return 1;
+    var c=clamp((x/CFG.CELL)|0,0,map.cols-1),r=clamp((y/CFG.CELL)|0,0,map.rows-1);
+    return map.flowDist[r*map.cols+c]>=0;
+  }
   function usable(x,y){
     if(inCamView(x,y,20))return 0;
     if(dist(p.x,p.y,x,y)<Math.max(140,r0-40))return 0;
-    if(circleHitSolid(x,y,16,"solid"))return 0;
-    var c=clamp((x/CFG.CELL)|0,0,map.cols-1),r=clamp((y/CFG.CELL)|0,0,map.rows-1);
-    if(map.grid[r*map.cols+c])return 0;
-    if(map.flowDist&&map.flowDist[r*map.cols+c]<0)return 0;
-    return 1;
+    if(spawnBlocked(x,y,rad))return 0;
+    return reach(x,y);
   }
   if(map.spawns&&map.spawns.length){
     for(i=0;i<map.spawns.length;i++){
@@ -643,34 +731,39 @@ function pickSpawn(p){
       if(d>bestD){bestD=d;best=s;}
     }
     if(best)return {x:best.x,y:best.y};
-    for(i=0;i<map.spawns.length;i++){
-      s=map.spawns[i];
-      if(!circleHitSolid(s.x,s.y,16,"solid"))return {x:s.x,y:s.y};
-    }
   }
-  /* fallback: ring search, stay on island */
   var ang,r,pt;
-  for(r=r0;r<=r0+280;r+=28){
-    for(i=0;i<16;i++){
-      ang=i*(6.283/16)+(p.facing||0);
+  for(r=r0;r<=r0+320;r+=24){
+    for(i=0;i<20;i++){
+      ang=i*(6.283/20)+(p.facing||0);
       pt={x:p.x+Math.cos(ang)*r,y:p.y+Math.sin(ang)*r};
       if(usable(pt.x,pt.y))return pt;
     }
   }
-  if(map.spawns&&map.spawns.length)return {x:map.spawns[0].x,y:map.spawns[0].y};
+  /* still valid ground, even if close / on camera — never a blocked point */
+  var f=_freeCells(rad),cand=null;bestD=-1;
+  for(i=0;i<f.length;i++){
+    if(!reach(f[i].x,f[i].y))continue;
+    d=dist(p.x,p.y,f[i].x,f[i].y);
+    if(inCamView(f[i].x,f[i].y,10))d*=0.25;
+    if(d>bestD){bestD=d;cand=f[i];}
+  }
+  if(cand)return {x:cand.x,y:cand.y};
+  if(f.length)return {x:f[0].x,y:f[0].y};
   return {x:map.start.x,y:map.start.y};
 }
 function pickBossSpawn(p){
   /* open clearing south of the pond / north of the stone bridge */
-  var cands=[
+  var rad=SPAWN_CLEAR_BOSS,cands=[
     {x:(map.start&&map.start.x)||552,y:((map.start&&map.start.y)||430)-20},
     {x:620,y:400},{x:500,y:400},{x:640,y:360},{x:480,y:360}
-  ],i,s;
+  ],i,s,e;
   for(i=0;i<cands.length;i++){
     s=cands[i];
-    if(!circleHitSolid(s.x,s.y,28,"solid"))return s;
+    if(!spawnBlocked(s.x,s.y,rad))return {x:s.x,y:s.y};
   }
-  return pickSpawn(p||(game&&game.player)||{x:552,y:430});
+  e=pickSpawn(p||(game&&game.player)||{x:552,y:430},rad);
+  return e;
 }
 function zoneAt(x,y){
   var i,z,best=null,ba=1e15,a,t,n=10;

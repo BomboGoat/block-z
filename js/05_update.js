@@ -254,6 +254,7 @@ function update(dt){
         typ=item&&item.type?item.type:item;el=item&&item.elite?1:0;
         sp=pickSpawn(p);
         nz=spawnZombie(typ,sp.x,sp.y,game.wave,el);
+        if(typeof placeOnGround==="function")placeOnGround(nz);
         game.zombies.push(nz);aliveN++;
         if(typeof announceNewZombie==="function")announceNewZombie(typ,el);
       }

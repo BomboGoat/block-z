@@ -37,7 +37,7 @@ function artLoad(done){
   };
   mj.onerror=tick;mj.open("GET","assets/spr/meta.json?v=20");mj.send();
   var mw=new Image();mw.onload=function(){ART.menuWide=mw;tick();};mw.onerror=tick;mw.src="assets/ui/menu-wide.webp?v=20";
-  var ar=new Image();ar.onload=function(){ART.arena=ar;if(map){map.chunks={};map.dirty=1;}tick();};ar.onerror=tick;ar.src="assets/env/arena.webp?v=20";
+  var ar=new Image();ar.onload=function(){ART.arena=ar;if(map){map.chunks={};map.dirty=1;}tick();};ar.onerror=tick;ar.src="assets/env/arena.webp?v=20.1.2";
 }
 function artEntry(look,dir,pose){
   if(!ART.ready||!ART.meta)return null;
