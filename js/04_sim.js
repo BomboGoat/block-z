@@ -78,7 +78,7 @@ function explodeAt(x,y,r,dmg,opts){
 function findNearestZombie(p,range,fast){
   var best=null,bestD=range||CFG.AUTO_RANGE*(p.rangeMul||1),i,z,d;
   for(i=0;i<game.zombies.length;i++){
-    z=game.zombies[i];if(z.dead||z.dying)continue;d=dist(p.x,p.y,z.x,z.y);if(d>=bestD)continue;
+    z=game.zombies[i];if(z.dead||z.dying||z.ghost)continue;d=dist(p.x,p.y,z.x,z.y);if(d>=bestD)continue;
     if(!fast){
       if(d>36&&typeof inCamView==="function"&&!inCamView(z.x,z.y,-18))continue;
       if(d>40&&hiddenInBush(z.x,z.y,p))continue;if(d>28&&!hasLOS(p.x,p.y,z.x,z.y))continue;
@@ -245,7 +245,7 @@ function fireWeapon(p){
   if(p.overcharge&&Math.random()<0.15)hurtPlayer(p,2);
 }
 function hurtZombie(z,dmg,fromX,noChain,opts){if(game&&game.player&&game.player._evtDmg)dmg*=game.player._evtDmg;
-  if(z.dying||z.dead)return;opts=opts||{};
+  if(z.dying||z.dead||z.ghost)return;opts=opts||{};
   var p=game.player;
   if(z.armor&&fromX!=null){
     var fy=opts.fromY!=null?opts.fromY:(game.player?game.player.y:z.y);
@@ -287,10 +287,11 @@ function grantRunXP(p,n){
   while(p.runXP>=p.runXPNext){p.runXP-=p.runXPNext;p.runLevel++;p.runXPNext=(50+p.runLevel*25)|0;p.levelFlash=1;p.hp=Math.min(p.maxHp,p.hp+15);sfx("level");}
 }
 function hurtPlayer(p,dmg){
+  if(typeof p==="number"){dmg=p;p=game&&game.player;}if(!p)return;
   if(p.invuln>0||game.state==="countdown"||game.state==="boss_intro")return;
   if(p.evasion&&Math.random()<p.evasion){floatText(p.x,p.y,"MISS","#90caf9");return;}
   if(p.hasShield&&p.shieldReady){p.shieldReady=0;p.shieldCd=6;p.invuln=0.4;sfx("hurt");return;}
-  dmg*=(p.armorMul||1);if(p.giantT>0)dmg*=0.6;p.hp-=dmg;p.flash=0.12;p.invuln=CFG.INVULN_MS/1000;shake(6);
+  dmg*=(p.armorMul||1);if(p.giantT>0)dmg*=0.6;p.hp-=dmg;p.flash=0.12;p.invuln=CFG.INVULN_MS/1000;shake(6);if(typeof onPlayerDamaged==="function")onPlayerDamaged(p,dmg);
   sfx(dmg>15?"hurt_big":"hurt");
   if(p.thorns){var n=findNearestZombie(p,70);if(n)hurtZombie(n,dmg*0.4,p.x,1);}
   if(p.hp<=0){
@@ -576,10 +577,10 @@ function startGame(){
 }
 function poolForWave(idx){var pool=["normal"];for(var w=0;w<=idx&&w<WAVE_UNLOCKS.length;w++){var u=WAVE_UNLOCKS[w];for(var i=0;i<u.length;i++)if(u[i]!=="boss"&&pool.indexOf(u[i])<0)pool.push(u[i]);}return pool;}
 function startWave(idx){
-  game.wave=idx;game.waveSpawned=0;game.spawnQueue=[];game.zombies=game.zombies.filter(function(z){return!z.dead;});game.bullets.length=0;game.projectiles.length=0;game.grenades.length=0;if(game.lasers)game.lasers.length=0;if(game.scorches)game.scorches.length=0;if(game.novas)game.novas.length=0;if(game.slashes)game.slashes.length=0;game.bossSpawned=0;game.bossFight=0;game.boss=null;game.colossus=null;game.home=null;
+  game.wave=idx;game.portals=[];game.gorgon=null;game.pdmg=[];if(typeof clearFireFx==="function")clearFireFx();game.waveSpawned=0;game.spawnQueue=[];game.zombies=game.zombies.filter(function(z){return!z.dead;});game.bullets.length=0;game.projectiles.length=0;game.grenades.length=0;if(game.lasers)game.lasers.length=0;if(game.scorches)game.scorches.length=0;if(game.novas)game.novas.length=0;if(game.slashes)game.slashes.length=0;game.bossSpawned=0;game.bossFight=0;game.boss=null;game.colossus=null;game.home=null;
   var wd=waveDifficulty(idx),pool=poolForWave(idx),i,n=wd.count,fresh=WAVE_UNLOCKS[idx]||[],typ,el,counts={},maxShare,q,j,tmp;
   if(!pool.length)pool=["normal"];
-  if(idx===2||idx===5)n=Math.max(4,Math.round(4+idx*0.4));
+  if(idx===2||idx===5||idx===7)n=Math.max(4,Math.round(4+idx*0.4));
   else if(idx===9)n=Math.max(7,Math.round(7+idx*0.3));
   maxShare=Math.max(2,Math.ceil(n*0.42));
   q=[];
@@ -610,16 +611,18 @@ function beginCombat(){
   var p=game.player;
   if(game.wave===2){var s=(typeof pickBossSpawn==='function'?pickBossSpawn(p):pickSpawn(p));startBoss(spawnColossus(s.x,s.y),"¡Vamos a gamblear!","Va va vamos a gam gam blear",88);return;}
   if(game.wave===5){var s1=(typeof pickBossSpawn==='function'?pickBossSpawn(p):pickSpawn(p));startBoss(spawnHome(s1.x,s1.y),"¿Sabéis quién soy?","Sa sa sabeis quien soy yo",110);return;}
+  if(game.wave===7){var sg=(typeof gorgonSpot==='function'&&(gorgonSpot(p.x,p.y,110,180,18)||gorgonSpot(p.x,p.y,90,240,14)))||(typeof pickBossSpawn==='function'?pickBossSpawn(p):pickSpawn(p));startBoss(spawnGorgon(sg.x,sg.y),"","",0);return;}
   if(game.wave===9){var s2=(typeof pickBossSpawn==='function'?pickBossSpawn(p):pickSpawn(p)),fb=spawnZombie("boss",s2.x,s2.y,9),bs=(typeof waveDifficulty==="function"?waveDifficulty(9).bossHp:1.49);fb.isBoss=1;fb.hp=Math.round(1320*bs);fb.maxHp=fb.hp;fb.r=26;fb.h=58;if(typeof placeOnGround==="function")placeOnGround(fb);fb.speed=Math.round(60*(typeof waveDifficulty==="function"?waveDifficulty(9).speed:1));fb.damage=Math.round(28*(typeof waveDifficulty==="function"?waveDifficulty(9).dmg:1));fb.bName="JEFE FINAL";fb.look.final=1;fb.look.kind="final";fb.look.type="boss";fb.rings=[];fb.throws=[];fb.atkCd=2;fb.windup=null;fb.windupT=0;fb.chargeT=0;startBoss(fb,"¡El fin!","El fin",70);return;}
   p.invuln=Math.max(p.invuln,0.9);game.state="playing";game.spawnTimer=0.5;game.graceT=1.4;
 }
 function startBoss(z,line,bab,pitch){
-  game.zombies.push(z);game.boss=z;if(z.isColossus)game.colossus=z;if(z.isHome)game.home=z;
+  game.zombies.push(z);game.boss=z;if(z.isColossus)game.colossus=z;if(z.isHome)game.home=z;if(z.isGorgon)game.gorgon=z;
   game.bossSpawned=1;game.bossFight=1;game.state="boss_intro";game.message=null;
   game.introX=game.camX;game.introY=game.camY;
   z.phase="intro";z.introT=4.2;z.bubbleFull=line;z.bubbleText="";z.bubbleIdx=0;z.bubbleT=0;
   if(game.player)game.player.invuln=Math.max(game.player.invuln,4.3);
   sfx("boss");sfx("sting");
+  if(z.isGorgon){startMusic("gorgon");game.player.invuln=Math.max(game.player.invuln,4.3);return;}
   if(z.isHome){sfx("laugh");startMusic("home");z.loom=1;}
   else if(z.isColossus){sfx("growl");sfx("foot_heavy");startMusic("colo");}
   else startMusic("final");
@@ -628,7 +631,7 @@ function startBoss(z,line,bab,pitch){
 function speakColossus(){
   try{if(game&&game.colossus){game.colossus.bubbleText="";game.colossus.bubbleFull="¡Vamos a gamblear!";game.colossus.bubbleIdx=0;game.colossus.bubbleT=0;}babbleSpeak("Va va vamos a gam gam blear",{pitch:88,gap:0.13});}catch(e){}
 }
-function onWaveCleared(){if(game.bossFight){startMusic("play");game.bossFight=0;}if(game.wave>=9){game.state="victory";grantAccountXP(((game.player.runXP*0.25)|0)+50);layoutMenuButtons();sfx("clear");return;}game.state="upgrade";skipDtClamp=1;sfx("clear");game.rerollLeft=1;if(game.player&&game.player.secondWind)game.player.hp=Math.min(game.player.maxHp,game.player.hp+game.player.maxHp*0.2);pickUpgradeChoices();}
+function onWaveCleared(){if(game.bossFight){startMusic("play");game.bossFight=0;}if(game.portals)game.portals.length=0;game.gorgon=null;if(game.wave>=9){game.state="victory";grantAccountXP(((game.player.runXP*0.25)|0)+50);layoutMenuButtons();sfx("clear");return;}game.state="upgrade";skipDtClamp=1;sfx("clear");game.rerollLeft=1;if(game.player&&game.player.secondWind)game.player.hp=Math.min(game.player.maxHp,game.player.hp+game.player.maxHp*0.2);pickUpgradeChoices();if(typeof upgradeOpened==="function")upgradeOpened();}
 function rollRarity(luck){
   var w=RARITIES.map(function(r){return r.w;}),wave=(game&&game.wave)||0,wr=wave*0.85,t=0,i,r,a=0;
   if(luck>0){w[0]=Math.max(20,w[0]-luck*0.6);w[3]+=luck*0.25;w[4]+=luck*0.15;w[2]+=luck*0.2;}
@@ -749,7 +752,7 @@ function layoutUpgradeCards(){
 function handleUpgradeClick(lx,ly){
   var b=game.rerollBtn;
   if(b&&(game.rerollLeft||0)>0&&lx>=b.x&&lx<=b.x+b.w&&ly>=b.y&&ly<=b.y+b.h){
-    game.rerollLeft=0;sfx("card");pickUpgradeChoices();return;
+    game.rerollLeft=0;sfx("card");pickUpgradeChoices();if(typeof upgradeOpened==="function")upgradeOpened(450);return;
   }
   for(var i=0;i<game.upgradeCards.length;i++){var card=game.upgradeCards[i];if(lx>=card.x&&lx<=card.x+card.w&&ly>=card.y&&ly<=card.y+card.h){card.upgrade.apply(game.player);sfx("card");sfx("rarity"+card.upgrade.rarity);startWave(game.wave+1);skipDtClamp=1;return;}}
 }

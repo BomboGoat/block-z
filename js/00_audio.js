@@ -8,14 +8,15 @@ var MUS_BEDS={
   colo:"assets/mus/colo.mp3",
   home:"assets/mus/home.mp3",
   home2:"assets/mus/home2.mp3",
-  final:"assets/mus/final.mp3"
+  final:"assets/mus/final.mp3",
+  gorgon:"assets/mus/gorgon.mp3"
 };
 function musicBedKey(mode){return (mode&&MUS_BEDS[mode])?mode:null;}
 function ensureMusicBeds(){
   if(audio.beds)return;
   audio.beds={};
   Object.keys(MUS_BEDS).forEach(function(k){
-    var a=new Audio(MUS_BEDS[k]+(MUS_BEDS[k].indexOf("?")>=0?"":"?v=20.1.2"));
+    var a=new Audio(MUS_BEDS[k]+(MUS_BEDS[k].indexOf("?")>=0?"":"?v=20.2.0"));
     a.loop=true;a.preload="auto";a.crossOrigin="anonymous";a.volume=0;a.setAttribute("playsinline","playsinline");
     audio.beds[k]={el:a,gain:null,wanted:0,src:null};
   });
@@ -88,7 +89,7 @@ function setMuteSfx(v){audio.mutedSfx=!!v;if(audio.sfxG)audio.sfxG.gain.value=au
 function setMuteMus(v){audio.mutedMus=!!v;if(audio.musG)audio.musG.gain.value=audio.mutedMus?0:0.42;saveAudioSettings();}
 
 var SFX_UI={unlock:1,click:1,card:1,rarity0:1,rarity1:1,rarity2:1,rarity3:1,rarity4:1,xp:1,level:1,wave:1,clear:1};
-var SFX_BOSS={boss:1,sting:1,growl:1,laugh:1,stomp:1,foot_heavy:1};
+var SFX_BOSS={boss:1,sting:1,growl:1,laugh:1,stomp:1,foot_heavy:1,gorgon_roar:1,gorgon_growl:1,portal:1};
 var SFX_FILES={
   explode:"assets/sfx/explode.mp3",click:"assets/sfx/click.mp3",foot_heavy:"assets/sfx/foot_heavy.mp3",
   death:"assets/sfx/death.mp3",dash:"assets/sfx/dash.mp3",wave:"assets/sfx/wave.mp3",
@@ -104,7 +105,9 @@ var SFX_FILES={
   hurt:"assets/sfx/hurt.mp3",hit:"assets/sfx/hit.mp3",crackle:"assets/sfx/crackle.mp3",
   boss:"assets/sfx/boss.mp3",splash:"assets/sfx/splash.mp3",laser_loop:"assets/sfx/laser_loop.mp3",
   rarity0:"assets/sfx/rarity0.mp3",rarity1:"assets/sfx/rarity1.mp3",rarity2:"assets/sfx/rarity2.mp3",
-  rarity3:"assets/sfx/rarity3.mp3",rarity4:"assets/sfx/rarity4.mp3"
+  rarity3:"assets/sfx/rarity3.mp3",rarity4:"assets/sfx/rarity4.mp3",
+  gorgon_roar:"assets/sfx/gorgon_roar.mp3",gorgon_growl:"assets/sfx/gorgon_growl.mp3",portal:"assets/sfx/portal.mp3",
+  fire_loop:"assets/sfx/fire_loop.mp3",fire_ignite:"assets/sfx/fire_ignite.mp3"
 };
 function combatLive(){return typeof game!=="undefined"&&game&&game.state==="playing";}
 function sfxAllowed(name){
@@ -115,7 +118,7 @@ function sfxAllowed(name){
   if(game.state==="boss_intro"&&SFX_BOSS[name])return 1;
   return 0;
 }
-function stopCombatLoops(){stopLaserHum();}
+function stopCombatLoops(){stopLaserHum();stopFireLoop();}
 function noteGameState(){
   if(typeof game==="undefined"||!game)return;
   var st=game.state;
@@ -131,7 +134,7 @@ function prefetchSfx(){
     if(audio.sfxRaw[k])return;
     var ctrl=typeof AbortController==="function"?new AbortController():null;
     var to=setTimeout(function(){try{if(ctrl)ctrl.abort();}catch(e){}},8000);
-    fetch(SFX_FILES[k]+"?v=20.1.2",ctrl?{signal:ctrl.signal}:undefined).then(function(r){return r&&r.ok?r.arrayBuffer():null;}).then(function(ab){
+    fetch(SFX_FILES[k]+"?v=20.2.0",ctrl?{signal:ctrl.signal}:undefined).then(function(r){return r&&r.ok?r.arrayBuffer():null;}).then(function(ab){
       clearTimeout(to);
       if(ab)audio.sfxRaw[k]=ab;
       if(audio.ctx)decodeFetchedSfx();
@@ -242,6 +245,29 @@ function stopLaserHum(){
     h.g.gain.linearRampToValueAtTime(0.0001,t+0.1);
   }catch(e){}
   setTimeout(function(){try{h.src.stop();}catch(e){};try{h.src.disconnect();}catch(e){};try{h.g.disconnect();}catch(e){};},140);
+}
+
+/* v20.2.0: looping wheat-fire crackle (recorded CC0), volume follows distance */
+function startFireLoop(vol){
+  if(!ensureAudio()||audio.mutedSfx||!audio.sfxG||!combatLive())return;
+  if(!audio._baked)bakeSfxSync();
+  var buf=audio.sfxBuf&&audio.sfxBuf.fire_loop;if(!buf)return;
+  if(audio.fireLoop&&audio.fireLoop.alive){setFireLoopVol(vol);return;}
+  var ctx=audio.ctx,t=ctx.currentTime,g=ctx.createGain(),src;
+  g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(Math.max(0.0002,vol==null?0.3:vol),t+0.6);
+  g.connect(audio.sfxG);
+  src=ctx.createBufferSource();src.buffer=buf;src.loop=true;src.connect(g);
+  try{src.start(t);}catch(e){return;}
+  audio.fireLoop={g:g,src:src,alive:1};
+}
+function setFireLoopVol(vol){
+  var h=audio.fireLoop;if(!h||!h.alive||!audio.ctx)return;
+  try{h.g.gain.setTargetAtTime(Math.max(0.0002,vol),audio.ctx.currentTime,0.15);}catch(e){}
+}
+function stopFireLoop(){
+  var h=audio.fireLoop,t;if(!h)return;audio.fireLoop=null;h.alive=0;
+  try{t=audio.ctx.currentTime;h.g.gain.cancelScheduledValues(t);h.g.gain.setValueAtTime(Math.max(0.0001,h.g.gain.value||0.0001),t);h.g.gain.linearRampToValueAtTime(0.0001,t+0.5);}catch(e){}
+  setTimeout(function(){try{h.src.stop();}catch(e){};try{h.src.disconnect();}catch(e){};try{h.g.disconnect();}catch(e){};},600);
 }
 
 function sfx(name,extra){

@@ -20,7 +20,7 @@ splitter:{hp:45,speed:64,damage:10,r:13,h:28,color:"#c0ca33",score:26,xp:20,spli
 mini:{hp:12,speed:120,damage:6,r:9,h:16,color:"#aed581",score:5,xp:6},
 boss:{hp:700,speed:58,damage:26,r:22,h:44,color:"#1b3d18",score:500,xp:200}
 };
-var WAVE_UNLOCKS=[["fast","crawler"],["tank"],["jumper"],[],["spitter"],[],["armored"],["exploder","screamer"],["splitter"],["boss"]];
+var WAVE_UNLOCKS=[["fast","crawler"],["tank"],["jumper"],[],["spitter"],[],["armored","exploder"],[],["screamer","splitter"],["boss"]];
 var ZTYPE_NAME={normal:"Zombi",fast:"Corredor",tank:"Tanque",crawler:"Reptador",spitter:"Escupidor",jumper:"Saltador",armored:"Acorazado",exploder:"Explosivo",screamer:"Gritón",splitter:"Divisor",mini:"Cría",boss:"Jefe"};
 var ZTYPE_BANNER={spitter:1,armored:1,exploder:1,screamer:1,splitter:1,jumper:1,tank:1};
 function waveDifficulty(idx){

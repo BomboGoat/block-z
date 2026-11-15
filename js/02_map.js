@@ -342,39 +342,102 @@ function pointInBush(x,y){
   for(i=0;i<b.length;i++){var s=b[i];if(x>=s.x&&x<=s.x+s.w&&y>=s.y&&y<=s.y+s.d)return s;}
   return null;
 }
-function updateFlow(px,py){
-  var cols=map.cols,rows=map.rows,cell=CFG.CELL,g=map.grid;
-  if(!g)return;
-  var sc=clamp((px/cell)|0,0,cols-1),sr=clamp((py/cell)|0,0,rows-1);
-  var n=cols*rows,distA=map.flowDist||(map.flowDist=new Int16Array(n));
-  var dir=map.flow||(map.flow=new Int8Array(n*2));
-  var i;for(i=0;i<n;i++)distA[i]=-1;
-  var qx=map.qx||(map.qx=new Int16Array(n)),qy=map.qy||(map.qy=new Int16Array(n));
-  var h=0,t=0;qx[t]=sc;qy[t]=sr;t++;distA[sr*cols+sc]=0;
-  var nbrs=[1,0,-1,0,0,1,0,-1,1,1,1,-1,-1,1,-1,-1];
-  while(h<t){
-    var cx=qx[h],cy=qy[h];h++;
-    var cd=distA[cy*cols+cx],k;
-    for(k=0;k<8;k++){
-      var nx=cx+nbrs[k*2],ny=cy+nbrs[k*2+1];
-      if(nx<0||ny<0||nx>=cols||ny>=rows)continue;
-      var idx=ny*cols+nx;if(g[idx]||distA[idx]>=0)continue;
-      if(k>=4&&(g[cy*cols+nx]||g[ny*cols+cx]))continue;
-      distA[idx]=cd+1;qx[t]=nx;qy[t]=ny;t++;
+/* v20.2: clearance-aware flow — zombies prefer routes with room for their body, so they stop
+   jamming in 1-cell gaps between trees, rocks and the pond shore. Weighted (Dial) search:
+   roomy cells cost 1, tight cells 4, wall-hugging cells 24 — pockets stay reachable. */
+function _flowWide(WR){
+  var cols=map.cols,rows=map.rows,cell=CFG.CELL,g=map.grid,n=cols*rows,i;
+  var D=typeof decodeMapData==="function"?decodeMapData():null,sd=D&&D.sdf&&D.sdf.length===n?D.sdf:null,ss=map.solids||[],si,o,c0,c1,r0,r1,rr,cc2,ox,oy,lim,qx2,qy2;
+  var wide=new Uint8Array(n);
+  for(i=0;i<n;i++)wide[i]=g[i]?0:(sd?(sd[i]>=WR*10?1:(sd[i]<110?2:0)):1);
+  for(si=0;si<ss.length;si++){
+    o=ss[si];if(!o||o.dead||o.k==="bush")continue;
+    c0=Math.max(0,((o.x-WR-o.w)/cell)|0);c1=Math.min(cols-1,((o.x+o.w*2+WR)/cell)|0);
+    r0=Math.max(0,((o.y-WR-o.d)/cell)|0);r1=Math.min(rows-1,((o.y+o.d*2+WR)/cell)|0);
+    for(rr=r0;rr<=r1;rr++)for(cc2=c0;cc2<=c1;cc2++){
+      ox=(cc2+0.5)*cell;oy=(rr+0.5)*cell;
+      if(o.shape==="circle"){var ocr=o.cr||Math.min(o.w,o.d)/2;lim=ocr+WR;qx2=ox-(o.x+o.w/2);qy2=oy-(o.y+o.d/2);}
+      else{lim=WR;qx2=ox-clamp(ox,o.x,o.x+o.w);qy2=oy-clamp(oy,o.y,o.y+o.d);}
+      if(qx2*qx2+qy2*qy2<lim*lim&&wide[rr*cols+cc2]===1)wide[rr*cols+cc2]=0;
     }
   }
+  return wide;
+}
+function _flowBuild(F,px,py,WR){
+  var cols=map.cols,rows=map.rows,cell=CFG.CELL,g=map.grid,n=cols*rows,i;
+  if(!F.dist||F.dist.length!==n){
+    F.dist=new Int16Array(n);F.dir=new Int8Array(n*2);F.cost=new Int32Array(n);F.pass=new Uint8Array(n);
+    F.nxt=new Int32Array(n*8+8);F.val=new Int32Array(n*8+8);F.dv=new Int32Array(n*8+8);F.wide=null;
+  }
+  if(!F.wide||F.wide.length!==n)F.wide=_flowWide(WR);
+  var sc=clamp((px/cell)|0,0,cols-1),sr=clamp((py/cell)|0,0,rows-1);
+  var distA=F.dist,dir=F.dir,cost=F.cost,pass=F.pass,wide=F.wide,nxt=F.nxt,val=F.val,dv=F.dv;
+  for(i=0;i<n;i++)cost[i]=2147483647;
+  var NB=512,bh=F.bh||(F.bh=new Int32Array(NB));
+  for(i=0;i<NB;i++)bh[i]=-1;
+  var pool=0,cur=0,pending=0,nbrs=[1,0,-1,0,0,1,0,-1,1,1,1,-1,-1,1,-1,-1],k,cx,cy,nx,ny,idx,e,ci,cd,nd,step,bk;
+  var s0=sr*cols+sc;cost[s0]=0;val[0]=s0;dv[0]=0;nxt[0]=-1;bh[0]=0;pool=1;pending=1;
+  while(pending>0){
+    bk=cur%NB;e=bh[bk];
+    if(e<0){cur++;continue;}
+    bh[bk]=nxt[e];pending--;
+    ci=val[e];cd=dv[e];if(cd!==cost[ci])continue;
+    cx=ci%cols;cy=(ci/cols)|0;
+    for(k=0;k<8;k++){
+      nx=cx+nbrs[k*2];ny=cy+nbrs[k*2+1];
+      if(nx<0||ny<0||nx>=cols||ny>=rows)continue;
+      idx=ny*cols+nx;if(g[idx])continue;
+      if(k>=4&&(g[cy*cols+nx]||g[ny*cols+cx]))continue;
+      step=(k>=4?14:10)*((wide[idx]===1||(Math.abs(nx-sc)<=3&&Math.abs(ny-sr)<=3))?1:(wide[idx]===2?24:4));
+      nd=cd+step;
+      if(nd<cost[idx]&&pool<nxt.length){cost[idx]=nd;val[pool]=idx;dv[pool]=nd;bk=nd%NB;nxt[pool]=bh[bk];bh[bk]=pool;pool++;pending++;}
+    }
+  }
+  for(i=0;i<n;i++){distA[i]=cost[i]===2147483647?-1:Math.min(32000,(cost[i]/10)|0);pass[i]=wide[i]===1?1:2;}
   for(i=0;i<n;i++){
     if(distA[i]<0){dir[i*2]=0;dir[i*2+1]=0;continue;}
-    var x=i%cols,y=(i/cols)|0,best=distA[i],bx=0,by=0,k;
+    var x=i%cols,y=(i/cols)|0,best=cost[i],bx=0,by=0,d;
     for(k=0;k<8;k++){
-      var nx=x+nbrs[k*2],ny=y+nbrs[k*2+1];
+      nx=x+nbrs[k*2];ny=y+nbrs[k*2+1];
       if(nx<0||ny<0||nx>=cols||ny>=rows)continue;
-      var idx=ny*cols+nx,d=distA[idx];
-      if(d>=0&&d<best){best=d;bx=nbrs[k*2];by=nbrs[k*2+1];}
+      idx=ny*cols+nx;if(g[idx])continue;d=cost[idx];
+      if(k>=4&&(g[y*cols+nx]||g[ny*cols+x]))continue;
+      if(d<best){best=d;bx=nbrs[k*2];by=nbrs[k*2+1];}
     }
     dir[i*2]=bx;dir[i*2+1]=by;
   }
+}
+function updateFlow(px,py){
+  if(!map.grid)return;
+  var F=map._flowZ||(map._flowZ={});
+  _flowBuild(F,px,py,17); /* sized for the biggest walker (tank r18) */
+  map.flowDist=F.dist;map.flow=F.dir;map.wideMask=F.wide;map.flowPass=F.pass;
+  /* bosses get their own, roomier field while one is alive */
+  var b=typeof game!=="undefined"&&game?game.boss:null;
+  if(b&&!b.dead){var FB=map._flowB||(map._flowB={});_flowBuild(FB,px,py,Math.min(30,Math.max(20,(b.r||24)+2)));map.flowBoss=FB.dir;}
+  else map.flowBoss=null;
   map.flowT=0;
+}
+/* v20.2: follow the flow path through cell centres (2-cell look-ahead) so bodies stay on the
+   roomy centre line instead of grinding along walls */
+function flowSteer(x,y,fx,fy,fl){
+  fl=fl||map.flow;
+  var cs=CFG.CELL,c=clamp((x/cs)|0,0,map.cols-1),r=clamp((y/cs)|0,0,map.rows-1),k,i,dx,dy,l;
+  for(k=0;k<2;k++){
+    c+=fx;r+=fy;if(c<0||r<0||c>=map.cols||r>=map.rows){c-=fx;r-=fy;break;}
+    i=r*map.cols+c;var nfx=fl[i*2],nfy=fl[i*2+1];if(!nfx&&!nfy)break;fx=nfx;fy=nfy;
+  }
+  dx=(c+0.5)*cs-x;dy=(r+0.5)*cs-y;l=Math.sqrt(dx*dx+dy*dy);
+  if(l<0.5)return {x:0,y:0};
+  return {x:dx/l,y:dy/l};
+}
+/* bosses: follow the flow path around water/props when far, go straight when close */
+function chaseDir(z,dx,dy,d){
+  squeezeTick(z,1/60,d);
+  var fl=(z&&z.isBoss&&map.flowBoss)||map.flow;
+  if(d>60&&map&&fl){var c=clamp((z.x/CFG.CELL)|0,0,map.cols-1),r=clamp((z.y/CFG.CELL)|0,0,map.rows-1),i=r*map.cols+c,fx=fl[i*2],fy=fl[i*2+1];
+    if(fx||fy){var s2=flowSteer(z.x,z.y,fx,fy,fl);if(s2.x||s2.y)return s2;}}
+  return {x:dx/(d||1),y:dy/(d||1)};
 }
 function flowDir(x,y){
   if(!map.flow)return{x:0,y:0};
@@ -614,7 +677,21 @@ function resolveCircle(ent){
     ent.x=ent._gx;ent.y=ent._gy;
   }
 }
+/* v20.2: a big body that makes no progress toward the hero for ~2 s squeezes (smaller
+   collision radius, same look) through the gap, then regains its size in open ground */
+function squeezeTick(z,dt,d){
+  if(z._qx==null){z._qx=z.x;z._qy=z.y;z._qt=0;z._qs=0;}
+  z._qt+=dt;
+  if(z._qt>=1){var m=Math.hypot(z.x-z._qx,z.y-z._qy);z._qs=(m<10&&d>(z.r||13)+40)?z._qs+1:0;z._qx=z.x;z._qy=z.y;z._qt=0;}
+  if(z._qs>=2&&!z._sqR&&(z.r||13)>11){z._sqR=11;z._sqT=2.5;}
+  if(z._sqR){z._sqT-=dt;if(z._sqT<=0&&sampleSDF(z.x,z.y)>=(z.r||13)+1){z._sqR=0;z._qs=0;}}
+}
 function moveWithSlide(ent,dx,dy){
+  var rSave=ent.r;if(ent._sqR)ent.r=ent._sqR;
+  _moveWithSlide(ent,dx,dy);
+  ent.r=rSave;
+}
+function _moveWithSlide(ent,dx,dy){
   var dist=Math.hypot(dx,dy),steps,i,s,rad=ent.r||13;
   if(typeof sampleSDF==="function" && sampleSDF(ent.x,ent.y)>=rad-0.5){ent._gx=ent.x;ent._gy=ent.y;}
   if(dist<0.0001){resolveCircle(ent);return;}
@@ -728,6 +805,8 @@ function pickSpawn(p,radOpt){
       s=map.spawns[(i*7+((game&&game.time*10)|0))%map.spawns.length];
       if(!usable(s.x,s.y))continue;
       d=dist(p.x,p.y,s.x,s.y);
+      /* prefer spawns with a roomy route to the player (no squeezing between trees) */
+      if(map.flowPass&&map.flowPass[clamp((s.y/CFG.CELL)|0,0,map.rows-1)*map.cols+clamp((s.x/CFG.CELL)|0,0,map.cols-1)]!==1)d*=0.3;
       if(d>bestD){bestD=d;best=s;}
     }
     if(best)return {x:best.x,y:best.y};

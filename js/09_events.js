@@ -62,7 +62,7 @@ function beginRoundEvents(waveIdx){
   if(!game)return;
   game.events=[];game.eventBanner=null;game.eventBannerT=0;
   if(game._flooded){restoreBridges();game._flooded=0;}
-  if(game._burnedWheat){game._burnedWheat.burned=0;game._burnedWheat=null;}
+  if(game._burnedWheat){game._burnedWheat.burned=0;game._burnedWheat.regrowT=6;game._burnedWheat=null;}
   var ids=pickEventIds(waveIdx),delay=waveIdx<=0?randRange(10,16):randRange(6,12),i,id,def,ev,spot,wh;
   for(i=0;i<ids.length;i++){
     id=ids[i];def=EVENT_DEFS[id];if(!def)continue;
@@ -110,13 +110,13 @@ function activateEvent(ev){
   game.eventBanner=ev.banner;game.eventIcon=ev.icon||(ev.def&&ev.def.icon)||"";game.eventBannerT=2.4;
   if(ev.id==="riada"){blockStoneBridge();if(typeof sfx==="function")sfx("splash");}
   if(ev.id==="tormenta"||ev.id==="luna"){if(typeof sfx==="function")sfx("storm");}
-  if(ev.id==="fuego"&&ev.field){ev.field.burned=1;game._burnedWheat=ev.field;if(typeof sfx==="function")sfx("explode");}
+  if(ev.id==="fuego"&&ev.field){ev.field.burned=1;game._burnedWheat=ev.field;if(typeof fireStart==="function")fireStart(ev);else if(typeof sfx==="function")sfx("explode");}
   if(ev.id==="caja"||ev.id==="tesoro"){if(typeof sfx==="function")sfx("sting");}
 }
 function endEvent(ev){
   ev.alive=0;
   if(ev.id==="riada")restoreBridges();
-  if(ev.id==="fuego"&&ev.field){/* stays burned until next round begins */}
+  if(ev.id==="fuego"&&ev.field){/* stays burned until next round begins */if(typeof stopFireLoop==="function")stopFireLoop();}
 }
 function strikeLightning(x,y){
   var i,z,p=game.player,r=46;
@@ -198,6 +198,7 @@ function updateEvents(dt){
   if(p&&p._evtDmgT>0){p._evtDmgT-=dt;if(p._evtDmgT<=0)p._evtDmg=1;}
 }
 function drawEventsUnder(){
+  if(game&&typeof drawScorchedRegrow==="function")drawScorchedRegrow();
   if(!game||!game.events)return;
   var i,ev,s,sc=layout.scale,ys=CFG.YSCALE,a,p;
   for(i=0;i<game.events.length;i++){
@@ -207,7 +208,8 @@ function drawEventsUnder(){
       ctx.globalAlpha=a;ctx.fillStyle="#8bc34a";fillEllipse(ctx,s.x,s.y,ev.r*sc,ev.r*ys*sc);ctx.globalAlpha=0.5;
       ctx.strokeStyle="#c6ff00";ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(s.x,s.y,ev.r*sc,ev.r*ys*sc,0,0,7);ctx.stroke();ctx.globalAlpha=1;
     }
-    if(ev.id==="fuego"&&ev.field){
+    if(ev.id==="fuego"&&ev.field&&ev.fire&&typeof drawFireUnder==="function"){drawFireUnder(ev);}
+    else if(ev.id==="fuego"&&ev.field){
       s=toScreen(ev.field.x,ev.field.y);
       var w=ev.field.w*sc,h=ev.field.d*ys*sc;
       ctx.globalAlpha=0.28+0.1*Math.sin((game.time||0)*8);

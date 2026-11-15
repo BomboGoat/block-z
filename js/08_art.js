@@ -11,13 +11,15 @@ var ART_MAP={
   normal:{f:"z_normal_f"},fast:{f:"z_fast_f"},tank:{f:"z_tank_f"},
   exploder:{f:"z_exploder_f"},crawler:{f:"z_crawler_f"},armored:{f:"z_armored_f"},
   spitter:{f:"z_spitter_f"},jumper:{f:"z_jumper_f"},screamer:{f:"z_screamer_f"},
-  splitter:{f:"z_splitter_f"},mini:{f:"z_normal_f"}
+  splitter:{f:"z_splitter_f"},mini:{f:"z_normal_f"},
+  gorgon:{f:"gorgon_f"},gorgon_open:{f:"gorgon_open_f"}
 };
 function artLookKey(look){
   if(!look)return null;
   if(look.kind==="player")return look.hero||"classic";
   if(look.kind==="colossus")return "colossus";
   if(look.kind==="home")return "home";
+  if(look.kind==="gorgon")return look.open?"gorgon_open":"gorgon";
   if(look.kind==="final"||(look.type==="boss"&&look.final)||look.final)return "final";
   return look.type||null;
 }
@@ -35,9 +37,9 @@ function artLoad(done){
       im.src=(ART.meta[k]&&ART.meta[k].file)||("assets/spr/"+k+".webp");
     })(keys[i]);
   };
-  mj.onerror=tick;mj.open("GET","assets/spr/meta.json?v=20");mj.send();
-  var mw=new Image();mw.onload=function(){ART.menuWide=mw;tick();};mw.onerror=tick;mw.src="assets/ui/menu-wide.webp?v=20";
-  var ar=new Image();ar.onload=function(){ART.arena=ar;if(map){map.chunks={};map.dirty=1;}tick();};ar.onerror=tick;ar.src="assets/env/arena.webp?v=20.1.2";
+  mj.onerror=tick;mj.open("GET","assets/spr/meta.json?v=20.2.0");mj.send();
+  var mw=new Image();mw.onload=function(){ART.menuWide=mw;tick();};mw.onerror=tick;mw.src="assets/ui/menu-wide.webp?v=20.2.0";
+  var ar=new Image();ar.onload=function(){ART.arena=ar;if(map){map.chunks={};map.dirty=1;}tick();};ar.onerror=tick;ar.src="assets/env/arena.webp?v=20.2.0";
 }
 function artEntry(look,dir,pose){
   if(!ART.ready||!ART.meta)return null;
@@ -54,6 +56,7 @@ function artTargetH(look,sc){
 
   if(look&&look.kind==="colossus")h*=2.4;
   else if(look&&look.kind==="home")h*=1.85;
+  else if(look&&look.kind==="gorgon")h*=2.5;
   else if(look&&(look.kind==="final"||look.final||(look.type==="boss"&&!look.kind)))h*=2.65;
   else if(look&&(look.type==="tank"||look.type==="armored"))h*=1.25;
   else if(look&&(look.type==="crawler"||look.type==="mini"))h*=0.7;
@@ -119,6 +122,7 @@ function drawBodyShadow(s,bodyW,bob,opts,look){
 function artWaist(look){
   if(!look)return 0.57;
   if(look.kind==="colossus")return 0.55;
+  if(look.kind==="gorgon")return 0.52;
   if(look.kind==="final")return 0.58;
   if(look.kind==="zombie")return (look.type==="tank"||look.type==="armored")?0.56:0.57;
   if(look.hero==="gompa")return 0.54;

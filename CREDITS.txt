@@ -228,6 +228,41 @@ Boss sting / sting stinger:
   License: CC0 1.0 Universal
   Files: assets/sfx/sting.mp3, boss.mp3
 
+v20.2.0 additions (all CC0 1.0 Universal)
+-----------------------------------------
+  "Epic Boss Battle [Seamlessly Looping]" (orchestral)
+  Author: Juhani Junkala (SubspaceAudio)
+  Source: https://opengameart.org/content/boss-battle-music
+  License: CC0 1.0 Universal
+  Files: assets/mus/gorgon.mp3 (GORGON boss theme)
+
+  "CC0 Deep Monster Roar"
+  Author: trazzz123
+  Source: https://opengameart.org/content/cc0-deep-monster-roar
+  License: CC0 1.0 Universal
+  Files: assets/sfx/gorgon_roar.mp3 (mixed), portal.mp3 (reversed/pitched)
+
+  "T-rex Calls"
+  Author: CaveboyTup
+  Source: https://opengameart.org/content/t-rex-calls
+  License: CC0 1.0 Universal
+  Files: assets/sfx/gorgon_roar.mp3 (mixed), gorgon_growl.mp3
+
+  "Fireplace Sound loop"
+  Author: PagDev
+  Source: https://opengameart.org/content/fireplace-sound-loop
+  License: CC0 1.0 Universal
+  Files: assets/sfx/fire_loop.mp3 (wheat-fire crackle loop)
+
+  "Fire Crackling"
+  Author: AntumDeluge
+  Source: https://opengameart.org/content/fire-crackling
+  License: CC0 1.0 Universal
+  Files: assets/sfx/fire_ignite.mp3
+
+GORGON sprites are original artwork generated for Block Z (no third-party
+characters, names or logos).
+
 The in-game 8-voice pooled playback system and the iOS "Toca para empezar"
 audio unlock are original to Block Z. No procedural synth beeps remain.
 v20.1 checked the baked SFX for chiptune-like spectra (very peaky, thin

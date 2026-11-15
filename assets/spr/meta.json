@@ -207,5 +207,27 @@
     "hy": 0.445,
     "ex": 0.5,
     "ey": 0.2
+  },
+  "gorgon_f": {
+    "file": "assets/spr/gorgon_f.webp",
+    "w": 157,
+    "h": 360,
+    "fx": 0.5,
+    "fy": 0.994,
+    "hx": 0.88,
+    "hy": 0.7,
+    "ex": 0.5,
+    "ey": 0.1
+  },
+  "gorgon_open_f": {
+    "file": "assets/spr/gorgon_open_f.webp",
+    "w": 226,
+    "h": 360,
+    "fx": 0.5,
+    "fy": 0.992,
+    "hx": 0.92,
+    "hy": 0.4,
+    "ex": 0.5,
+    "ey": 0.17
   }
 }

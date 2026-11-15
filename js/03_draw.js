@@ -1119,13 +1119,15 @@ function ensureChunk(cx,cy){
   map.chunks[k]={c:c,dirty:0,cx:cx,cy:cy};return map.chunks[k];
 }
 function drawWheatOverlay(ent){
-  if(!ent||!inWheat||!inWheat(ent.x,ent.y))return;
-  var s=toScreen(ent.x,ent.y),sc=layout.scale,i,t=game?game.time:0;
+  if(ent&&(ent.sink>0||ent.ghost))return;
+  var wf=ent&&inWheat?inWheat(ent.x,ent.y):0;
+  if(!wf)return;
+  var s=toScreen(ent.x,ent.y),sc=layout.scale,i,t=game?game.time:0,burnt=wf.burned||(wf.regrowT>3);
   ctx.save();
   ctx.globalAlpha=0.92;
   for(i=0;i<7;i++){
     var ox=(i-3)*3.2*sc, h=(10+((ent.x+i*17)%5))*sc, sway=Math.sin(t*4+i)*1.2*sc;
-    ctx.strokeStyle=i%2?"#f0d35a":"#c6a02a";ctx.lineWidth=1.6*sc;
+    ctx.strokeStyle=burnt?(i%2?"#3a2a1c":"#1e1610"):(i%2?"#f0d35a":"#c6a02a");ctx.lineWidth=1.6*sc;if(burnt)h*=0.55;
     ctx.beginPath();ctx.moveTo(s.x+ox,s.y+4*sc);ctx.quadraticCurveTo(s.x+ox+sway,s.y-h*0.4,s.x+ox+sway,s.y-h);
     ctx.stroke();
   }
