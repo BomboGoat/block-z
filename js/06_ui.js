@@ -575,9 +575,10 @@ function draw(){
   drawZoneTint();if(typeof drawLighting==="function")drawLighting();drawVignette();
   if(typeof drawBossMenace==="function")drawBossMenace();
   if(typeof drawHurtFlash==="function")drawHurtFlash();
+  if(typeof hellDrawScreen==="function"&&hellDrawScreen())return;
   if(game.state==="countdown")drawCountdownOverlay();
   if(game.state==="boss_intro"){drawBossIntroUI();return;}
-  if(game.state!=="upgrade")drawHUD();
+  if(game.state!=="upgrade"){drawHUD();if(typeof hellDrawHUDExtra==="function")hellDrawHUDExtra();}
   if(game.state==="pause")drawPauseUI();
   if(game.state==="upgrade")drawUpgradeUI();
   if(game.state==="dead")drawEndScreen(0);

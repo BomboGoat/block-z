@@ -268,6 +268,29 @@ audio unlock are original to Block Z. No procedural synth beeps remain.
 v20.1 checked the baked SFX for chiptune-like spectra (very peaky, thin
 high-frequency buzz); the hero attacks above are recorded sources.
 
+v20.2.1 additions — Round 10: THANOS in the lost hell planet
+-------------------------------------------------------------
+Thanos boss theme: "Colossal Boss Battle Theme" (looped version, with choir)
+  Author: Matthew Pablo (www.matthewpablo.com)
+  Source: https://opengameart.org/content/colossal-boss-battle-theme
+  License: CC-BY 3.0
+  File: assets/mus/thanos.mp3 (re-encoded 112 kbps stereo MP3, unedited music)
+  Recorded/produced orchestral track with choir chants. Not chiptune.
+
+Thanos voice line "Yo soy inevitable": synthesized with Piper TTS
+  (voice es_ES-davefx-medium, rhasspy/piper-voices; dataset license CC0 per
+  the model card), pitched down with formant preservation, a
+  sub-octave layer and a dark hall reverb. File: assets/sfx/thanos_voice.mp3
+
+Thanos deep impact: assets/sfx/thanos_boom.mp3 — made in-house by pitching
+  down and layering the CC0 samples already credited above (explode.mp3,
+  stomp.mp3) with a generated reverb.
+
+Thanos sprites (walk, gauntlet-raise cast, snap) and the hell-planet ground
+painting were generated for Block Z and keyed through the chroma-key pipeline.
+The mega-powers ("MARTILLO DEL TRUENO", "ARMADURA DE HIERRO", "FURIA VERDE")
+are generic names with original procedural designs; no third-party logos.
+
 CC0: https://creativecommons.org/publicdomain/zero/1.0/
 CC-BY 3.0: https://creativecommons.org/licenses/by/3.0/
 CC-BY 4.0: https://creativecommons.org/licenses/by/4.0/

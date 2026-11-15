@@ -229,5 +229,44 @@
     "hy": 0.4,
     "ex": 0.5,
     "ey": 0.17
+  },
+  "thanos_walk_f": {
+    "file": "assets/spr/thanos_walk_f.webp",
+    "w": 280,
+    "h": 360,
+    "fx": 0.49,
+    "fy": 0.99,
+    "hx": 0.16,
+    "hy": 0.68,
+    "ex": 0.5,
+    "ey": 0.15,
+    "gx": 0.16,
+    "gy": 0.68
+  },
+  "thanos_cast_f": {
+    "file": "assets/spr/thanos_cast_f.webp",
+    "w": 229,
+    "h": 360,
+    "fx": 0.55,
+    "fy": 0.99,
+    "hx": 0.2,
+    "hy": 0.13,
+    "ex": 0.5,
+    "ey": 0.15,
+    "gx": 0.2,
+    "gy": 0.13
+  },
+  "thanos_snap_f": {
+    "file": "assets/spr/thanos_snap_f.webp",
+    "w": 259,
+    "h": 360,
+    "fx": 0.57,
+    "fy": 0.99,
+    "hx": 0.08,
+    "hy": 0.13,
+    "ex": 0.5,
+    "ey": 0.15,
+    "gx": 0.08,
+    "gy": 0.13
   }
 }
