@@ -29,6 +29,12 @@ function hellSetView(w){
   if(layout.viewW===w)return;
   layout.viewW=w;layout.scale=layout.gameDrawW/layout.viewW;layout.viewH=layout.gameDrawH/(layout.scale*CFG.YSCALE);W=layout.viewW;H=layout.viewH;
 }
+/* v20.2.2: straight walkable line (no lava / pillar) so at least one snap circle is always reachable */
+function hellClearPath(x0,y0,x1,y1){
+  var d=dist(x0,y0,x1,y1),n=Math.max(2,Math.ceil(d/6)),k,x,y;
+  for(k=1;k<n;k++){x=x0+(x1-x0)*k/n;y=y0+(y1-y0)*k/n;if(sampleType(x,y)!==0||sampleSDF(x,y)<9)return 0;}
+  return 1;
+}
 function hellSpot(cx,cy,rmin,rmax,rad){
   var i,a,r,x,y;
   for(i=0;i<80;i++){a=Math.random()*6.283;r=rmin+Math.random()*(rmax-rmin);x=cx+Math.cos(a)*r;y=cy+Math.sin(a)*r;
@@ -338,7 +344,7 @@ function thanosStartSnap(z){
   h.orbs.length=0;h.clones.length=0;h.zones.length=0;h.rings.length=0;
   h.safe=[];
   for(i=0;i<3;i++){
-    sp=null;for(tries=0;tries<30&&!sp;tries++){var c=hellSpot(p.x,p.y,90,200,30);if(c&&h.safe.every(function(s){return dist(s.x,s.y,c.x,c.y)>80;})&&dist(c.x,c.y,z.x,z.y)>60)sp=c;}
+    sp=null;for(tries=0;tries<30&&!sp;tries++){var c=hellSpot(p.x,p.y,90,200,30);if(c&&(tries>24||hellClearPath(p.x,p.y,c.x,c.y))&&h.safe.every(function(s){return dist(s.x,s.y,c.x,c.y)>80;})&&dist(c.x,c.y,z.x,z.y)>60)sp=c;}
     if(!sp)sp=hellSpot(p.x,p.y,40,240,26);if(sp)h.safe.push({x:sp.x,y:sp.y,r:30});
   }
   sfx("thanos_boom",1);shake(10);game.message=null;
@@ -536,6 +542,7 @@ function megaTick(p,dt){
     /* auto flight-dash out of telegraphs */
     var danger=z.tele&&((z.gem==="time"&&dist(p.x,p.y,z.cx,z.cy)<70)||(z.gem==="power"&&d<240)||(z.gem==="space"));
     if(z.ts==="punch_wind"&&dist(p.x,p.y,z.x,z.y)<70)danger=1;
+    if(game.hell.safe&&game.hell.safe.length)danger=0; /* never auto-dash out of a snap safe circle */
     if(danger&&p.flyCd<=0&&!(p.dashT>0)){
       var ax=p.x-(z.gem==="time"&&z.tele?z.cx:z.x),ay=p.y-(z.gem==="time"&&z.tele?z.cy:z.y),al=Math.sqrt(ax*ax+ay*ay)||1;
       if(input.joy&&Math.abs(input.jx)+Math.abs(input.jy)>0.2){ax=input.jx;ay=input.jy;al=Math.sqrt(ax*ax+ay*ay)||1;}
