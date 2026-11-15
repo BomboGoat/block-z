@@ -683,6 +683,8 @@ function drawHUD(){
   var boss=game.boss;
   if(boss&&!boss.dead&&!boss.dying&&game.bossFight&&game.state!=="boss_intro"){
     var bw=Math.min(360,SW-200),bx=(SW-bw)/2,by=s.t+(game.eventBannerT>0?40:8),bh=9;
+    /* v20.2.2: in the hell arena the Thanos bar sits bottom-centre (between the sticks) so his head is never hidden */
+    if(boss.isThanos&&typeof HELL!=="undefined"&&HELL.active){bw=Math.min(300,SW-400);bx=(SW-bw)/2;by=SH-s.b-36;}
     ctx.fillStyle="rgba(10,0,0,0.78)";roundRect(ctx,bx-4,by,bw+8,28,8);ctx.fill();
     ctx.textAlign="center";ctx.fillStyle="#ffd54f";hudFont("bold",10);ctx.fillText(boss.bName||"JEFE",SW/2,by+9);
     ctx.fillStyle="#3a0000";roundRect(ctx,bx,by+13,bw,bh,4);ctx.fill();
