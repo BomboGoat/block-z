@@ -722,7 +722,10 @@ function updateBullets(dt){
         addParticle(b.x,b.y,"#ff6d00",0.28,bx+rand(-28,28),by+rand(-36,4),rand(2,4),3);
       }
     }
-    if(b.life<=0||bulletHitsWall(b)){if(b.expl)explodeAt(b.x,b.y,b.explR||40,b.explDmg||b.damage*0.6,{friendly:1});game.bullets.splice(i,1);bulletPool.push(b);continue;}
+    /* v20.3: zombies along this frame's path are tested before the wall, so a zombie stacked right on the
+       hero next to a rock or ruin wall still gets hit (the muzzle can sit inside the wall) */
+    if(b.life<=0){if(b.expl)explodeAt(b.x,b.y,b.explR||40,b.explDmg||b.damage*0.6,{friendly:1});game.bullets.splice(i,1);bulletPool.push(b);continue;}
+    var nb=game.bullets.length;
     for(j=0;j<game.zombies.length;j++){
       z=game.zombies[j];if(z.dead||z.dying||z.ghost||(b.hit&&b.hit.has(z)))continue;
       var tq=((z.x-x0)*sgx+(z.y-y0)*sgy)/sgl;tq=tq<0?0:(tq>1?1:tq);
@@ -737,6 +740,7 @@ function updateBullets(dt){
         else if(!b.pierce){game.bullets.splice(i,1);bulletPool.push(b);break;}
       }
     }
+    if(game.bullets.length===nb&&game.bullets[i]===b&&bulletHitsWall(b)){if(b.expl)explodeAt(b.x,b.y,b.explR||40,b.explDmg||b.damage*0.6,{friendly:1});game.bullets.splice(i,1);bulletPool.push(b);}
   }
 }
 function updateGrenades(dt){
