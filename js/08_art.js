@@ -1,5 +1,5 @@
 /* v19: generated sprites, landscape rotate overlay, extra upgrade VFX */
-var ART={ready:0,imgs:{},meta:null,menuWide:null};
+var ART={ready:0,imgs:{},meta:null,menuWide:null,arena:null};
 var ART_MAP={
   classic:{f:"classic_f",b:"classic_b"},
   trueno:{f:"trueno_f",laser:"trueno_laser_f"},
@@ -22,7 +22,7 @@ function artLookKey(look){
   return look.type||null;
 }
 function artLoad(done){
-  var left=2;
+  var left=3;
   function tick(){if(--left<=0){ART.ready=1;if(done)done();}}
   var mj=new XMLHttpRequest();
   mj.onload=function(){
@@ -35,8 +35,9 @@ function artLoad(done){
       im.src=(ART.meta[k]&&ART.meta[k].file)||("assets/spr/"+k+".webp");
     })(keys[i]);
   };
-  mj.onerror=tick;mj.open("GET","assets/spr/meta.json?v=19.7");mj.send();
-  var mw=new Image();mw.onload=function(){ART.menuWide=mw;tick();};mw.onerror=tick;mw.src="assets/ui/menu-wide.webp?v=19.7";
+  mj.onerror=tick;mj.open("GET","assets/spr/meta.json?v=20");mj.send();
+  var mw=new Image();mw.onload=function(){ART.menuWide=mw;tick();};mw.onerror=tick;mw.src="assets/ui/menu-wide.webp?v=20";
+  var ar=new Image();ar.onload=function(){ART.arena=ar;if(map){map.chunks={};map.dirty=1;}tick();};ar.onerror=tick;ar.src="assets/env/arena.webp?v=20";
 }
 function artEntry(look,dir,pose){
   if(!ART.ready||!ART.meta)return null;

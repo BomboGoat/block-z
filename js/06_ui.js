@@ -1,6 +1,7 @@
 function onScreen(wx,wy,pad){pad=pad||80;var s=toScreen(wx,wy);return s.x>-pad&&s.x<SW+pad&&s.y>-pad&&s.y<SH+pad;}
 function drawWorld(){
   drawGround();
+  if(typeof drawEventsUnder==="function")drawEventsUnder();
   if(typeof drawBlood==="function")drawBlood();
   if(game.acids){
     var ai,ac,as,aa;
@@ -34,11 +35,9 @@ function drawWorld(){
     else if(it.k==="z")drawZ(it.o);
     else if(it.k==="dog"){var d=game.player.dog;drawChar34(d.x,d.y,{kind:"zombie",skin:"#6e7a5a",shirt:"#3e2723",pants:"#3e2723",hair:"#1a120b",eyeGlow:"#c62828"},game.player.aimAng,d.anim||0,{h:16,r:8,scale:0.7,moving:1});}
   }
-  /* bushes always on top of units (Brawl Stars hide) */
-  for(i=0;i<map.bushes.length;i++){
-    o=map.bushes[i];if(!vis(o.x,o.y,o.w,o.d))continue;
-    var ghost=!!(p&&p.x>o.x-6&&p.x<o.x+o.w+6&&p.y>o.y-6&&p.y<o.y+o.d+6);
-    drawBush(o,ghost);
+  if(typeof drawWheatOverlay==="function"){
+    if(p)drawWheatOverlay(p);
+    if(zs)for(i=0;i<zs.length;i++)if(!zs[i].dead)drawWheatOverlay(zs[i]);
   }
   /* bullets / fx above */
   if(game.bullets)for(i=0;i<game.bullets.length;i++)if(onScreen(game.bullets[i].x,game.bullets[i].y,20))drawBullet(game.bullets[i]);
@@ -57,6 +56,7 @@ function drawWorld(){
   if(game.novas)for(i=0;i<game.novas.length;i++)drawNova(game.novas[i]);
   if(game.lasers)drawLasers();
   if(game.floatTexts)for(i=0;i<game.floatTexts.length;i++)drawFloat(game.floatTexts[i]);
+  if(typeof drawEventsOver==="function")drawEventsOver();
 }
 function drawHero(){
   var p=game.player,blink=p.invuln>0&&((game.time*16)|0)%2===0;if(blink)ctx.globalAlpha=0.4;
@@ -615,3 +615,98 @@ var c=spawnColossus(p.x+130,p.y-20);c.phase="fight";c.introT=0;c.aimAng=0.4;c.an
 var hm=spawnHome(p.x+195,p.y-40);hm.phase="fight";hm.introT=0;hm.aimAng=0.4;hm.anim=1;hm.spawnT=0;g.zombies.push(hm);
 };
 document.addEventListener("DOMContentLoaded",boot);if(document.readyState!=="loading")boot();
+
+/* ===== v20 polished landscape HUD ===== */
+function hudFont(w,px){ctx.font=(w||"bold")+" "+px+"px system-ui,Segoe UI,Helvetica Neue,sans-serif";}
+function hudGlass(x,y,w,h,r){
+  ctx.fillStyle="rgba(8,8,14,0.72)";roundRect(ctx,x,y,w,h,r||8);ctx.fill();
+  ctx.strokeStyle="rgba(255,255,255,0.14)";ctx.lineWidth=1;roundRect(ctx,x,y,w,h,r||8);ctx.stroke();
+}
+function drawHUD(){
+  var p=game.player,s=layout.safe,x,y,w,h,hp,frac,alive=0,i,z,wpn,hero,pal,lab;
+  if(!p)return;
+  x=s.l+10;y=s.t+8;w=Math.min(228,SW*0.34);
+  hudGlass(x,y,w,58,10);
+  /* HP */
+  h=13;
+  ctx.fillStyle="#3a1518";roundRect(ctx,x+10,y+9,w-20,h,7);ctx.fill();
+  frac=clamp(p.hp/p.maxHp,0,1);
+  if(frac>0){
+    ctx.fillStyle=frac>0.35?lg(ctx,x+10,y+9,x+10,y+9+h,"#ff6b6b","#c62828"):lg(ctx,x+10,y+9,x+10,y+9+h,"#ffab40","#e65100");
+    roundRect(ctx,x+10,y+9,Math.max(7,(w-20)*frac),h,7);ctx.fill();
+  }
+  ctx.strokeStyle="rgba(0,0,0,0.45)";ctx.lineWidth=1;roundRect(ctx,x+10,y+9,w-20,h,7);ctx.stroke();
+  hudFont("bold",10);ctx.fillStyle="#fff";ctx.textBaseline="middle";
+  ctx.fillText((p.hp|0)+"/"+(p.maxHp|0),x+16,y+9+h/2+0.5);
+  /* XP sliver */
+  var xp=p.runXP||0,need=p.runXPNext||50,xf=clamp(xp/need,0,1);
+  ctx.fillStyle="#1a2330";roundRect(ctx,x+10,y+26,w-20,4,2);ctx.fill();
+  ctx.fillStyle="#4fc3f7";roundRect(ctx,x+10,y+26,Math.max(0,(w-20)*xf),4,2);ctx.fill();
+  /* round + kills + weapon */
+  if(game.zombies)for(i=0;i<game.zombies.length;i++)if(!game.zombies[i].dead&&!game.zombies[i].dying)alive++;
+  alive+=(game.spawnQueue?game.spawnQueue.length:0);
+  hudFont("bold",11);ctx.fillStyle="#ffe082";
+  ctx.fillText("Ronda "+(game.wave+1)+"/10",x+10,y+40);
+  ctx.fillStyle="#cfd8dc";hudFont("600",10);
+  ctx.fillText("Nv "+(p.runLevel||1)+"  ·  "+(game.kills||0)+" bajas",x+10,y+52);
+  /* weapon / rarity pill — right of the card, still in the left cluster */
+  wpn=p.weapon||"pistol";hero=p.hero||"classic";
+  lab=wpn==="bolt"?"Rayos":wpn==="knife"?"Cuchillo":wpn==="fist"||wpn==="bell"?"Pesas":wpn==="smg"?"Subfusil":wpn==="shotgun"?"Escopeta":wpn==="revolver"?"Revólver":wpn==="rifle"?"Rifle":wpn==="gl"?"Lanzagranadas":"Pistola";
+  pal={classic:{bg:"#ff8f00",fg:"#1a0a00"},trueno:{bg:"#00e5ff",fg:"#00363d"},mr:{bg:"#ff1744",fg:"#fff"},gompa:{bg:"#c6ff00",fg:"#142000"}};
+  var col=pal[hero]||pal.classic;
+  hudFont("bold",9);var tw=ctx.measureText(lab).width+14,px=x+w-tw-8,py=y+38;
+  ctx.fillStyle=col.bg;roundRect(ctx,px,py,tw,16,8);ctx.fill();
+  ctx.fillStyle=col.fg;ctx.textAlign="center";ctx.fillText(lab,px+tw/2,py+9);ctx.textAlign="left";
+  ctx.textBaseline="alphabetic";
+
+  drawMinimap();
+  drawPauseBtn();
+  if((game.state==="playing"||game.state==="countdown"||game.state==="boss_intro")&&!(p&&p.grabbed)){drawJoystick();drawSuperBtn();}
+  if(p&&p.grabbed)drawMashButton();
+  var boss=game.boss;
+  if(boss&&!boss.dead&&!boss.dying&&game.bossFight&&game.state!=="boss_intro"){
+    var bw=Math.min(360,SW-200),bx=(SW-bw)/2,by=s.t+(game.eventBannerT>0?40:8),bh=9;
+    ctx.fillStyle="rgba(10,0,0,0.78)";roundRect(ctx,bx-4,by,bw+8,28,8);ctx.fill();
+    ctx.textAlign="center";ctx.fillStyle="#ffd54f";hudFont("bold",10);ctx.fillText(boss.bName||"JEFE",SW/2,by+9);
+    ctx.fillStyle="#3a0000";roundRect(ctx,bx,by+13,bw,bh,4);ctx.fill();
+    ctx.fillStyle="#e53935";roundRect(ctx,bx,by+13,bw*clamp(boss.hp/boss.maxHp,0,1),bh,4);ctx.fill();
+    ctx.strokeStyle="rgba(255,255,255,0.25)";ctx.lineWidth=1;roundRect(ctx,bx,by+13,bw,bh,4);ctx.stroke();
+    ctx.textAlign="left";
+  }
+  if(typeof drawEventBanner==="function")drawEventBanner();
+  /* leftover type-unlock banners only (no buff banner) */
+  if(game.banner&&game.bannerT>0&&!(game.banner||"").indexOf&&true){
+    var txt=game.banner||"";
+    if(txt&&txt.indexOf("vida")<0&&txt.indexOf("Zombis +")<0){
+      var bt=clamp(game.bannerT/2.8,0,1),ba=bt>0.85?(1-(bt-0.85)/0.15):bt<0.15?bt/0.15:1;
+      ctx.save();ctx.globalAlpha=ba;ctx.textAlign="center";ctx.textBaseline="middle";
+      hudFont("bold",15);
+      bw=Math.min(SW-32, ctx.measureText(txt).width+36);
+      by=s.t+(game.eventBannerT>0?44:52);bh=30;
+      ctx.fillStyle="rgba(80,10,10,0.88)";roundRect(ctx,(SW-bw)/2,by,bw,bh,8);ctx.fill();
+      ctx.strokeStyle="#ffd54f";ctx.lineWidth=1.6;roundRect(ctx,(SW-bw)/2,by,bw,bh,8);ctx.stroke();
+      ctx.fillStyle="#ffe082";ctx.fillText(txt,SW/2,by+bh/2+1);
+      ctx.restore();ctx.textAlign="left";ctx.textBaseline="alphabetic";
+    }
+  }
+}
+function drawMinimap(){
+  var s=layout.safe,mw=layout.isPortrait?84:118,mh=mw*(CFG.MAP_H/CFG.MAP_W),x=SW-s.r-mw-12,y=s.t+54;
+  hudGlass(x-6,y-6,mw+12,mh+12,8);
+  var img=(typeof ART!=="undefined"&&ART.arena)||(typeof GFX!=="undefined"&&GFX.arena);
+  if(img&&img.width){ctx.drawImage(img,x,y,mw,mh);}
+  else{ctx.fillStyle="#1b5e20";ctx.fillRect(x,y,mw,mh);}
+  var sx=mw/CFG.MAP_W,sy=mh/CFG.MAP_H,i,z;
+  if(game.zombies)for(i=0;i<game.zombies.length;i++){z=game.zombies[i];if(z.dead||z.dying)continue;ctx.fillStyle=z.isColossus||z.isBoss||z.isHome?"#ff1744":"#c6ff00";ctx.fillRect(x+z.x*sx-1.5,y+z.y*sy-1.5,3,3);}
+  var p=game.player;ctx.fillStyle="#40c4ff";ctx.beginPath();ctx.arc(x+p.x*sx,y+p.y*sy,3.2,0,7);ctx.fill();
+  ctx.strokeStyle="rgba(255,255,255,0.7)";ctx.lineWidth=1;
+  ctx.strokeRect(x+(game.camX-worldW()/2)*sx,y+(game.camY-worldH()/2)*sy,worldW()*sx,worldH()*sy);
+  /* area name */
+  z=typeof zoneAt==="function"?zoneAt(p.x,p.y):null;
+  if(z&&z.name){hudFont("bold",9);ctx.fillStyle="rgba(0,0,0,0.55)";roundRect(ctx,x,y+mh-14,mw,14,0);ctx.fill();ctx.fillStyle="#fff8e1";ctx.textAlign="center";ctx.fillText(z.name,x+mw/2,y+mh-4);ctx.textAlign="left";}
+}
+function drawPauseBtn(){
+  var b=getPauseBtn();
+  hudGlass(b.x,b.y,b.w,b.h,10);
+  ctx.fillStyle="#fff";roundRect(ctx,b.x+13,b.y+10,5,20,1.5);ctx.fill();roundRect(ctx,b.x+22,b.y+10,5,20,1.5);ctx.fill();
+}

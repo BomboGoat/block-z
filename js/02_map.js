@@ -417,3 +417,257 @@ function zoneAt(x,y){
   for(i=0;i<map.zones.length;i++){z=map.zones[i];if(x>=z.x&&x<=z.x+z.w&&y>=z.y&&y<=z.y+z.h)best=z;}
   return best;
 }
+
+/* ===== v20 compact arena ===== */
+function b64ToU8(s){
+  var bin=atob(s),i,u=new Uint8Array(bin.length);
+  for(i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
+  return u;
+}
+function b64ToI16(s){
+  var u=b64ToU8(s);return new Int16Array(u.buffer);
+}
+function decodeMapData(){
+  if(!MAP_DATA||MAP_DATA._decoded)return MAP_DATA;
+  MAP_DATA.walk=b64ToU8(MAP_DATA.walk_b64);
+  MAP_DATA.sdf=b64ToI16(MAP_DATA.sdf_b64);
+  MAP_DATA._decoded=1;
+  return MAP_DATA;
+}
+function sampleSDF(x,y){
+  var D=decodeMapData();if(!D||!D.sdf)return 40;
+  /* values are stored at cell centres */
+  var cs=D.cell,c=x/cs-0.5,r=y/cs-0.5,c0=Math.floor(c),r0=Math.floor(r);
+  var fx=c-c0,fy=r-r0;
+  function at(cc,rr){
+    cc=cc<0?0:(cc>=D.cols?D.cols-1:cc);
+    rr=rr<0?0:(rr>=D.rows?D.rows-1:rr);
+    return D.sdf[rr*D.cols+cc]/10;
+  }
+  var a=at(c0,r0),b=at(c0+1,r0),c1=at(c0,r0+1),d=at(c0+1,r0+1);
+  return a*(1-fx)*(1-fy)+b*fx*(1-fy)+c1*(1-fx)*fy+d*fx*fy;
+}
+function sdfNormal(x,y){
+  var e=5,dx=sampleSDF(x+e,y)-sampleSDF(x-e,y),dy=sampleSDF(x,y+e)-sampleSDF(x,y-e),l=Math.sqrt(dx*dx+dy*dy)||1;
+  return {x:dx/l,y:dy/l};
+}
+function terrainHit(cx,cy,rad){
+  var d=sampleSDF(cx,cy);
+  if(d>=rad-0.2)return null;
+  var n=sdfNormal(cx,cy);
+  return {k:"terrain",x:cx,y:cy,w:0,d:0,nx:n.x,ny:n.y,pen:rad-d,solid:1};
+}
+function hitCircleProp(s,cx,cy,rad){
+  var px=s.x+s.w/2,py=s.y+s.d/2,cr=s.cr||Math.min(s.w,s.d)/2;
+  var dx=cx-px,dy=cy-py,d2=dx*dx+dy*dy,lim=rad+cr;
+  if(d2>=lim*lim)return null;
+  var d=Math.sqrt(d2)||0.0001;
+  return {k:s.k,x:s.x,y:s.y,w:s.w,d:s.d,nx:dx/d,ny:dy/d,pen:lim-d,solid:s,shape:"circle"};
+}
+
+function buildMap(seed){
+  decodeMapData();
+  var D=MAP_DATA;
+  CFG.MAP_W=D.w;CFG.MAP_H=D.h;CFG.CELL=D.cell;
+  map={zones:[],solids:[],bushes:[],decos:[],spawns:[],chunks:{},chunkS:256,dirty:1,grid:null,cols:D.cols,rows:D.rows,flow:null,flowT:0,opens:[],corridors:[],decals:[],birds:[],lamps:[],rats:[],papers:[],view:{},play:D.play,start:D.start,pond:D.pond,bridges:D.bridges||[],wheat:D.wheat||[],sdf:D.sdf,walk:D.walk};
+  var i,p,list;
+  map.zones=(D.zones||[]).slice();
+  map.bushes=[];
+  (D.bushes||[]).forEach(function(b){map.bushes.push({x:b.x,y:b.y,w:b.w,d:b.d||b.h,h:b.h||14,k:"wheat",bush:1});});
+  function addAll(arr){
+    if(!arr)return;
+    for(i=0;i<arr.length;i++){p=arr[i];addSolid({k:p.k,x:p.x,y:p.y,w:p.w,d:p.d,h:p.h,canopy:p.canopy,treeKind:p.treeKind,shape:p.shape,cr:p.cr,top:p.top,side:p.side});}
+  }
+  addAll(D.trees);addAll(D.ruins);addAll(D.crates);addAll(D.barrels);addAll(D.rocks);
+  map.spawns=(D.spawns||[]).slice();
+  (function nudgeSpawns(){
+    var i,e,s;
+    for(i=0;i<map.spawns.length;i++){
+      s=map.spawns[i];e={x:s.x,y:s.y,r:16};resolveCircle(e);
+      if(typeof sampleSDF==="function" && sampleSDF(e.x,e.y)<18){
+        /* pull toward start until clear */
+        var k,vx=(map.start.x-e.x),vy=(map.start.y-e.y),l=Math.hypot(vx,vy)||1;
+        for(k=0;k<12 && sampleSDF(e.x,e.y)<18;k++){e.x+=vx/l*6;e.y+=vy/l*6;resolveCircle(e);}
+      }
+      s.x=e.x;s.y=e.y;
+    }
+  })();
+  map.start=D.start||{x:D.w/2,y:D.h*0.7};
+  map.view={
+    lago:{x:(D.pond&&D.pond.x)||500,y:(D.pond&&D.pond.y)+80||360},
+    trigal:{x:(D.wheat&&D.wheat[0]&&D.wheat[0].x+D.wheat[0].w/2)||280,y:(D.wheat&&D.wheat[0]&&D.wheat[0].y+D.wheat[0].h/2)||230},
+    ruinas:{x:680,y:200},
+    puente:{x:555,y:500},
+    park:map.start,gas:map.start,street:map.start,ruins:{x:680,y:200},lot:map.start
+  };
+  map.opens=[{x:map.play.x0,y:map.play.y0,w:map.play.x1-map.play.x0,h:map.play.y1-map.play.y0}];
+  /* grid from baked walk mask (already includes prop footprints) */
+  map.grid=new Uint8Array(D.walk);
+  map.cols=D.cols;map.rows=D.rows;
+  map.arenaReady=1;
+}
+
+function buildGrid(){
+  /* kept for compatibility; v20 grid is baked */
+  if(MAP_DATA&&MAP_DATA.walk){decodeMapData();map.grid=new Uint8Array(MAP_DATA.walk);map.cols=MAP_DATA.cols;map.rows=MAP_DATA.rows;return;}
+}
+
+function circleHitSolid(cx,cy,rad,ent){
+  var i,s,a=map.solids,best=null,bestD=0,mode,hit,d,dx,dy,d2,qx,qy;
+  mode=typeof ent==="string"?ent:(ent?"ent":"soft");
+  for(i=0;i<a.length;i++){
+    s=a[i];if(s.dead)continue;
+    if(s.climbable){
+      if(mode==="soft")continue;
+      if(mode==="ent"){
+        if(ent.vaultT>0||ent.jumpT>0||ent.dashT>0||(ent.airH||0)>4||ent.isHome||ent.isColossus||ent.isBoss)continue;
+      }
+    }
+    if(s.shape==="circle"){
+      hit=hitCircleProp(s,cx,cy,rad);
+      if(hit&&(!best||hit.pen>bestD)){best=hit;bestD=hit.pen;}
+      continue;
+    }
+    qx=clamp(cx,s.x,s.x+s.w);qy=clamp(cy,s.y,s.y+s.d);
+    dx=cx-qx;dy=cy-qy;d2=dx*dx+dy*dy;
+    if(d2<rad*rad){
+      d=Math.sqrt(d2)||0.0001;
+      if(!best||rad-d>bestD){best=s;bestD=rad-d;best.nx=dx/d;best.ny=dy/d;best.pen=rad-d;}
+    }
+  }
+  hit=terrainHit(cx,cy,rad);
+  if(hit&&(!best||hit.pen>bestD))best=hit;
+  return best;
+}
+function _bestSdfDir(x,y){
+  var k,ang,s,best=-1e9,bx=1,by=0,px,py;
+  for(k=0;k<8;k++){
+    ang=k*0.78539816339;
+    px=x+Math.cos(ang)*6;py=y+Math.sin(ang)*6;
+    s=sampleSDF(px,py);
+    if(s>best){best=s;bx=Math.cos(ang);by=Math.sin(ang);}
+  }
+  return {x:bx,y:by};
+}
+function resolveCircle(ent){
+  var i,hit,nx,ny,pen,dl,dr,dt,db,m,s0,s1,n,rad=ent.r||13,k;
+  for(i=0;i<8;i++){
+    hit=circleHitSolid(ent.x,ent.y,rad,ent);
+    if(!hit)break;
+    nx=hit.nx;ny=hit.ny;pen=hit.pen;
+    if(!(pen>0))break;
+    if(Math.abs(nx)+Math.abs(ny)<0.08){
+      if(hit.k==="terrain"||hit.k==="sdf"){n=sdfNormal(ent.x,ent.y);nx=n.x;ny=n.y;}
+      else if(hit.w||hit.d){
+        dl=ent.x-hit.x;dr=hit.x+hit.w-ent.x;dt=ent.y-hit.y;db=hit.y+hit.d-ent.y;m=Math.min(dl,dr,dt,db);
+        if(m===dl){nx=-1;ny=0;pen=rad+dl;}
+        else if(m===dr){nx=1;ny=0;pen=rad+dr;}
+        else if(m===dt){nx=0;ny=-1;pen=rad+dt;}
+        else{nx=0;ny=1;pen=rad+db;}
+      }else{n=_bestSdfDir(ent.x,ent.y);nx=n.x;ny=n.y;}
+    }
+    if(Math.abs(nx)+Math.abs(ny)<0.08){n=_bestSdfDir(ent.x,ent.y);nx=n.x;ny=n.y;}
+    s0=sampleSDF(ent.x,ent.y);
+    ent.x+=nx*pen;ent.y+=ny*pen;
+    s1=sampleSDF(ent.x,ent.y);
+    if(s1<s0-0.15 && s0<rad){
+      /* stepped deeper into terrain — revert and climb SDF */
+      ent.x-=nx*pen;ent.y-=ny*pen;
+      n=_bestSdfDir(ent.x,ent.y);
+      pen=Math.max(2,rad-sampleSDF(ent.x,ent.y));
+      ent.x+=n.x*pen;ent.y+=n.y*pen;
+    }
+  }
+  /* final escape so we never remain in water / forest */
+  for(i=0;i<10;i++){
+    s0=sampleSDF(ent.x,ent.y);
+    if(s0>=rad-0.2)break;
+    n=sdfNormal(ent.x,ent.y);
+    if(Math.abs(n.x)+Math.abs(n.y)<0.08)n=_bestSdfDir(ent.x,ent.y);
+    ent.x+=n.x*Math.max(2,rad-s0);
+    ent.y+=n.y*Math.max(2,rad-s0);
+    hit=circleHitSolid(ent.x,ent.y,rad,ent);
+    if(hit&&hit.k!=="terrain"){ent.x+= (hit.nx||0)*((hit.pen||2));ent.y+=(hit.ny||0)*((hit.pen||2));}
+  }
+  /* never clamp to the play AABB — it includes river corners */
+  ent.x=clamp(ent.x,8,CFG.MAP_W-8);
+  ent.y=clamp(ent.y,8,CFG.MAP_H-8);
+  if(sampleSDF(ent.x,ent.y)<(ent.r||13)-0.2 && ent._gx!=null){
+    ent.x=ent._gx;ent.y=ent._gy;
+  }
+}
+function moveWithSlide(ent,dx,dy){
+  var dist=Math.hypot(dx,dy),steps,i,s,rad=ent.r||13;
+  if(typeof sampleSDF==="function" && sampleSDF(ent.x,ent.y)>=rad-0.5){ent._gx=ent.x;ent._gy=ent.y;}
+  if(dist<0.0001){resolveCircle(ent);return;}
+  steps=Math.max(1,Math.ceil(dist/3.2));s=1/steps;
+  for(i=0;i<steps;i++){ent.x+=dx*s;ent.y+=dy*s;resolveCircle(ent);}
+  if(typeof sampleSDF==="function" && sampleSDF(ent.x,ent.y)<(ent.r||13)*0.35 && ent._gx!=null){ent.x=ent._gx;ent.y=ent._gy;resolveCircle(ent);}
+}
+function pickSpawn(p){
+  if(!map.flowDist)updateFlow(p.x,p.y);
+  var hw=worldW()*0.5,hh=worldH()*0.5,diag=Math.sqrt(hw*hw+hh*hh);
+  var r0=diag+24,i,sp,best=null,bestD=0,s,d,ok;
+  function usable(x,y){
+    if(inCamView(x,y,20))return 0;
+    if(dist(p.x,p.y,x,y)<Math.max(140,r0-40))return 0;
+    if(circleHitSolid(x,y,16,"solid"))return 0;
+    var c=clamp((x/CFG.CELL)|0,0,map.cols-1),r=clamp((y/CFG.CELL)|0,0,map.rows-1);
+    if(map.grid[r*map.cols+c])return 0;
+    if(map.flowDist&&map.flowDist[r*map.cols+c]<0)return 0;
+    return 1;
+  }
+  if(map.spawns&&map.spawns.length){
+    for(i=0;i<map.spawns.length;i++){
+      s=map.spawns[(i*7+((game&&game.time*10)|0))%map.spawns.length];
+      if(!usable(s.x,s.y))continue;
+      d=dist(p.x,p.y,s.x,s.y);
+      if(d>bestD){bestD=d;best=s;}
+    }
+    if(best)return {x:best.x,y:best.y};
+    for(i=0;i<map.spawns.length;i++){
+      s=map.spawns[i];
+      if(!circleHitSolid(s.x,s.y,16,"solid"))return {x:s.x,y:s.y};
+    }
+  }
+  /* fallback: ring search, stay on island */
+  var ang,r,pt;
+  for(r=r0;r<=r0+280;r+=28){
+    for(i=0;i<16;i++){
+      ang=i*(6.283/16)+(p.facing||0);
+      pt={x:p.x+Math.cos(ang)*r,y:p.y+Math.sin(ang)*r};
+      if(usable(pt.x,pt.y))return pt;
+    }
+  }
+  if(map.spawns&&map.spawns.length)return {x:map.spawns[0].x,y:map.spawns[0].y};
+  return {x:map.start.x,y:map.start.y};
+}
+function pickBossSpawn(p){
+  /* open clearing south of the pond / north of the stone bridge */
+  var cands=[
+    {x:(map.start&&map.start.x)||552,y:((map.start&&map.start.y)||430)-20},
+    {x:620,y:400},{x:500,y:400},{x:640,y:360},{x:480,y:360}
+  ],i,s;
+  for(i=0;i<cands.length;i++){
+    s=cands[i];
+    if(!circleHitSolid(s.x,s.y,28,"solid"))return s;
+  }
+  return pickSpawn(p||(game&&game.player)||{x:552,y:430});
+}
+function zoneAt(x,y){
+  var i,z,best=null;
+  for(i=0;i<(map.zones||[]).length;i++){z=map.zones[i];if(x>=z.x&&x<=z.x+z.w&&y>=z.y&&y<=z.y+(z.h||z.d||0))best=z;}
+  return best;
+}
+function inWheat(x,y){
+  var i,b=map.bushes;
+  if(!b)return 0;
+  for(i=0;i<b.length;i++)if(b[i].k==="wheat"&&x>=b[i].x&&x<=b[i].x+b[i].w&&y>=b[i].y&&y<=b[i].y+b[i].d)return b[i];
+  return 0;
+}
+function terrainSpeedMul(x,y){
+  var m=1;
+  if(inWheat(x,y))m*=0.78;
+  if(typeof eventSpeedMul==="function")m*=eventSpeedMul(x,y);
+  return m;
+}

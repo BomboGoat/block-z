@@ -17,9 +17,9 @@ function gfxLoad(done){
   var trees=["oak","pine","bushy"],left=keys.length+trees.length+1;
   GFX.trees=GFX.trees||{};
   function tick(){if(--left<=0){GFX.ready=1;if(typeof map!=="undefined"&&map){map.chunks={};map.dirty=1;}if(done)done();}}
-  keys.forEach(function(k){var im=new Image();im.onload=function(){GFX.tex[k]=im;tick();};im.onerror=tick;im.src=urls[k]+"?v=19.7";});
-  trees.forEach(function(k){var im=new Image();im.onload=function(){GFX.trees[k]=im;tick();};im.onerror=tick;im.src="assets/env/tree_"+k+".webp?v=19.7";});
-  var mb=new Image();mb.onload=function(){GFX.menuBg=mb;tick();};mb.onerror=tick;mb.src="assets/ui/menu-bg.webp?v=19.7";
+  keys.forEach(function(k){var im=new Image();im.onload=function(){GFX.tex[k]=im;tick();};im.onerror=tick;im.src=urls[k]+"?v=20";});
+  trees.forEach(function(k){var im=new Image();im.onload=function(){GFX.trees[k]=im;tick();};im.onerror=tick;im.src="assets/env/tree_"+k+".webp?v=20";});
+  var mb=new Image();mb.onload=function(){GFX.menuBg=mb;tick();};mb.onerror=tick;mb.src="assets/ui/menu-bg.webp?v=20";
 }
 function gfxTick(dt){
   var ms=(dt||0.016)*1000;GFX.ft=GFX.ft*0.9+ms*0.1;

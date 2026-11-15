@@ -1,22 +1,133 @@
 Block Z — third-party credits
 ================================
 
-Music (menu and rounds)
------------------------
-Menu bed: "Lost in a bad place (horror ambience loop)"
+Map art
+-------
+Arena ground painting generated for Block Z v20, based on a layout
+reference provided by Eric Montes. Trees, ruins, crates and barrels
+are drawn as in-game sprites / boxes on top of that painting.
+
+
+Music (recorded tracks, not 8-bit / not procedural)
+---------------------------------------------------
+Menu bed: "Dark Intro"
+  Author: Nikke
+  Source: https://opengameart.org/content/dark-intro
+  License: CC0 1.0 Universal
+  File: assets/mus/menu.mp3
+  Notes: Encoded as 128 kbps stereo MP3.
+
+Round / in-game bed: "Lost in a bad place (horror ambience loop)"
   Author: congusbongus
   Source: https://opengameart.org/content/lost-in-a-bad-place-horror-ambience-loop
-  License: CC0 1.0 Universal (public domain dedication)
-  File in this repo: assets/mus/menu.mp3
-  Notes: Downloaded as lost_1.ogg. For faster first load the web build uses a 45-second stereo loop at 64 kbps (trimmed from the start of the original, composition otherwise unchanged).
+  License: CC0 1.0 Universal
+  File: assets/mus/play.mp3
 
-Round / in-game bed: "Ancient caverns (horror ambient loop)"
-  Author: congusbongus
-  Source: https://opengameart.org/content/ancient-caverns-horror-ambient-loop
-  License: CC0 1.0 Universal (public domain dedication)
-  File in this repo: assets/mus/play.mp3
-  Notes: Downloaded as caverns.ogg and compressed to 80 kbps stereo MP3. A very quiet procedural heartbeat pulse is mixed under this bed in-game; it is original to Block Z.
+Colossus boss: "Battle Theme"
+  Author: Wolfgang_
+  Source: https://opengameart.org/content/battle-theme-0
+  License: CC0 1.0 Universal
+  File: assets/mus/colo.mp3
 
-Boss tracks (Colossus, Homelander, final) are original procedural music generated at runtime in the browser (no third-party samples).
+Homelander (phase 1): "Determined Pursuit (epic orchestra loop)"
+  Author: Emma_MA
+  Source: https://opengameart.org/content/determined-pursuit-epic-orchestra-loop
+  License: CC0 1.0 Universal
+  File: assets/mus/home.mp3
 
-CC0 license text: https://creativecommons.org/publicdomain/zero/1.0/
+Homelander (phase 2): "Fall of Nightmares [Epic, Orchestral]"
+  Author: nene  (voices: Helena Kesti, Matias Lindgren)
+  Source: https://opengameart.org/content/fall-of-nightmares-epic-orchestral
+  License: CC0 1.0 Universal
+  File: assets/mus/home2.mp3
+
+Final boss: "The Final Battle"
+  Author: skrjablin
+  Source: https://opengameart.org/content/the-final-battle
+  License: CC0 1.0 Universal
+  File: assets/mus/final.mp3
+
+
+Sound effects (recorded samples, encoded mono 96 kbps MP3)
+----------------------------------------------------------
+Gunshots (pistol, revolver, rifle, SMG, shotgun):
+  "Gunshot Sounds" recorded while target shooting
+  Author: Tabasco
+  Source: https://opengameart.org/content/gunshot-sounds
+  License: CC0 1.0 Universal
+  Original files: cz.wav, mosin.wav, sks.wav, shotty.wav
+  Files: assets/sfx/shot_pistol.mp3, shot_revolver.mp3, shot_rifle.mp3,
+         shot_smg.mp3, shot_shotgun.mp3
+
+Melee punches, heavy impacts, stomps:
+  Kenney — Impact Sounds (via "150 Combat Sound Effects")
+  Author: Kenney
+  Source: https://kenney.nl/assets/impact-sounds
+  Also listed at: https://opengameart.org/content/150-combat-sound-effects
+  License: CC0 1.0 Universal
+  Files: assets/sfx/melee.mp3, hit.mp3, stomp.mp3, foot_heavy.mp3
+
+Knife slashes and dash whoosh:
+  Kenney — RPG Audio (via the same combat pack, source id s03)
+  Author: Kenney
+  Source: https://kenney.nl/assets/rpg-audio
+  License: CC0 1.0 Universal
+  Files: assets/sfx/slash.mp3, dash.mp3
+
+Explosions and grenade launcher:
+  Kenney — Sci-fi Sounds (source id s04 in the combat pack)
+  Author: Kenney
+  Source: https://kenney.nl/assets/sci-fi-sounds
+  License: CC0 1.0 Universal
+  Files: assets/sfx/explode.mp3, shot_gl.mp3, splash.mp3
+
+Lightning / zap / crackle / boss sting:
+  "Basic Spell Impacts"
+  Author: lentikula
+  Source: included in https://opengameart.org/content/150-combat-sound-effects
+          (source id s06)
+  License: CC0 1.0 Universal
+  Files: assets/sfx/zap.mp3, crackle.mp3, sting.mp3, boss.mp3
+
+Thunder / storm:
+  "Thunder"
+  Author: Jerimee
+  Source: https://opengameart.org/content/thunder
+  License: CC-BY 3.0
+  File: assets/sfx/storm.mp3
+  The laser hum loop (assets/sfx/laser_loop.mp3) is a crossfaded excerpt
+  of this recording.
+
+Zombie groans, death and laugh:
+  "Scorchers Foley Sounds" — zombie_moaning.wav
+  Author: scorcher24
+  Source: https://opengameart.org/content/scorchers-foley-sounds
+  License: CC0 1.0 Universal
+  Files: assets/sfx/growl.mp3, death.mp3, laugh.mp3
+
+Player pain:
+  "Pain"
+  Author: harakira
+  Source: https://opengameart.org/content/pain
+  License: CC-BY 4.0
+  File: assets/sfx/hurt.mp3
+
+UI clicks, cards, rarities, wave, clear, level, jump, mash:
+  "51 UI Sound Effects"
+  Author: Kenney Vleugels (www.kenney.nl)
+  Source: https://opengameart.org/content/51-ui-sound-effects-buttons-switches-and-clicks
+  License: CC0 1.0 Universal
+  Files: assets/sfx/click.mp3, card.mp3, rarity0-4.mp3, wave.mp3,
+         clear.mp3, level.mp3, jump.mp3, mash.mp3
+
+Footstep (optional / reserved):
+  "Footsteps"
+  Source: https://opengameart.org/content/footsteps-0
+  License: CC0 1.0 Universal
+
+The in-game 8-voice pooled playback system and the iOS "Toca para empezar"
+audio unlock are original to Block Z. No procedural synth beeps remain.
+
+CC0: https://creativecommons.org/publicdomain/zero/1.0/
+CC-BY 3.0: https://creativecommons.org/licenses/by/3.0/
+CC-BY 4.0: https://creativecommons.org/licenses/by/4.0/
