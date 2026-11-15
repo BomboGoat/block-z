@@ -92,20 +92,19 @@ function drawArtShadow(s,e,W,H,look,bob,opts){
   var fade=clamp(1-up/(56*sc),hover?0.22:0.18,1);
   if(opts.dying)fade*=clamp(opts.dieP||0,0.15,1);
   var shrink=0.58+0.42*fade;
-  var bodyW=W*(look&&look.type==="crawler"?0.58:look&&look.type==="jumper"?0.40:0.40);
-  var footW=bodyW*0.70*shrink,footH=Math.max(3,footW*0.30);
-  var ox=7*sc*shrink,oy=2*sc;
-  ctx.save();
-  ctx.fillStyle="rgba(0,0,0,"+(0.32*fade)+")";
-  fillEllipse(ctx,s.x+ox*0.3,s.y+oy,footW,footH);
-  var sh=artShadowSpr(e),pad=sh.pad,iw=sh.w,ih=sh.h;
-  var dw=W*(1+2*pad/iw),dh=H*(1+2*pad/ih),sx=W/iw,sy=H/ih;
-  ctx.translate(s.x+ox,s.y+oy);
-  ctx.transform(1,0,0.40,0.17*shrink,0,0);
-  if(e.flip)ctx.scale(-1,1);
-  ctx.globalAlpha=0.26*fade;
-  ctx.drawImage(sh.c,-(pad+iw*fx)*sx,-(pad+ih*fy)*sy,dw,dh);
+  /* v20.3: one soft grounded contact shadow centred under the feet (no skewed silhouette) */
+  var big=look&&(look.kind==="colossus"||look.kind==="thanos"||look.kind==="gorgon"||look.kind==="final"||look.type==="boss");
+  var footW=W*(look&&look.type==="crawler"?0.56:big?0.42:0.55)*shrink,footH=Math.max(3,footW*0.34);
+  ctx.save();ctx.globalAlpha=fade;
+  ctx.drawImage(softShadowSpr(),s.x-footW,s.y-footH*1.05,footW*2,footH*2);
   ctx.restore();ctx.globalAlpha=1;
+}
+var _softSh=null;
+function softShadowSpr(){
+  if(_softSh)return _softSh;
+  var c=document.createElement("canvas");c.width=64;c.height=64;var g=c.getContext("2d"),gr=g.createRadialGradient(32,32,0,32,32,32);
+  gr.addColorStop(0,"rgba(8,12,4,0.92)");gr.addColorStop(0.55,"rgba(8,12,4,0.74)");gr.addColorStop(0.85,"rgba(8,12,4,0.28)");gr.addColorStop(1,"rgba(0,0,0,0)");
+  g.fillStyle=gr;g.fillRect(0,0,64,64);_softSh=c;return c;
 }
 function drawBodyShadow(s,bodyW,bob,opts,look){
   opts=opts||{};
