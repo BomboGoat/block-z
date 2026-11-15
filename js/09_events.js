@@ -1,11 +1,9 @@
 /* v20 temporary round events */
 var EVENT_DEFS={
-  niebla:{name:"Niebla",banner:"¡Niebla espesa!",icon:"🌫️",mild:1,dur:[18,26],col:"#b0bec5"},
   tormenta:{name:"Tormenta",banner:"¡Tormenta!",icon:"⚡",mild:0,dur:[16,24],col:"#90caf9"},
   fuego:{name:"Fuego en el trigal",banner:"¡El trigal arde!",icon:"🔥",mild:0,dur:[16,24],col:"#ff8a50"},
   riada:{name:"Riada",banner:"¡Riada en el puente!",icon:"🌊",mild:0,dur:[14,20],col:"#4fc3f7"},
   caja:{name:"Caja de suministros",banner:"¡Caja de suministros!",icon:"📦",mild:1,dur:[20,28],col:"#ffd54f"},
-  toxica:{name:"Zona tóxica",banner:"¡Charco tóxico!",icon:"☠️",mild:0,dur:[16,24],col:"#9ccc65"},
   luna:{name:"Luna de sangre",banner:"¡Luna de sangre!",icon:"🔴",mild:0,dur:[18,26],col:"#e53935"},
   tesoro:{name:"Tesoro",banner:"¡Tesoro en las ruinas!",icon:"💎",mild:1,dur:[20,28],col:"#ffe082"}
 };
@@ -35,7 +33,7 @@ function eventAutoRangeMul(){
   return 1;
 }
 function pickEventIds(waveIdx){
-  var mild=["niebla","caja","tesoro"],all=Object.keys(EVENT_DEFS),ids=[],id,pool,i;
+  var mild=["caja","tesoro"] /* v20.3: fog and giant poison removed */,all=Object.keys(EVENT_DEFS),ids=[],id,pool,i;
   function pickFrom(arr){
     var left=arr.filter(function(k){return ids.indexOf(k)<0;});
     if(!left.length)return null;

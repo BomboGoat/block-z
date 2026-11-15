@@ -67,14 +67,36 @@ function treeHides(o,x,y){
   if(y<cy)return 0;
   return dist(x,y,cx,cy)<R+12;
 }
+var _treeGrade={};
+function gradedTree(kind,img){
+  var c=_treeGrade[kind];if(c)return c;
+  c=document.createElement("canvas");c.width=img.width;c.height=img.height;
+  var g=c.getContext("2d"),w=c.width,h=c.height,gr;
+  g.drawImage(img,0,0);
+  g.globalCompositeOperation="source-atop";
+  g.fillStyle="rgba(70,84,52,0.13)";g.fillRect(0,0,w,h);            /* pull the flat sticker greens toward the painted ground */
+  gr=g.createLinearGradient(0,h*0.35,0,h);gr.addColorStop(0,"rgba(16,26,10,0)");gr.addColorStop(0.72,"rgba(16,26,10,0.26)");gr.addColorStop(1,"rgba(12,18,8,0.5)");
+  g.fillStyle=gr;g.fillRect(0,0,w,h);                               /* ambient occlusion under the canopy and at the root */
+  gr=g.createRadialGradient(w*0.36,h*0.2,4,w*0.36,h*0.2,w*0.7);gr.addColorStop(0,"rgba(255,236,170,0.14)");gr.addColorStop(1,"rgba(255,236,170,0)");
+  g.fillStyle=gr;g.fillRect(0,0,w,h);                               /* warm key light from the same side as the map */
+  _treeGrade[kind]=c;return c;
+}
 function drawTree(o){
   var s=toScreen(o.x+o.w/2,o.y+o.d/2),sc=layout.scale,R=(o.canopy||40)*sc,h=(o.h||16)*sc;
   var ghost=0,p=game&&game.player,zs,i;
   if(p&&treeHides(o,p.x,p.y))ghost=1;
   if(!ghost&&game&&game.zombies){zs=game.zombies;for(i=0;i<zs.length;i++)if(!zs[i].dead&&onScreen(zs[i].x,zs[i].y,40)&&treeHides(o,zs[i].x,zs[i].y)){ghost=1;break;}}
-  ctx.fillStyle="rgba(0,0,0,0.28)";fillEllipse(ctx,s.x+7,s.y+6,R*0.58,R*0.22);
   var kind=o.treeKind||"oak",img=typeof GFX!=="undefined"&&GFX.trees&&GFX.trees[kind];
   if(img&&img.width){
+    /* v20.3: soft canopy shadow cast on the ground + a dark contact patch at the trunk,
+       and a once-baked colour grade so the sprite sits in the painted ground instead of looking pasted */
+    if(typeof softShadowSpr==="function"){
+      var ss=softShadowSpr();
+      ctx.globalAlpha=ghost?0.18:0.34;ctx.drawImage(ss,s.x-R*0.55,s.y-R*0.3,R*1.75,R*0.66);
+      ctx.globalAlpha=ghost?0.3:0.62;ctx.drawImage(ss,s.x-R*0.42,s.y-R*0.13,R*0.84,R*0.3);
+      ctx.globalAlpha=1;
+    }
+    img=gradedTree(kind,img);
     var mul=kind==="pine"?2.85:kind==="bushy"?2.25:2.55;
     var H=R*mul,W=H*(img.width/img.height);
     var sway=Math.sin(((game&&game.time)||0)*1.15+(o.x||0)*0.02)*0.032;
@@ -237,6 +259,33 @@ function drawFence(o){
     ctx.fillRect(px-postW/2,py-h-2*sc,postW,2.2*sc);
   }
   ctx.restore();
+}
+/* v20.3: walkable ruins. The painted ruin walls are cut out (assets/env/ruin_occ.webp, alpha = stone)
+   and y-sorted with actors as strips, one per wall footprint, so anyone behind a wall is hidden by it;
+   strips that hide the hero fade so you never lose track of yourself inside. */
+var RUIN_OCC={"box":[578,50,822,246],"strips":[[588,95.4,622,182],[622,100.0,648,178],[640,69.1,668,150],[664,57.1,694,138],[686,48.3,700,132],[694,46.6,748,140],[746,61.1,768,142],[766,68.3,800,152],[736,98.9,766,178],[766,92.0,806,174],[792,122.9,806,198],[690,153.7,720,230],[718,158.9,762,238],[760,144.9,800,224]]};
+function ruinOccItems(list){
+  var img=typeof GFX!=="undefined"&&GFX.ruinOcc;if(!img||!img.width||game.state==="hell"||(typeof HELL!=="undefined"&&HELL.active))return;
+  var i,st,b=RUIN_OCC.box;if(!onScreen((b[0]+b[2])/2,(b[1]+b[3])/2,260))return;
+  for(i=0;i<RUIN_OCC.strips.length;i++){st=RUIN_OCC.strips[i];if(st.sy==null)st.sy=ruinOccSortY(st);list.push({y:st.sy,k:"occ",o:st});}
+}
+/* a tree planted just in front of a wall must stay drawn over the wall strip */
+function ruinOccSortY(st){
+  var y=st[3],i,o,cx,R,ty;
+  for(i=0;i<map.solids.length;i++){o=map.solids[i];if(o.k!=="tree")continue;
+    cx=o.x+o.w/2;R=(o.canopy||34)*0.9;ty=o.y+o.d;
+    if(cx+R>st[0]&&cx-R<st[2]&&ty<st[3]+40&&ty>st[3]-48)y=Math.min(y,ty-0.5);}
+  return y;
+}
+function drawRuinOcc(st){
+  var img=GFX.ruinOcc,b=RUIN_OCC.box,p=game.player,sc=layout.scale,ys=CFG.YSCALE;
+  var hide=p&&p.y+(p.r||10)<=st[3]&&p.y>st[1]-6&&p.x>st[0]-10&&p.x<st[2]+10;
+  st.f=(st.f==null?1:st.f)+((hide?0.42:1)-(st.f==null?1:st.f))*0.2;
+  var a=st.f;if(a<0.02)return;
+  var s0=toScreen(st[0],st[1]),kx=img.width/(b[2]-b[0]),ky=img.height/(b[3]-b[1]);
+  ctx.globalAlpha=a;
+  ctx.drawImage(img,(st[0]-b[0])*kx,(st[1]-b[1])*ky,(st[2]-st[0])*kx,(st[3]-st[1])*ky,s0.x,s0.y,(st[2]-st[0])*sc,(st[3]-st[1])*ys*sc);
+  ctx.globalAlpha=1;
 }
 function drawProp(o,ghost){
   if(o.dead)return;
@@ -846,7 +895,8 @@ function drawWeapon34(c,hx,hy,ang,wpn,sc,muzzle,skin,two){
 }
 function drawBullet(b){
   var s=toScreen(b.x,b.y);if(b.lift)s.y-=b.lift;
-  var sc=layout.scale*(b.cannon?1.45:1),ang=Math.atan2(b.vy||0,b.vx||1);
+  /* v20.3: projectiles proportional to the smaller characters */
+  var sc=layout.scale*(b.cannon?1.45:1)*(b.cannon?0.62:b.knife?0.62:b.bell?0.66:b.gl?0.72:0.55),ang=Math.atan2(b.vy||0,b.vx||1);
   ctx.save();ctx.translate(s.x,s.y);ctx.rotate(ang+(b.bell?(b.spinA||0):0));
   if(!b.bell&&!b.gl&&!b.knife&&!b.expl){
     var bs=ensureBulletSprs(),spr=b.revolver?bs.revolver:b.rifle?bs.rifle:b.pistol?bs.pistol:bs.generic;

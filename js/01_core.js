@@ -25,7 +25,7 @@ var ZTYPE_NAME={normal:"Zombi",fast:"Corredor",tank:"Tanque",crawler:"Reptador",
 var ZTYPE_BANNER={spitter:1,armored:1,exploder:1,screamer:1,splitter:1,jumper:1,tank:1};
 function waveDifficulty(idx){
   idx=idx||0;
-  var hp=Math.pow(1.13,idx), dmg=Math.pow(1.09,idx);
+  var hp=Math.pow(1.11,idx), dmg=0.85*Math.pow(1.065,idx); /* v20.3: zombies fairer */
   return{
     hp:hp,
     speed:1+0.025*idx,
@@ -34,10 +34,10 @@ function waveDifficulty(idx){
     maxAlive:Math.min(16,8+((idx*0.9)|0)),
     interval:Math.max(0.50,1.15-idx*0.072),
     burst:idx<3?1:idx<6?2:idx<8?3:4,
-    elite:idx<3?0:0.06+(idx-3)*0.045,
+    elite:idx<3?0:0.04+(idx-3)*0.035,
     bossHp:1+0.03*Math.max(0,idx-2),
     hpPct:Math.round((hp-1)*100),
-    dmgPct:Math.round((dmg-1)*100)
+    dmgPct:Math.max(0,Math.round((dmg-1)*100))
   };
 }
 function waveBuffText(idx){
@@ -170,10 +170,10 @@ function rngPick(rng,arr){return arr[(rng()*arr.length)|0];}
 function rngRange(rng,a,b){return a+rng()*(b-a);}
 var selectedHero="classic";
 var HEROES=[
-{id:"classic",name:"Eric",desc:"Equilibrado. Super Cañonazo: un abanico masivo con su arma.",hp:100,spd:100,dmg:100,wpn:"Pistola",col:"#1565c0"},
-{id:"trueno",name:"Tro",desc:"Rayos en cadena y un láser dirigido.",hp:90,spd:105,dmg:115,wpn:"Rayos",col:"#ffd54f"},
-{id:"mr",name:"Mr.",desc:"Cuchillo ágil. Super: abanico de cuchillos en llamas.",hp:120,spd:115,dmg:100,wpn:"Cuchillo",col:"#37474f"},
-{id:"gompa",name:"Gompa",desc:"Culturista. Super Gigante: crece, salta y aplasta.",hp:140,spd:88,dmg:100,wpn:"Pesas",col:"#6d4c41"}
+{id:"classic",name:"Eric",desc:"Equilibrado. Super Cañonazo: un abanico masivo con su arma.",hp:130,spd:100,dmg:100,wpn:"Pistola",col:"#1565c0"},
+{id:"trueno",name:"Tro",desc:"Rayos en cadena y un láser dirigido.",hp:120,spd:105,dmg:115,wpn:"Rayos",col:"#ffd54f"},
+{id:"mr",name:"Mr.",desc:"Cuchillo ágil. Super: abanico de cuchillos en llamas.",hp:150,spd:115,dmg:100,wpn:"Cuchillo",col:"#37474f"},
+{id:"gompa",name:"Gompa",desc:"Culturista. Super Gigante: crece, salta y aplasta.",hp:175,spd:88,dmg:100,wpn:"Pesas",col:"#6d4c41"}
 ];
 function makePlayerLook(){return{kind:"player",hero:"classic",skin:"#d2a679",skinShadow:"#a67c52",skinLight:"#e8c4a0",hair:"#2c1810",brow:"#1a1008",eye:"#2e4a3e",eyeWhite:"#e8e4d9",hoodie:"#1565c0",hoodieDark:"#0d47a1",hoodieLight:"#42a5f5",pants:"#1a237e",pantsDark:"#0d1540",shoe:"#1a1a1a",cap:"#8b1a1a",capBrim:"#5c1010",stubble:1};}
 function makeHeroLook(id){

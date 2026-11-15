@@ -303,6 +303,13 @@ Hero voice lines "Y yo... soy... <name>": assets/sfx/final_voice_{classic,trueno
 Infinity Gauntlet item sprite (assets/spr/gauntlet.webp) was generated for Block Z
   and keyed through the chroma-key pipeline.
 
+v20.3 additions
+---------------
+Ruin wall cut-out (assets/env/ruin_occ.webp): an alpha mask cut in-house from the
+  Block Z arena painting (assets/env/arena.webp) so actors can walk behind the ruin walls.
+Menu, hero rig animation, unlocks and achievements are drawn in code from the existing
+  Block Z sprites; menu sounds reuse the existing licensed SFX above.
+
 CC0: https://creativecommons.org/publicdomain/zero/1.0/
 CC-BY 3.0: https://creativecommons.org/licenses/by/3.0/
 CC-BY 4.0: https://creativecommons.org/licenses/by/4.0/
