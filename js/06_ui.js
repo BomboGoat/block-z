@@ -23,8 +23,9 @@ function drawWorld(){
   function vis(x,y,w,d){var s1=toScreen(x,y),s2=toScreen(x+w,y+d);return!(s2.x<-pad||s1.x>SW+pad||s2.y<-pad||s1.y>SH+pad);}
   for(i=0;i<map.solids.length;i++){o=map.solids[i];if(o.dead)continue;if(vis(o.x,o.y,o.w,o.d))list.push({y:o.y+o.d,k:"p",o:o});}
   for(i=0;i<(map.decos||[]).length;i++){o=map.decos[i];if(vis(o.x,o.y,o.w,o.d))list.push({y:o.y+o.d,k:"p",o:o});}
-  if(p)list.push({y:p.y+p.r,k:"pl"});
-  var zs=game.state==="title"?game.titleZ:game.zombies;
+  var menuSt=game.state==="title"||game.state==="select"||(typeof MENU_ST!=="undefined"&&MENU_ST[game.state]&&!(game.state==="settings"&&prevSettings==="pause"));
+  if(p&&!menuSt)list.push({y:p.y+p.r,k:"pl"});
+  var zs=menuSt?game.titleZ:game.zombies;
   if(zs)for(i=0;i<zs.length;i++){o=zs[i];if(o.dead)continue;if(onScreen(o.x,o.y,80))list.push({y:o.y+o.r,k:"z",o:o});}
   if(game.player&&game.player.hasDog&&game.player.dog)list.push({y:game.player.dog.y+8,k:"dog"});
   if(typeof fireSortItems==="function")fireSortItems(list);
@@ -196,7 +197,7 @@ function drawMinimap(){
 function drawPauseBtn(){var b=getPauseBtn();panel(b.x,b.y,b.w,b.h,"rgba(20,22,32,0.7)");ctx.fillStyle="#fff";roundRect(ctx,b.x+13,b.y+10,5,20,1.5);ctx.fill();roundRect(ctx,b.x+22,b.y+10,5,20,1.5);ctx.fill();}
 function drawJoystick(){
   if(!(game.state==="playing"||game.state==="countdown"||game.state==="boss_intro"))return;
-  var ox=input.joy?input.joyX:joyOrigin().x,oy=input.joy?input.joyY:joyOrigin().y,rad=58;
+  var ox=input.joy?input.joyX:joyOrigin().x,oy=input.joy?input.joyY:joyOrigin().y,rad=58*((typeof PROF!=="undefined"&&PROF&&PROF.set.joySize)||1);
   ctx.save();ctx.globalAlpha=input.joy?0.78:0.45;
   ctx.fillStyle="rgba(20,30,50,0.4)";ctx.beginPath();ctx.arc(ox,oy,rad,0,7);ctx.fill();
   ctx.strokeStyle="rgba(227,242,253,0.95)";ctx.lineWidth=4;ctx.beginPath();ctx.arc(ox,oy,rad,0,7);ctx.stroke();
@@ -574,6 +575,7 @@ function draw(){
   ctx.fillStyle="#102014";ctx.fillRect(0,0,SW,SH);
   if(layout&&layout.isPortrait&&typeof drawRotateOverlay==="function"){drawRotateOverlay();return;}
   if(!game)return;
+  if(typeof MENU_ST!=="undefined"&&MENU_ST[game.state]&&typeof drawMenuScreen==="function"){drawMenuScreen();if(game.state==="title"&&typeof titleSplash!=="undefined"&&titleSplash)drawTitleSplash();return;}
   if(game.state==="title"){drawTitle();if(typeof titleSplash!=="undefined"&&titleSplash)drawTitleSplash();return;}
   if(game.state==="select"){drawSelect();drawVignette();return;}
   if(game.state==="settings"){drawSettings();return;}
@@ -593,6 +595,7 @@ function draw(){
   if(game.state==="upgrade")drawUpgradeUI();
   if(game.state==="dead")drawEndScreen(0);
   if(game.state==="victory")drawEndScreen(1);
+  if((game.state==="dead"||game.state==="victory")&&typeof drawRunRewards==="function")drawRunRewards();
 }
 function frame(now){
   var t=now||Date.now(),dt=Math.min(0.033,(t-last)/1000);last=t;

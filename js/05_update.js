@@ -92,7 +92,7 @@ function handleMenuClick(id,st){
   else if(id==="ajustes"){prevSettings=st||game.state;game.state="settings";layoutMenuButtons();}
   else if(id==="sfx"){setMuteSfx(!audio.mutedSfx);layoutMenuButtons();}
   else if(id==="mus"){setMuteMus(!audio.mutedMus);if(!audio.mutedMus)startMusic(game&&game.bossFight?"boss":game&&(game.state==="playing"||game.state==="countdown")?"play":"menu");else stopMusic();layoutMenuButtons();}
-  else if(id==="back"){if(game.state==="select"){game.state="title";layoutMenuButtons();return;}game.state=prevSettings==="pause"?"pause":prevSettings==="howto"?"title":(prevSettings||"title");if(game.state==="title")startMusic("menu");layoutMenuButtons();}
+  else if(id==="back"){if(game.state==="select"){if(typeof menuGo==="function"){menuGo("levels");return;}game.state="title";layoutMenuButtons();return;}game.state=prevSettings==="pause"?"pause":prevSettings==="howto"?"title":(prevSettings||"title");if(game.state==="title")startMusic("menu");layoutMenuButtons();}
   else if(id==="continuar"){game.state="playing";layoutMenuButtons();}
   else if(id==="menu")goToMenu();
 }
@@ -177,10 +177,10 @@ function onPointerUp(e){
   input.joy=0;input.jx=0;input.jy=0;input.joyId=-1;
 }
 function initInput(){
-  canvas.addEventListener("pointerdown",onPointerDown);
-  canvas.addEventListener("pointermove",onPointerMove);
-  window.addEventListener("pointerup",onPointerUp);
-  window.addEventListener("pointercancel",onPointerUp);
+  canvas.addEventListener("pointerdown",function(e){onPointerDown(e);});
+  canvas.addEventListener("pointermove",function(e){onPointerMove(e);});
+  window.addEventListener("pointerup",function(e){onPointerUp(e);});
+  window.addEventListener("pointercancel",function(e){onPointerUp(e);});
   window.addEventListener("keydown",function(e){input.keys[e.key]=1;if(e.key==="p"||e.key==="Escape"){if(game&&game.state==="playing"){game.state="pause";if(typeof stopCombatLoops==="function")stopCombatLoops();layoutMenuButtons();}else if(game&&game.state==="pause"){game.state="playing";layoutMenuButtons();}}if(e.key===" "&&game&&game.player&&game.state==="playing")fireSuper(game.player);});
   window.addEventListener("keyup",function(e){input.keys[e.key]=0;});
   window.addEventListener("resize",resize);window.addEventListener("orientationchange",function(){setTimeout(resize,120);});
@@ -197,7 +197,8 @@ function update(dt){
   if(game.bannerT>0){game.bannerT-=dt;if(game.bannerT<=0){game.bannerT=0;game.banner=null;}}
   if(game.roundBannerT>0)game.roundBannerT=Math.max(0,game.roundBannerT-dt);
   var p=game.player;
-  if(game.state==="title"||game.state==="select"){updateTitle(dt);updateAmbient(dt);updateCam(dt);return;}
+  if(typeof menuGameTick==="function")menuGameTick(dt);
+  if(game.state==="title"||game.state==="select"||(typeof MENU_ST!=="undefined"&&MENU_ST[game.state]&&!(game.state==="settings"&&prevSettings==="pause"))){updateTitle(dt);updateAmbient(dt);updateCam(dt);return;}
   if(game.state==="countdown"){
     updatePlayerMove(p,dt,1);
     game.countdown-=dt;
