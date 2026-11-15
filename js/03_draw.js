@@ -238,6 +238,33 @@ function drawFence(o){
   }
   ctx.restore();
 }
+/* v20.3: walkable ruins. The painted ruin walls are cut out (assets/env/ruin_occ.webp, alpha = stone)
+   and y-sorted with actors as strips, one per wall footprint, so anyone behind a wall is hidden by it;
+   strips that hide the hero fade so you never lose track of yourself inside. */
+var RUIN_OCC={"box":[578,50,822,246],"strips":[[588,95.4,622,182],[622,100.0,648,178],[640,69.1,668,150],[664,57.1,694,138],[686,48.3,700,132],[694,46.6,748,140],[746,61.1,768,142],[766,68.3,800,152],[736,98.9,766,178],[766,92.0,806,174],[792,122.9,806,198],[690,153.7,720,230],[718,158.9,762,238],[760,144.9,800,224]]};
+function ruinOccItems(list){
+  var img=typeof GFX!=="undefined"&&GFX.ruinOcc;if(!img||!img.width||game.state==="hell"||(typeof HELL!=="undefined"&&HELL.active))return;
+  var i,st,b=RUIN_OCC.box;if(!onScreen((b[0]+b[2])/2,(b[1]+b[3])/2,260))return;
+  for(i=0;i<RUIN_OCC.strips.length;i++){st=RUIN_OCC.strips[i];if(st.sy==null)st.sy=ruinOccSortY(st);list.push({y:st.sy,k:"occ",o:st});}
+}
+/* a tree planted just in front of a wall must stay drawn over the wall strip */
+function ruinOccSortY(st){
+  var y=st[3],i,o,cx,R,ty;
+  for(i=0;i<map.solids.length;i++){o=map.solids[i];if(o.k!=="tree")continue;
+    cx=o.x+o.w/2;R=(o.canopy||34)*0.9;ty=o.y+o.d;
+    if(cx+R>st[0]&&cx-R<st[2]&&ty<st[3]+40&&ty>st[3]-48)y=Math.min(y,ty-0.5);}
+  return y;
+}
+function drawRuinOcc(st){
+  var img=GFX.ruinOcc,b=RUIN_OCC.box,p=game.player,sc=layout.scale,ys=CFG.YSCALE;
+  var hide=p&&p.y+(p.r||10)<=st[3]&&p.y>st[1]-6&&p.x>st[0]-10&&p.x<st[2]+10;
+  st.f=(st.f==null?1:st.f)+((hide?0.42:1)-(st.f==null?1:st.f))*0.2;
+  var a=st.f;if(a<0.02)return;
+  var s0=toScreen(st[0],st[1]),kx=img.width/(b[2]-b[0]),ky=img.height/(b[3]-b[1]);
+  ctx.globalAlpha=a;
+  ctx.drawImage(img,(st[0]-b[0])*kx,(st[1]-b[1])*ky,(st[2]-st[0])*kx,(st[3]-st[1])*ky,s0.x,s0.y,(st[2]-st[0])*sc,(st[3]-st[1])*ys*sc);
+  ctx.globalAlpha=1;
+}
 function drawProp(o,ghost){
   if(o.dead)return;
   /* Arena painting already has ruins, crates, barrels, rocks and pillars.

@@ -28,6 +28,7 @@ function drawWorld(){
   if(zs)for(i=0;i<zs.length;i++){o=zs[i];if(o.dead)continue;if(onScreen(o.x,o.y,80))list.push({y:o.y+o.r,k:"z",o:o});}
   if(game.player&&game.player.hasDog&&game.player.dog)list.push({y:game.player.dog.y+8,k:"dog"});
   if(typeof fireSortItems==="function")fireSortItems(list);
+  if(typeof ruinOccItems==="function")ruinOccItems(list);
   list.sort(function(a,b){return a.y-b.y;});
   for(i=0;i<list.length;i++){
     var it=list[i];
@@ -36,6 +37,7 @@ function drawWorld(){
     else if(it.k==="pl")drawHero();
     else if(it.k==="z")drawZ(it.o);
     else if(it.k==="fire")drawFireAnchor(it.o);
+    else if(it.k==="occ")drawRuinOcc(it.o);
     else if(it.k==="dog"){var d=game.player.dog;drawChar34(d.x,d.y,{kind:"zombie",skin:"#6e7a5a",shirt:"#3e2723",pants:"#3e2723",hair:"#1a120b",eyeGlow:"#c62828"},game.player.aimAng,d.anim||0,{h:16,r:8,scale:0.7,moving:1});}
   }
   if(typeof drawWheatOverlay==="function"){
