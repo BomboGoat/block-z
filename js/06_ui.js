@@ -670,6 +670,7 @@ function drawHUD(){
   lab=wpn==="bolt"?"Rayos":wpn==="knife"?"Cuchillo":wpn==="fist"||wpn==="bell"?"Pesas":wpn==="smg"?"Subfusil":wpn==="shotgun"?"Escopeta":wpn==="revolver"?"Revólver":wpn==="rifle"?"Rifle":wpn==="gl"?"Lanzagranadas":"Pistola";
   pal={classic:{bg:"#ff8f00",fg:"#1a0a00"},trueno:{bg:"#00e5ff",fg:"#00363d"},mr:{bg:"#ff1744",fg:"#fff"},gompa:{bg:"#c6ff00",fg:"#142000"}};
   var col=pal[hero]||pal.classic;
+  if(p.mega&&typeof MEGA!=="undefined"&&MEGA[p.mega]){lab=p.mega==="hammer"?"Martillo":p.mega==="armor"?"Armadura":"Furia verde";col={bg:MEGA[p.mega].c,fg:p.mega==="armor"?"#fff":"#0a0a12"};}
   hudFont("bold",9);var tw=ctx.measureText(lab).width+14,px=x+w-tw-8,py=y+38;
   ctx.fillStyle=col.bg;roundRect(ctx,px,py,tw,16,8);ctx.fill();
   ctx.fillStyle=col.fg;ctx.textAlign="center";ctx.fillText(lab,px+tw/2,py+9);ctx.textAlign="left";
@@ -682,6 +683,8 @@ function drawHUD(){
   var boss=game.boss;
   if(boss&&!boss.dead&&!boss.dying&&game.bossFight&&game.state!=="boss_intro"){
     var bw=Math.min(360,SW-200),bx=(SW-bw)/2,by=s.t+(game.eventBannerT>0?40:8),bh=9;
+    /* v20.2.2: in the hell arena the Thanos bar sits bottom-centre (between the sticks) so his head is never hidden */
+    if(boss.isThanos&&typeof HELL!=="undefined"&&HELL.active){bw=Math.min(300,SW-400);bx=(SW-bw)/2;by=SH-s.b-36;}
     ctx.fillStyle="rgba(10,0,0,0.78)";roundRect(ctx,bx-4,by,bw+8,28,8);ctx.fill();
     ctx.textAlign="center";ctx.fillStyle="#ffd54f";hudFont("bold",10);ctx.fillText(boss.bName||"JEFE",SW/2,by+9);
     ctx.fillStyle="#3a0000";roundRect(ctx,bx,by+13,bw,bh,4);ctx.fill();
