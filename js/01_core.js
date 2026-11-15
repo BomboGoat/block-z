@@ -139,7 +139,14 @@ var UPGRADE_DEFS=[
 var bootErrorEl=document.getElementById("bootError");
 function showBootError(err){try{var msg=(err&&err.stack)?String(err.stack):String(err);if(bootErrorEl){bootErrorEl.style.display="block";bootErrorEl.textContent="Error del juego:\n"+msg;}if(console&&console.error)console.error(err);}catch(e2){}}
 window.addEventListener("error",function(ev){showBootError(ev&&(ev.error||ev.message)||"error");});
-window.addEventListener("unhandledrejection",function(ev){showBootError(ev&&(ev.reason)||"promise");});
+window.addEventListener("unhandledrejection",function(ev){
+  var r=ev&&ev.reason,m=String((r&&(r.message||r.name||r))||r||"");
+  if(/decodeAudioData|NotAllowedError|NotSupportedError|AbortError|The operation was aborted|play\(\)|MediaError|EncodingError/i.test(m)){
+    try{if(ev.preventDefault)ev.preventDefault();}catch(e){}
+    return;
+  }
+  showBootError(r||"promise");
+});
 var canvas,ctx,SW=390,SH=844,dpr=1,W=CFG.WORLD_BASE_W,H=CFG.WORLD_BASE_H,game=null,last=0,skipDtClamp=0,memStore={},account={level:1,xp:0,xpToNext:80};
 var particlePool=[],floatPool=[],bulletPool=[];
 var layout={gameX:0,gameY:0,gameDrawW:0,gameDrawH:0,scale:1,isPortrait:1,safe:{l:0,t:0,r:0,b:0},viewW:800,viewH:400};

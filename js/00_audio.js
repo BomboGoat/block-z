@@ -15,7 +15,7 @@ function ensureMusicBeds(){
   if(audio.beds)return;
   audio.beds={};
   Object.keys(MUS_BEDS).forEach(function(k){
-    var a=new Audio(MUS_BEDS[k]+(MUS_BEDS[k].indexOf("?")>=0?"":"?v=20"));
+    var a=new Audio(MUS_BEDS[k]+(MUS_BEDS[k].indexOf("?")>=0?"":"?v=20.0.1"));
     a.loop=true;a.preload="auto";a.crossOrigin="anonymous";a.volume=0;a.setAttribute("playsinline","playsinline");
     audio.beds[k]={el:a,gain:null,wanted:0,src:null};
   });
@@ -74,14 +74,15 @@ function createAudioGraph(){
 }
 function ensureAudio(){
   var fresh=!audio.ctx;
-  if(!createAudioGraph())return null;
-  if(audio.ctx.state==="suspended")try{audio.ctx.resume();}catch(e){}
-  audio.started=1;
-  ensureMusicBeds();hookBedNodes();unlockBeds();
-  if(typeof decodeFetchedSfx==="function")decodeFetchedSfx();
-  if(fresh&&audio.musicMode)startMusic(audio.musicMode);
-  if(typeof bakeSfxSync==="function")bakeSfxSync();
-  return audio.ctx;
+  try{
+    if(!createAudioGraph())return null;
+    if(audio.ctx.state==="suspended"){var rp=audio.ctx.resume();if(rp&&rp.then)rp.catch(function(){});}
+    audio.started=1;
+    ensureMusicBeds();hookBedNodes();
+    if(fresh&&audio.musicMode)startMusic(audio.musicMode);
+    setTimeout(function(){try{decodeFetchedSfx();bakeSfxSync();}catch(e){}},0);
+    return audio.ctx;
+  }catch(e){return audio.ctx||null;}
 }
 function setMuteSfx(v){audio.mutedSfx=!!v;if(audio.sfxG)audio.sfxG.gain.value=audio.mutedSfx?0:0.55;saveAudioSettings();}
 function setMuteMus(v){audio.mutedMus=!!v;if(audio.musG)audio.musG.gain.value=audio.mutedMus?0:0.42;saveAudioSettings();}
@@ -126,10 +127,13 @@ function prefetchSfx(){
   audio._sfxPrefetch=1;audio.sfxRaw=audio.sfxRaw||{};
   Object.keys(SFX_FILES).forEach(function(k){
     if(audio.sfxRaw[k])return;
-    fetch(SFX_FILES[k]+"?v=20").then(function(r){return r.ok?r.arrayBuffer():null;}).then(function(ab){
+    var ctrl=typeof AbortController==="function"?new AbortController():null;
+    var to=setTimeout(function(){try{if(ctrl)ctrl.abort();}catch(e){}},8000);
+    fetch(SFX_FILES[k]+"?v=20.0.1",ctrl?{signal:ctrl.signal}:undefined).then(function(r){return r&&r.ok?r.arrayBuffer():null;}).then(function(ab){
+      clearTimeout(to);
       if(ab)audio.sfxRaw[k]=ab;
       if(audio.ctx)decodeFetchedSfx();
-    }).catch(function(){});
+    }).catch(function(){clearTimeout(to);});
   });
 }
 function decodeFetchedSfx(){
@@ -138,11 +142,15 @@ function decodeFetchedSfx(){
   Object.keys(audio.sfxRaw||{}).forEach(function(k){
     if(audio.sfxBuf[k]||!audio.sfxRaw[k]||audio["_dec_"+k])return;
     audio["_dec_"+k]=1;
+    var done=0,timer;
+    function ok(buf){if(done)return;done=1;if(timer)clearTimeout(timer);if(buf)audio.sfxBuf[k]=buf;}
+    function fail(){if(done)return;done=1;if(timer)clearTimeout(timer);audio["_dec_"+k]=0;}
+    timer=setTimeout(fail,5000);
     try{
-      audio.ctx.decodeAudioData(audio.sfxRaw[k].slice?audio.sfxRaw[k].slice(0):audio.sfxRaw[k],function(buf){
-        audio.sfxBuf[k]=buf;
-      },function(){});
-    }catch(e){}
+      var src=audio.sfxRaw[k],ab=src.slice?src.slice(0):src;
+      var ret=audio.ctx.decodeAudioData(ab,ok,fail);
+      if(ret&&typeof ret.then==="function")ret.then(ok,fail);
+    }catch(e){fail();}
   });
 }
 function bakeSfxSync(){
@@ -276,3 +284,42 @@ function stopMusic(){
   fadeOutBeds(0.6);
 }
 try{prefetchSfx();ensureMusicBeds();}catch(e){}
+
+function dismissTitleSplash(){
+  if(!titleSplash)return 0;
+  titleSplash=0;audio._splashEat=1;
+  /* Only swallow leftover events from this same gesture — a later tap on JUGAR must work. */
+  setTimeout(function(){try{if(audio)audio._splashEat=0;}catch(e){}},80);
+  return 1;
+}
+function unlockAudioNonBlocking(){
+  try{
+    createAudioGraph();
+    if(audio.ctx&&audio.ctx.state==="suspended"){var rp=audio.ctx.resume();if(rp&&rp.then)rp.catch(function(){});}
+    audio.started=1;
+    ensureMusicBeds();hookBedNodes();unlockBeds();
+    if(!audio.mutedMus&&(!audio.musicMode||audio.musicMode==="menu"))startMusic("menu");
+    setTimeout(function(){try{decodeFetchedSfx();bakeSfxSync();}catch(e){}},0);
+  }catch(e){}
+}
+function onFirstAudioGesture(e){
+  var typ=e&&e.type;
+  /* iOS Safari only treats click and touchend as audio-activation gestures.
+     Always dismiss the splash first so a failed/slow decode can never trap the player. */
+  if(typ!=="click"&&typ!=="touchend"&&typ!=="pointerup")return;
+  var first=!!titleSplash;
+  dismissTitleSplash();
+  if(typ==="pointerup"&&!first&&audio._unlocked)return;
+  if(typ==="click"||typ==="touchend"||first){
+    try{unlockAudioNonBlocking();}catch(err){}
+    audio._tapped=1;audio._unlocked=1;
+  }
+}
+if(typeof window!=="undefined"){
+  window.addEventListener("click",onFirstAudioGesture,true);
+  window.addEventListener("touchend",onFirstAudioGesture,{capture:true,passive:true});
+  window.addEventListener("pointerup",onFirstAudioGesture,{capture:true,passive:true});
+  window.__audio=audio;
+  document.addEventListener("visibilitychange",function(){if(!document.hidden){try{if(audio.ctx&&audio.ctx.state==="suspended")audio.ctx.resume();}catch(e){}}});
+  window.addEventListener("pageshow",function(){try{if(audio.ctx&&audio.ctx.state==="suspended")audio.ctx.resume();}catch(e){}});
+}
