@@ -296,7 +296,7 @@ function updatePlayerMove(p,dt,safe){
   if(input.keys.ArrowDown||input.keys.s||input.keys.S)my+=1;
   if(input.joy){mx+=input.jx;my+=input.jy;}
   var m=Math.sqrt(mx*mx+my*my);if(m>1){mx/=m;my/=m;m=1;}
-  var spd=CFG.PLAYER_SPEED*(p.speedMul||1);if(p.laserT>0)spd*=0.4;if(typeof terrainSpeedMul==='function')spd*=terrainSpeedMul(p.x,p.y);
+  var spd=CFG.PLAYER_SPEED*(CFG.MOVE||1)*(p.speedMul||1);if(p.laserT>0)spd*=0.4;if(typeof terrainSpeedMul==='function')spd*=terrainSpeedMul(p.x,p.y);
   if(p.giantT>0&&!(p.giantLeapT>0))spd*=0.78;
   if(p.giantLeapT>0){
     if(typeof updateGigante==="function")updateGigante(p,dt);
@@ -330,7 +330,7 @@ function updatePlayerMove(p,dt,safe){
     if(fh&&fh.climbable){p._fp=(p._fp||0)+dt;if(p._fp>0.18){p.jumpT=0.42;p.jumpMax=0.42;p._fp=0;sfx("jump");}}
     else p._fp=0;
   }
-  p.anim+=dt*(m>0.15?10:4);
+  p.anim+=dt*(m>0.15?10*(CFG.MOVE||1):4);
   if(m>0.15){p.facing=Math.atan2(my,mx);p.lastMoveX=mx;p.lastMoveY=my;}
   if(p.aimAng==null)p.aimAng=p.facing||0;
   var want=p.facing||0;
@@ -366,9 +366,8 @@ function updateCam(dt){
     else if(t>1){tx=bx;ty=by;}
     else {u=1-t;u=u*u*(3-2*u);tx=bx+(p.x-bx)*u;ty=by+(p.y-by)*u;}
     k=1-Math.exp(-10*dt);
-    /* zoom in to the intro hold and KEEP that zoom (no zoom-out on the return pan) */
-    zin=t>3.7?((4.2-t)/0.5)*0.22:0.22;
-    want=base*(1-zin);
+    /* v20.2.3: no intro zoom — the boss is shown at exactly its gameplay size (no size jump when the fight starts) */
+    zin=0;want=base;
   }
   /* v20.2.1: after the intro the camera follows ONLY the player, like normal play */
   /* v20.2.2: hell arena only — gentle bias (max 15% of the view) so Thanos stays fully visible under the HUD */
@@ -431,7 +430,7 @@ function updateZombies(dt){
     if(z.burn>0){z.burn-=dt;z.hp-=8*dt;if(z.hp<=0)killZombie(z);}
     if(z.poison>0){z.poison-=dt;z.hp-=6*dt;if(z.hp<=0)killZombie(z);}
     if(z.slow>0)z.slow-=dt;if(z.stun>0)z.stun-=dt;
-    z.anim+=dt*8;
+    z.anim+=dt*8*(CFG.MOVE||1);
     if(z.vaultT>0){
       z.vaultT-=dt;
       var vu=1-z.vaultT/(z.vaultMax||0.65);vu=clamp(vu,0,1);
@@ -459,7 +458,7 @@ function updateZombies(dt){
         var ang=Math.atan2(p.y-z.y,p.x-z.x),lx=z.x+Math.cos(ang)*420*0.28,ly=z.y+Math.sin(ang)*420*0.28,okLand=1;
         if(typeof sampleSDF==="function"&&sampleSDF(lx,ly)<(z.r||12)+8)okLand=0;
         if(typeof circleHitSolid==="function"&&circleHitSolid(lx,ly,(z.r||12)+4,"solid"))okLand=0;
-        if(okLand){z.leapT=0.28;z.leapVx=Math.cos(ang)*420;z.leapVy=Math.sin(ang)*420;z.leapCd=rand(1.6,2.8);}
+        if(okLand){z.leapT=0.28;z.leapVx=Math.cos(ang)*420*CFG.MOVE;z.leapVy=Math.sin(ang)*420*CFG.MOVE;z.leapCd=rand(1.6,2.8);}
         else z.leapCd=0.4;
       }
       /* v20.2: walk the flow path between leaps (they used to stand frozen when far away) */
@@ -479,6 +478,12 @@ function updateZombies(dt){
     var fh=circleHitSolid(z.x,z.y,z.r+2,"solid");
     if(fh&&fh.climbable)startVault(z,fh);
     if(typeof squeezeTick==="function")squeezeTick(z,dt,dist(z.x,z.y,p.x,p.y));
+    /* v20.2.3: a walker that makes no progress toward the hero for 8 s while off-screen (wedged in a
+       tree pocket) is quietly moved to a normal spawn point, so a round can never hang on one zombie */
+    z._pgT=(z._pgT||0)+dt;
+    if(z._pgT>=8){var dNow=dist(z.x,z.y,p.x,p.y);
+      if(z._pgD!=null&&dNow>z._pgD-24&&dNow>140&&!inCamView(z.x,z.y,30)&&typeof pickSpawn==="function"){var rs=pickSpawn(p);if(rs&&sampleType(rs.x,rs.y)===0&&sampleSDF(rs.x,rs.y)>=(z.r||10)){z.x=rs.x;z.y=rs.y;z._gx=null;z._sx=z.x;z._sy=z.y;}}
+      z._pgT=0;z._pgD=dist(z.x,z.y,p.x,p.y);}
     var moved=dist(z.x,z.y,z._sx||z.x,z._sy||z.y);
     if(moved<2.2){z._st=(z._st||0)+dt;
       if(z._st>0.35){
@@ -527,7 +532,7 @@ function updateColossus(z,dt){
     if(th.t>=th.life){explodeAt(th.tx,th.ty,70,26,{friendly:0});z.throws.splice(i,1);}
   }
   if(z.chargeT>0){
-    z.chargeT-=dt;if(typeof moveWithSlide==="function")moveWithSlide(z,Math.cos(z.chargeAng)*380*dt,Math.sin(z.chargeAng)*380*dt);else{z.x+=Math.cos(z.chargeAng)*380*dt;z.y+=Math.sin(z.chargeAng)*380*dt;resolveCircle(z);}
+    z.chargeT-=dt;if(typeof moveWithSlide==="function")moveWithSlide(z,Math.cos(z.chargeAng)*380*CFG.MOVE*dt,Math.sin(z.chargeAng)*380*CFG.MOVE*dt);else{z.x+=Math.cos(z.chargeAng)*380*CFG.MOVE*dt;z.y+=Math.sin(z.chargeAng)*380*CFG.MOVE*dt;resolveCircle(z);}
     if(dist(z.x,z.y,p.x,p.y)<p.r+z.r+6)hurtPlayer(p,z.damage+8);
     z.aimAng=z.chargeAng;return;
   }
@@ -632,7 +637,7 @@ function updateHome(z,dt){
     return;
   }
   if(z.grabDash>0){
-    z.grabDash-=dt;ang=Math.atan2(z.ty-z.y,z.tx-z.x);sp=780;
+    z.grabDash-=dt;ang=Math.atan2(z.ty-z.y,z.tx-z.x);sp=780*(CFG.MOVE||1);
     if(typeof moveWithSlide==="function")moveWithSlide(z,Math.cos(ang)*sp*dt,Math.sin(ang)*sp*dt);
     else{z.x+=Math.cos(ang)*sp*dt;z.y+=Math.sin(ang)*sp*dt;}
     z.aimAng=ang;
@@ -658,7 +663,7 @@ function updateHome(z,dt){
     if(z.windup==="grab"){z.tx=p.x;z.ty=p.y;z.aimAng=Math.atan2(p.y-z.y,p.x-z.x);}
     if(z.windupT<=0){
       ang=Math.atan2(p.y-z.y,p.x-z.x);
-      if(z.windup==="grab"){z.tx=p.x;z.ty=p.y;d=dist(z.x,z.y,z.tx,z.ty);z.grabDash=Math.min(0.55,Math.max(0.22,d/780+0.08));sfx("dash");}
+      if(z.windup==="grab"){z.tx=p.x;z.ty=p.y;d=dist(z.x,z.y,z.tx,z.ty);z.grabDash=Math.min(0.6,Math.max(0.22,d/(780*(CFG.MOVE||1))+0.08));sfx("dash");}
       else if(z.windup==="sweep"){addLaser(z.x,z.y,ang-0.55,460,0.5,16,0);game.lasers[game.lasers.length-1].spin=2.2;}
       else if(z.windup==="burst"){addLaser(z.x,z.y,ang,420,0.28,18,0);addLaser(z.x,z.y,ang+0.18,420,0.28,18,0);}
       else if(z.windup==="dive"){z.diveT=0.32;}

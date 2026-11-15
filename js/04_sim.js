@@ -616,6 +616,7 @@ function beginCombat(){
   p.invuln=Math.max(p.invuln,0.9);game.state="playing";game.spawnTimer=0.5;game.graceT=1.4;
 }
 function startBoss(z,line,bab,pitch){
+  z.spawnT=0; /* v20.2.3: no ground-emerge squash during the intro — same size in intro and fight */
   game.zombies.push(z);game.boss=z;if(z.isColossus)game.colossus=z;if(z.isHome)game.home=z;if(z.isGorgon)game.gorgon=z;
   game.bossSpawned=1;game.bossFight=1;game.state="boss_intro";game.message=null;
   game.introX=game.camX;game.introY=game.camY;

@@ -160,7 +160,7 @@ function updateGorgon(z,dt){
     if(z.gt<=0){gorgonSet(z,"lunge",0.2);z.hitDone=0;sfx("slash");}
     break;
   case "lunge":
-    sp2=Math.min(520,d/0.2+60);
+    sp2=Math.min(520*(CFG.MOVE||1),d/0.2+60);
     if(typeof moveWithSlide==="function")moveWithSlide(z,Math.cos(z.lockA)*sp2*dt,Math.sin(z.lockA)*sp2*dt);
     if(Math.random()<0.6)addParticle(z.x,z.y,"#7a0a14",0.25,-Math.cos(z.lockA)*40,-Math.sin(z.lockA)*40,7,4);
     if(!z.hitDone&&gorgonClawHit(z,p,z.damage+(z.p2?4:0))){z.hitDone=1;}

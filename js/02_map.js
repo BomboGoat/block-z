@@ -414,7 +414,7 @@ function updateFlow(px,py){
   map.flowDist=F.dist;map.flow=F.dir;map.wideMask=F.wide;map.flowPass=F.pass;
   /* bosses get their own, roomier field while one is alive */
   var b=typeof game!=="undefined"&&game?game.boss:null;
-  if(b&&!b.dead){var FB=map._flowB||(map._flowB={});_flowBuild(FB,px,py,Math.min(30,Math.max(20,(b.r||24)+2)));map.flowBoss=FB.dir;}
+  if(b&&!b.dead){var FB=map._flowB||(map._flowB={});_flowBuild(FB,px,py,(b.isThanos?Math.min(30,Math.max(20,(b.r||24)+2)):14));map.flowBoss=FB.dir;}
   else map.flowBoss=null;
   map.flowT=0;
 }
@@ -523,6 +523,13 @@ function sdfNormal(x,y){
   var e=5,dx=sampleSDF(x+e,y)-sampleSDF(x-e,y),dy=sampleSDF(x,y+e)-sampleSDF(x,y-e),l=Math.sqrt(dx*dx+dy*dy)||1;
   return {x:dx/l,y:dy/l};
 }
+/* v20.2.3: island bosses use a slimmer FOOTPRINT against water/forest (their body still collides
+   with props and the player at full size) so they walk over the bridges like everyone else. */
+var BOSS_TERRAIN_R=10;
+function terrR(ent,rad){
+  if(ent&&ent.isBoss&&!ent.isThanos&&!(typeof HELL!=="undefined"&&HELL.active))return Math.min(rad,BOSS_TERRAIN_R);
+  return rad;
+}
 function terrainHit(cx,cy,rad){
   var d=sampleSDF(cx,cy);
   if(d>=rad-0.2)return null;
@@ -615,7 +622,7 @@ function circleHitSolid(cx,cy,rad,ent){
       if(hit&&(!best||hit.pen>bestD))best=hit;
     }
   }else{
-    hit=terrainHit(cx,cy,rad);
+    hit=terrainHit(cx,cy,(mode==="ent"&&ent)?terrR(ent,rad):rad);
     if(hit&&(!best||hit.pen>bestD))best=hit;
   }
   return best;
@@ -651,7 +658,7 @@ function resolveCircle(ent){
     s0=sampleSDF(ent.x,ent.y);
     ent.x+=nx*pen;ent.y+=ny*pen;
     s1=sampleSDF(ent.x,ent.y);
-    if(s1<s0-0.15 && s0<rad){
+    if(s1<s0-0.15 && s0<terrR(ent,rad)){
       /* stepped deeper into terrain — revert and climb SDF */
       ent.x-=nx*pen;ent.y-=ny*pen;
       n=_bestSdfDir(ent.x,ent.y);
@@ -660,20 +667,21 @@ function resolveCircle(ent){
     }
   }
   /* final escape so we never remain in water / forest */
+  var trad=terrR(ent,rad);
   for(i=0;i<10;i++){
     s0=sampleSDF(ent.x,ent.y);
-    if(s0>=rad-0.2)break;
+    if(s0>=trad-0.2)break;
     n=sdfNormal(ent.x,ent.y);
     if(Math.abs(n.x)+Math.abs(n.y)<0.08)n=_bestSdfDir(ent.x,ent.y);
-    ent.x+=n.x*Math.max(2,rad-s0);
-    ent.y+=n.y*Math.max(2,rad-s0);
+    ent.x+=n.x*Math.max(2,trad-s0);
+    ent.y+=n.y*Math.max(2,trad-s0);
     hit=circleHitSolid(ent.x,ent.y,rad,ent);
     if(hit&&hit.k!=="terrain"){ent.x+= (hit.nx||0)*((hit.pen||2));ent.y+=(hit.ny||0)*((hit.pen||2));}
   }
   /* never clamp to the play AABB — it includes river corners */
   ent.x=clamp(ent.x,8,CFG.MAP_W-8);
   ent.y=clamp(ent.y,8,CFG.MAP_H-8);
-  if(sampleSDF(ent.x,ent.y)<(ent.r||13)-0.2 && ent._gx!=null){
+  if(sampleSDF(ent.x,ent.y)<terrR(ent,ent.r||13)-0.2 && ent._gx!=null){
     ent.x=ent._gx;ent.y=ent._gy;
   }
 }
@@ -692,7 +700,7 @@ function moveWithSlide(ent,dx,dy){
   ent.r=rSave;
 }
 function _moveWithSlide(ent,dx,dy){
-  var dist=Math.hypot(dx,dy),steps,i,s,rad=ent.r||13;
+  var dist=Math.hypot(dx,dy),steps,i,s,rad=terrR(ent,ent.r||13);
   if(typeof sampleSDF==="function" && sampleSDF(ent.x,ent.y)>=rad-0.5){ent._gx=ent.x;ent._gy=ent.y;}
   if(dist<0.0001){resolveCircle(ent);return;}
   steps=Math.max(1,Math.ceil(dist/3.2));s=1/steps;
