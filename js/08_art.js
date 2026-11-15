@@ -52,7 +52,7 @@ function artEntry(look,dir,pose){
   return{img:img,meta:meta,flip:fl<0,key:k};
 }
 function artTargetH(look,sc){
-  var h=31*sc; /* ~62px at landscape viewW=420 */
+  var h=31*sc*(CFG.CHAR||1); /* v20.2.1: characters 18% smaller in world units, camera a bit closer */
 
   if(look&&look.kind==="colossus")h*=2.4;
   else if(look&&look.kind==="home")h*=1.85;

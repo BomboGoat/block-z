@@ -80,7 +80,7 @@ function drawPlayerDamage(){
   ctx.save();ctx.textAlign="center";ctx.textBaseline="middle";ctx.lineJoin="round";
   for(i=0;i<L.length;i++){
     d=L[i];a=d.age<0.75?1:clamp(1-(d.age-0.75)/0.3,0,1);
-    y=s.y-46*sc-Math.max(d.age*42,(L.length-1-i)*19+d.age*14);
+    y=s.y-46*sc*(CFG.CHAR||1)-Math.max(d.age*42,(L.length-1-i)*19+d.age*14);
     sz=Math.round(19+Math.min(9,d.v*0.28));sct=1+0.35*d.pop+(d.age<0.08?0.2*(1-d.age/0.08):0);
     txt="-"+d.v;
     ctx.globalAlpha=a;

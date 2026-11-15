@@ -5,7 +5,7 @@
 function spawnGorgon(x,y){
   var z=spawnZombie("boss",x,y,7);
   var bs=(typeof waveDifficulty==="function"?waveDifficulty(7).bossHp:1.15);
-  z.hp=Math.round(1400*bs);z.maxHp=z.hp;z.isBoss=1;z.isGorgon=1;z.r=19;z.h=58;z.speed=96;
+  z.hp=Math.round(1400*bs);z.maxHp=z.hp;z.isBoss=1;z.isGorgon=1;z.r=19*CFG.CHAR;z.h=58*CFG.CHAR;z.speed=96*CFG.SPD;
   z.damage=Math.round(20*bs);z.score=1000;z.xp=420;
   z.look={kind:"gorgon",type:"boss",open:0};z.phase="intro";z.introT=4.2;z.atkCd=1.6;z.windup=null;z.windupT=0;
   z.gs="walk";z.gt=0;z.p2=0;z.bName="GORGON";z.spawnT=0;z.sink=1;z.ghost=1;z.clawCd=1.2;z.portalCd=4.5;z.summonCd=8;z.roarCd=12;

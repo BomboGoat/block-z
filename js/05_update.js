@@ -25,8 +25,8 @@ function resize(){
   layout.safe=typeof readSafeInsets==="function"?readSafeInsets():{l:12,t:12,r:12,b:12};
   layout.gameX=0;layout.gameY=0;layout.gameDrawW=SW;layout.gameDrawH=SH;
   /* landscape zoom-out: viewW~420, characters stay >=60px via artTargetH */
-  layout.baseViewW=420;
-  layout.viewW=420;
+  layout.baseViewW=380;
+  layout.viewW=380;
   layout.scale=layout.gameDrawW/layout.viewW;
   layout.viewH=layout.gameDrawH/(layout.scale*CFG.YSCALE);
   W=layout.viewW;H=layout.viewH;
@@ -357,7 +357,7 @@ function bossCamDrop(b){
 }
 function updateCam(dt){
   var p=game.player,k=1-Math.exp(-CFG.CAM_LERP*dt),tx=p.x,ty=p.y,b=game.boss,t,u,bx,by,drop;
-  var base=layout.baseViewW||420, want=base, zin=0;
+  var base=layout.baseViewW||380, want=base, zin=0;
   if(game.state==="boss_intro"&&b){
     t=b.introT;drop=bossCamDrop(b);bx=b.x;by=b.y-drop;
     if(t>3.7){u=(4.2-t)/0.5;u=u*u*(3-2*u);tx=(game.introX||p.x)+(bx-(game.introX||p.x))*u;ty=(game.introY||p.y)+(by-(game.introY||p.y))*u;}
@@ -367,11 +367,8 @@ function updateCam(dt){
     /* zoom in to the intro hold and KEEP that zoom (no zoom-out on the return pan) */
     zin=t>3.7?((4.2-t)/0.5)*0.22:0.22;
     want=base*(1-zin);
-  }else if(game.bossFight&&b&&!b.dead&&!b.dying){
-    drop=bossCamDrop(b);
-    tx=p.x*0.40+b.x*0.60;ty=p.y*0.40+(b.y-drop)*0.60;
-    want=base*0.78; /* same scale as the intro hold, so the boss stays imposing */
   }
+  /* v20.2.1: after the intro the camera follows ONLY the player, like normal play */
   if(layout.viewW!==want){
     layout.viewW=want;
     layout.scale=layout.gameDrawW/layout.viewW;

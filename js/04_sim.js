@@ -12,7 +12,7 @@ function applyHero(p,id){
 function spawnZombie(type,x,y,wave,elite){
   var t=ZT[type]||ZT.normal,wd=typeof waveDifficulty==="function"?waveDifficulty(wave||0):{hp:1+(wave||0)*0.12,speed:1,dmg:1};
   var sc=wd.hp,look=makeZombieLook(type,(Math.random()*1e9)|0);
-  var z={type:type,x:x,y:y,r:t.r,h:t.h,vx:0,vy:0,hp:Math.round(t.hp*sc),maxHp:Math.round(t.hp*sc),speed:t.speed*(0.9+Math.random()*0.2)*(wd.speed||1),damage:Math.max(1,Math.round(t.damage*(wd.dmg||1))),color:t.color,score:t.score,xp:t.xp||10,aimAng:0,hitFlash:0,attackCd:0,dead:0,deathT:0,dying:0,anim:Math.random()*8,leapCd:rand(1.2,2.6),leapT:0,screamCd:rand(2,4),spitCd:rand(1.2,2.2),buffed:0,armor:!!t.armor,attackAnim:0,burn:0,slow:0,poison:0,look:look,spawnT:0.65,elite:0};
+  var z={type:type,x:x,y:y,r:t.r*CFG.CHAR,h:t.h*CFG.CHAR,vx:0,vy:0,hp:Math.round(t.hp*sc),maxHp:Math.round(t.hp*sc),speed:t.speed*CFG.SPD*(0.9+Math.random()*0.2)*(wd.speed||1),damage:Math.max(1,Math.round(t.damage*(wd.dmg||1))),color:t.color,score:t.score,xp:t.xp||10,aimAng:0,hitFlash:0,attackCd:0,dead:0,deathT:0,dying:0,anim:Math.random()*8,leapCd:rand(1.2,2.6),leapT:0,screamCd:rand(2,4),spitCd:rand(1.2,2.2),buffed:0,armor:!!t.armor,attackAnim:0,burn:0,slow:0,poison:0,look:look,spawnT:0.65,elite:0};
   if(elite&&type!=="boss"&&type!=="mini"){
     z.elite=1;z.hp=Math.round(z.hp*1.65);z.maxHp=z.hp;z.speed*=1.12;z.damage=Math.round(z.damage*1.28);
     z.score=Math.round(z.score*1.8);z.xp=Math.round((z.xp||10)*1.5);z.r*=1.06;look.elite=1;look._artScale=(look._artScale||1)*1.08;look.eyeGlow=look.eyeGlow||"#ffeb3b";
@@ -33,7 +33,7 @@ function announceNewZombie(type,elite){
 function spawnColossus(x,y){
   var z=spawnZombie("boss",x,y,2);
   var bs=(typeof waveDifficulty==="function"?waveDifficulty(2).bossHp:1.08);
-  z.hp=Math.round(1140*bs);z.maxHp=z.hp;z.isBoss=1;z.isColossus=1;z.r=24;z.h=52;z.speed=72;z.damage=Math.round(21*bs);z.score=800;z.xp=350;
+  z.hp=Math.round(1140*bs);z.maxHp=z.hp;z.isBoss=1;z.isColossus=1;z.r=24*CFG.CHAR;z.h=52*CFG.CHAR;z.speed=72*CFG.SPD;z.damage=Math.round(21*bs);z.score=800;z.xp=350;
   z.look=makeColossusLook();z.phase="intro";z.introT=4.2;z.atkCd=1.6;z.windup=null;z.windupT=0;z.bName="EL COLOSSUS";if(typeof placeOnGround==="function")placeOnGround(z);
   z.speechDone=0;z.bubbleText="";z.bubbleFull="";z.bubbleIdx=0;z.bubbleT=0;z.rings=[];z.throws=[];z.chargeT=0;z.chargeAng=0;
   return z;
@@ -41,7 +41,7 @@ function spawnColossus(x,y){
 function spawnHome(x,y){
   var z=spawnZombie("boss",x,y,5);
   var bs=(typeof waveDifficulty==="function"?waveDifficulty(5).bossHp:1.21);
-  z.hp=Math.round(1260*bs);z.maxHp=z.hp;z.isBoss=1;z.isHome=1;z.r=20;z.h=50;z.speed=90;z.damage=Math.round(17*bs);z.score=900;z.xp=380;
+  z.hp=Math.round(1260*bs);z.maxHp=z.hp;z.isBoss=1;z.isHome=1;z.r=20*CFG.CHAR;z.h=50*CFG.CHAR;z.speed=90*CFG.SPD;z.damage=Math.round(17*bs);z.score=900;z.xp=380;
   z.look=makeHomeLook();z.phase="intro";z.introT=4;z.atkCd=1.8;z.windup=null;z.windupT=0;z.p2=0;z.bName="HOMELANDER";
   z.bubbleText="";z.bubbleFull="¿Sabéis quién soy?";z.bubbleIdx=0;z.bubbleT=0;z.rings=[];z.diveT=0;if(typeof placeOnGround==="function")placeOnGround(z);z.tx=z.x;z.ty=z.y;
   return z;
@@ -99,7 +99,7 @@ function zigPts(ax,ay,bx,by,n){
 }
 function heroHandWorld(p,ang){
   ang=ang!=null?ang:(p&&(p.laserAng!=null?p.laserAng:p.aimAng)||0);
-  return {x:p.x+Math.cos(ang)*14,y:p.y+Math.sin(ang)*14};
+  return {x:p.x+Math.cos(ang)*14*CFG.CHAR,y:p.y+Math.sin(ang)*14*CFG.CHAR};
 }
 function heroHandLiftPx(p){
   var sc=(typeof layout!=="undefined"&&layout.scale)||1, scale=(p&&p.scale)||1;
