@@ -4,10 +4,10 @@ function createPlayer(){
 }
 function applyHero(p,id){
   id=id||"classic";p.hero=id;p.look=makeHeroLook(id);
-  if(id==="trueno"){p.weapon="bolt";p.fireCooldown=0.42;p.maxHp=90;p.hp=90;p.speedMul=1.05;p.damageMul=1.1;}
-  else if(id==="mr"){p.weapon="knife";p.hasMelee=1;p.meleeRange=88;p.meleeDmg=14;p.fireCooldown=0.42;p.maxHp=120;p.hp=120;p.speedMul=1.15;p.armorMul=0.92;}
-  else if(id==="gompa"){p.weapon="fist";p.meleeRange=86;p.meleeDmg=16;p.fireCooldown=0.5;p.maxHp=140;p.hp=140;p.speedMul=0.88;p.damageMul=1;}
-  else {p.weapon="pistol";p.fireCooldown=CFG.FIRE_COOLDOWN;if(typeof applyEricWeapon==="function")applyEricWeapon(p,"pistol");}
+  if(id==="trueno"){p.weapon="bolt";p.fireCooldown=0.42;p.maxHp=120;p.hp=120;p.speedMul=1.05;p.damageMul=1.1;}
+  else if(id==="mr"){p.weapon="knife";p.hasMelee=1;p.meleeRange=88;p.meleeDmg=14;p.fireCooldown=0.42;p.maxHp=150;p.hp=150;p.speedMul=1.15;p.armorMul=0.92;}
+  else if(id==="gompa"){p.weapon="fist";p.meleeRange=86;p.meleeDmg=16;p.fireCooldown=0.5;p.maxHp=175;p.hp=175;p.speedMul=0.88;p.damageMul=1;}
+  else {p.weapon="pistol";p.maxHp=130;p.hp=130;p.fireCooldown=CFG.FIRE_COOLDOWN;if(typeof applyEricWeapon==="function")applyEricWeapon(p,"pistol");}
 }
 function spawnZombie(type,x,y,wave,elite){
   var t=ZT[type]||ZT.normal,wd=typeof waveDifficulty==="function"?waveDifficulty(wave||0):{hp:1+(wave||0)*0.12,speed:1,dmg:1};
@@ -741,7 +741,21 @@ function applyUpgrade(p,def,ri){
 }
 
 function takenFlags(p){var t={},i;for(i=0;i<p.abilities.length;i++)t[p.abilities[i].id]=1;return t;}
-function pickUpgradeChoices(){var p=game.player,taken=takenFlags(p),choices=[],guard=0;while(choices.length<3&&guard++<60){var ri=rollRarity(p.luck|0);var pool=UPGRADE_DEFS.filter(function(d){if((d.once||d.flag||d.weapon||d.custom)&&taken[d.id])return 0;if(d.minR!=null&&ri<d.minR)return 0;if(d.exclusive&&ri<4)return 0;if(d.hero&&d.hero!==p.hero)return 0;if(d.weapon&&p.hero&&p.hero!=="classic")return 0;if(d.fixedR!=null&&ri!==d.fixedR)return 0;if(d.reqWeapon&&p.weapon!==d.reqWeapon)return 0;if(d.kind==="wpnUp"&&((p.wpnLv&&p.wpnLv[p.weapon])||1)>=5)return 0;if(d.flag==="hasMelee"&&(p.hero==="mr"||p.hero==="gompa"))return 0;if((d.flag==="pierce"||d.flag==="bounce")&&p.hero&&p.hero!=="classic")return 0;for(var c=0;c<choices.length;c++)if(choices[c].id===d.id)return 0;return 1;});if(!pool.length){ri=Math.max(0,ri-1);continue;}choices.push(buildUpgradeCard(pick(pool),ri));}game.upgradeChoices=choices;layoutUpgradeCards();}
+/* v20.3: each hero has its own coherent upgrade pool + a few shared generic ones */
+var UPG_SHARED={dmg:1,firerate:1,hp:1,heal:1,speed:1,luck:1,regen:1,crit:1,critDmg:1,vampKill:1,secondWind:1,superCharge:1,superCD:1,xpBoost:1,hunter:1,dash:1,jump:1,triple:1,turboDash:1,shield:1,magnet:1,lastStand:1,luckyCharm:1,revive:1,swift:1};
+var UPG_HERO={
+  classic:{multishot:1,bulletStorm:1,pierce:1,bounce:1,fire:1,ice:1,poison:1,explosive:1,heavy:1,range:1,melee:1,drone:1,dog:1,clone:1,frenzy:1,bloodlust:1},
+  trueno:{multishot:1,chain:1,critBolt:1,spark:1,overcharge:1,meteors:1,blackHole:1,range:1,frenzy:1,phoenix:0},
+  mr:{orbit:1,ninja:1,shadow:1,bloodlust:1,dashFire:1,lifesteal:1,vampBat:1,frenzy:1,phoenix:1},
+  gompa:{giant:1,stomp:1,tanky:1,fortress:1,berserk:1,thorns:1,chainBoom:1,shieldRegen:1,fireAura:1}
+};
+function upgAllowed(d,hero){
+  hero=hero||"classic";
+  if(d.hero)return d.hero===hero;
+  if(UPG_SHARED[d.id])return 1;
+  return !!(UPG_HERO[hero]&&UPG_HERO[hero][d.id]);
+}
+function pickUpgradeChoices(){var p=game.player,taken=takenFlags(p),choices=[],guard=0;while(choices.length<3&&guard++<60){var ri=rollRarity(p.luck|0);var pool=UPGRADE_DEFS.filter(function(d){if((d.once||d.flag||d.weapon||d.custom)&&taken[d.id])return 0;if(d.minR!=null&&ri<d.minR)return 0;if(d.exclusive&&ri<4)return 0;if(d.hero&&d.hero!==p.hero)return 0;if(!upgAllowed(d,p.hero))return 0;if(d.weapon&&p.hero&&p.hero!=="classic")return 0;if(d.fixedR!=null&&ri!==d.fixedR)return 0;if(d.reqWeapon&&p.weapon!==d.reqWeapon)return 0;if(d.kind==="wpnUp"&&((p.wpnLv&&p.wpnLv[p.weapon])||1)>=5)return 0;if(d.flag==="hasMelee"&&(p.hero==="mr"||p.hero==="gompa"))return 0;if((d.flag==="pierce"||d.flag==="bounce")&&p.hero&&p.hero!=="classic")return 0;for(var c=0;c<choices.length;c++)if(choices[c].id===d.id)return 0;return 1;});if(!pool.length){ri=Math.max(0,ri-1);continue;}choices.push(buildUpgradeCard(pick(pool),ri));}game.upgradeChoices=choices;layoutUpgradeCards();}
 function layoutUpgradeCards(){
   var n=game.upgradeChoices.length;
   var cardW2=Math.min(200,(SW-layout.safe.l-layout.safe.r-70)/n-12),cardH2=Math.min(250,SH*0.62);

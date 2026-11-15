@@ -846,7 +846,8 @@ function drawWeapon34(c,hx,hy,ang,wpn,sc,muzzle,skin,two){
 }
 function drawBullet(b){
   var s=toScreen(b.x,b.y);if(b.lift)s.y-=b.lift;
-  var sc=layout.scale*(b.cannon?1.45:1),ang=Math.atan2(b.vy||0,b.vx||1);
+  /* v20.3: projectiles proportional to the smaller characters */
+  var sc=layout.scale*(b.cannon?1.45:1)*(b.cannon?0.62:b.knife?0.62:b.bell?0.66:b.gl?0.72:0.55),ang=Math.atan2(b.vy||0,b.vx||1);
   ctx.save();ctx.translate(s.x,s.y);ctx.rotate(ang+(b.bell?(b.spinA||0):0));
   if(!b.bell&&!b.gl&&!b.knife&&!b.expl){
     var bs=ensureBulletSprs(),spr=b.revolver?bs.revolver:b.rifle?bs.rifle:b.pistol?bs.pistol:bs.generic;
