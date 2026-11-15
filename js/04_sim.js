@@ -36,7 +36,6 @@ function spawnColossus(x,y){
   z.hp=Math.round(1140*bs);z.maxHp=z.hp;z.isBoss=1;z.isColossus=1;z.r=24;z.h=52;z.speed=72;z.damage=Math.round(21*bs);z.score=800;z.xp=350;
   z.look=makeColossusLook();z.phase="intro";z.introT=4.2;z.atkCd=1.6;z.windup=null;z.windupT=0;z.bName="EL COLOSSUS";
   z.speechDone=0;z.bubbleText="";z.bubbleFull="";z.bubbleIdx=0;z.bubbleT=0;z.rings=[];z.throws=[];z.chargeT=0;z.chargeAng=0;
-  if(typeof placeOnGround==="function")placeOnGround(z);
   return z;
 }
 function spawnHome(x,y){
@@ -45,7 +44,6 @@ function spawnHome(x,y){
   z.hp=Math.round(1260*bs);z.maxHp=z.hp;z.isBoss=1;z.isHome=1;z.r=20;z.h=50;z.speed=90;z.damage=Math.round(17*bs);z.score=900;z.xp=380;
   z.look=makeHomeLook();z.phase="intro";z.introT=4;z.atkCd=1.8;z.windup=null;z.windupT=0;z.p2=0;z.bName="HOMELANDER";
   z.bubbleText="";z.bubbleFull="¿Sabéis quién soy?";z.bubbleIdx=0;z.bubbleT=0;z.rings=[];z.diveT=0;z.tx=x;z.ty=y;
-  if(typeof placeOnGround==="function")placeOnGround(z);
   return z;
 }
 function addParticle(x,y,color,life,vx,vy,size,kind){var p=particlePool.pop()||{};p.x=x;p.y=y;p.vx=vx!=null?vx:rand(-80,80);p.vy=vy!=null?vy:rand(-80,80);p.life=life||0.4;p.maxLife=p.life;p.color=color;p.size=size||rand(2,5);p.kind=kind||0;p.rot=rand(0,6);p.spin=rand(-8,8);p.lift=0;game.particles.push(p);var cap=(typeof GFX!=="undefined"&&GFX.maxPart)||240;if(game.particles.length>cap)game.particles.splice(0,game.particles.length-cap);return p;}
@@ -280,7 +278,7 @@ function killZombie(z){
   if(typeof addBlood==="function")addBlood(z.x,z.y,busy?2:4);
   if(p.bloodlust)p.bloodStacks=Math.min(10,(p.bloodStacks||0)+1);
   if(z.type==="exploder"||z.explode)explodeAt(z.x,z.y,70,28,{friendly:0});
-  if(z.type==="splitter"){for(var i=0;i<2;i++){var m=spawnZombie("mini",z.x+rand(-16,16),z.y+rand(-16,16),game.wave);if(typeof placeOnGround==="function")placeOnGround(m);game.zombies.push(m);}}
+  if(z.type==="splitter"){for(var i=0;i<2;i++){var m=spawnZombie("mini",z.x+rand(-16,16),z.y+rand(-16,16),game.wave);game.zombies.push(m);}}
 }
 function grantRunXP(p,n){
   if(p.xpMul)n=(n*p.xpMul)|0;
@@ -612,7 +610,7 @@ function beginCombat(){
   var p=game.player;
   if(game.wave===2){var s=(typeof pickBossSpawn==='function'?pickBossSpawn(p):pickSpawn(p));startBoss(spawnColossus(s.x,s.y),"¡Vamos a gamblear!","Va va vamos a gam gam blear",88);return;}
   if(game.wave===5){var s1=(typeof pickBossSpawn==='function'?pickBossSpawn(p):pickSpawn(p));startBoss(spawnHome(s1.x,s1.y),"¿Sabéis quién soy?","Sa sa sabeis quien soy yo",110);return;}
-  if(game.wave===9){var s2=(typeof pickBossSpawn==='function'?pickBossSpawn(p):pickSpawn(p)),fb=spawnZombie("boss",s2.x,s2.y,9),bs=(typeof waveDifficulty==="function"?waveDifficulty(9).bossHp:1.49);fb.isBoss=1;fb.hp=Math.round(1320*bs);fb.maxHp=fb.hp;fb.r=26;fb.h=58;if(typeof placeOnGround==="function")placeOnGround(fb);fb.speed=Math.round(60*(typeof waveDifficulty==="function"?waveDifficulty(9).speed:1));fb.damage=Math.round(28*(typeof waveDifficulty==="function"?waveDifficulty(9).dmg:1));fb.bName="JEFE FINAL";fb.look.final=1;fb.look.kind="final";fb.look.type="boss";fb.rings=[];fb.throws=[];fb.atkCd=2;fb.windup=null;fb.windupT=0;fb.chargeT=0;startBoss(fb,"¡El fin!","El fin",70);return;}
+  if(game.wave===9){var s2=(typeof pickBossSpawn==='function'?pickBossSpawn(p):pickSpawn(p)),fb=spawnZombie("boss",s2.x,s2.y,9),bs=(typeof waveDifficulty==="function"?waveDifficulty(9).bossHp:1.49);fb.isBoss=1;fb.hp=Math.round(1320*bs);fb.maxHp=fb.hp;fb.r=26;fb.h=58;fb.speed=Math.round(60*(typeof waveDifficulty==="function"?waveDifficulty(9).speed:1));fb.damage=Math.round(28*(typeof waveDifficulty==="function"?waveDifficulty(9).dmg:1));fb.bName="JEFE FINAL";fb.look.final=1;fb.look.kind="final";fb.look.type="boss";fb.rings=[];fb.throws=[];fb.atkCd=2;fb.windup=null;fb.windupT=0;fb.chargeT=0;startBoss(fb,"¡El fin!","El fin",70);return;}
   p.invuln=Math.max(p.invuln,0.9);game.state="playing";game.spawnTimer=0.5;game.graceT=1.4;
 }
 function startBoss(z,line,bab,pitch){

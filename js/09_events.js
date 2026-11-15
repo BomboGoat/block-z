@@ -50,11 +50,11 @@ function pickEventIds(waveIdx){
   return ids.filter(Boolean);
 }
 function openSpotNear(x,y,rad){
-  var i,ang,r,px,py,blocked=typeof spawnBlocked==="function"?function(px,py){return spawnBlocked(px,py,18);}:function(px,py){return !!circleHitSolid(px,py,18,"solid");};
-  for(i=0;i<32;i++){
+  var i,ang,r,px,py;
+  for(i=0;i<24;i++){
     ang=Math.random()*6.283;r=randRange(20,rad||80);
     px=x+Math.cos(ang)*r;py=y+Math.sin(ang)*r;
-    if(!blocked(px,py))return {x:px,y:py};
+    if(!circleHitSolid(px,py,16,"solid"))return {x:px,y:py};
   }
   return {x:x,y:y};
 }
@@ -72,12 +72,12 @@ function beginRoundEvents(waveIdx){
       ev.field=wh.length?(Math.random()<0.5||wh.length===1?wh[0]:wh[1]):null;
     }
     if(id==="caja"||id==="tesoro"){
-      if(id==="tesoro")spot=openSpotNear((map.ruinsCenter&&map.ruinsCenter.x)||(map.view&&map.view.ruinas&&map.view.ruinas.x)||(map.start&&map.start.x),(map.ruinsCenter&&map.ruinsCenter.y)||(map.view&&map.view.ruinas&&map.view.ruinas.y)||(map.start&&map.start.y),70);
-      else spot=openSpotNear((map.start&&map.start.x)||CFG.MAP_W/2,((map.start&&map.start.y)||CFG.MAP_H*0.7)-40,90);
+      if(id==="tesoro")spot=openSpotNear(680,200,70);
+      else spot=openSpotNear((map.start&&map.start.x)||552,((map.start&&map.start.y)||430)-40,90);
       ev.x=spot.x;ev.y=spot.y;ev.picked=0;ev.hp=40;
     }
     if(id==="toxica"){
-      spot=openSpotNear((map.pond&&map.pond.x)||(map.start&&map.start.x)||CFG.MAP_W/2,((map.pond&&map.pond.y)||(map.start&&map.start.y)||CFG.MAP_H*0.5)+90,70);
+      spot=openSpotNear((map.pond&&map.pond.x)||460,((map.pond&&map.pond.y)||285)+90,70);
       ev.x=spot.x;ev.y=spot.y;ev.r=28;ev.rMax=92;
     }
     if(id==="tormenta"){ev.strikes=[];ev.strikeT=randRange(2.2,3.6);}

@@ -238,82 +238,13 @@ function drawFence(o){
   }
   ctx.restore();
 }
-function drawCrate(o){
-  var s=toScreen(o.x,o.y),sc=layout.scale,ys=CFG.YSCALE,sw=o.w*sc,sd=Math.max(6,o.d*ys*sc),h=(o.h||16)*sc;
-  var x=s.x,y=s.y,ty=y-h,top=o.top||"#a17850",side=o.side||"#5d4030";
-  ctx.fillStyle="rgba(0,0,0,0.32)";ctx.beginPath();ctx.ellipse(x+sw*0.5+3,y+sd+2,sw*0.52,sd*0.38,0,0,7);ctx.fill();
-  ctx.fillStyle=lg(ctx,x,ty+sd,x,ty+sd+h,side,shadeHex(side,-22));
-  roundRect(ctx,x,ty+sd,sw,h,2);ctx.fill();
-  ctx.fillStyle=lg(ctx,x,ty,x+sw,ty+sd,shadeHex(top,28),shadeHex(top,-8));
-  roundRect(ctx,x,ty,sw,sd,3);ctx.fill();
-  ctx.strokeStyle="#2a1a10";ctx.lineWidth=1.6;roundRect(ctx,x,ty,sw,sd,3);ctx.stroke();
-  ctx.strokeStyle="rgba(60,35,16,0.55)";ctx.lineWidth=1.2;
-  ctx.beginPath();ctx.moveTo(x+sw*0.33,ty+2);ctx.lineTo(x+sw*0.33,ty+sd-2);
-  ctx.moveTo(x+sw*0.66,ty+2);ctx.lineTo(x+sw*0.66,ty+sd-2);
-  ctx.moveTo(x+2,ty+sd*0.5);ctx.lineTo(x+sw-2,ty+sd*0.5);ctx.stroke();
-  ctx.fillStyle="#3e2723";
-  [[0.18,0.18],[0.82,0.18],[0.18,0.82],[0.82,0.82]].forEach(function(p){fillEllipse(ctx,x+sw*p[0],ty+sd*p[1],1.4*sc,1.1*sc);});
-  ctx.strokeStyle="rgba(255,230,180,0.28)";ctx.lineWidth=1;
-  ctx.beginPath();ctx.moveTo(x+3,ty+3);ctx.lineTo(x+sw*0.45,ty+3);ctx.stroke();
-}
-function drawRock(o){
-  var s=toScreen(o.x+o.w/2,o.y+o.d/2),sc=layout.scale,R=(Math.max(o.w,o.d)*0.55)*sc,h=(o.h||10)*sc;
-  ctx.fillStyle="rgba(0,0,0,0.3)";fillEllipse(ctx,s.x+3,s.y+4,R*0.95,R*0.4);
-  function blob(x,y,rx,ry,col){ellP(ctx,x,y,rx,ry);fs(ctx,rg(ctx,x-rx*0.3,y-ry*0.4,1,rx,shadeHex(col,35),col),"#2a2a24",1.6);}
-  var base=o.top||"#8a8a80";
-  blob(s.x,s.y-h*0.25,R,R*0.62,base);
-  blob(s.x-R*0.28,s.y-h*0.15,R*0.55,R*0.4,shadeHex(base,-12));
-  blob(s.x+R*0.22,s.y-h*0.3,R*0.42,R*0.32,shadeHex(base,10));
-  ctx.fillStyle="rgba(70,120,55,0.28)";fillEllipse(ctx,s.x-R*0.1,s.y-h*0.35,R*0.28,R*0.16);
-  ctx.fillStyle="rgba(255,255,230,0.28)";fillEllipse(ctx,s.x-R*0.22,s.y-h*0.48,R*0.16,R*0.08);
-}
-function drawRuin(o){
-  var s=toScreen(o.x,o.y),sc=layout.scale,ys=CFG.YSCALE,sw=Math.max(4,o.w*sc),sd=Math.max(4,o.d*ys*sc),h=(o.h||28)*sc;
-  var x=s.x,y=s.y,ty=y-h,top=o.top||"#9a9d88",side=o.side||"#5d6154";
-  ctx.fillStyle="rgba(0,0,0,0.28)";ctx.beginPath();ctx.ellipse(x+sw*0.5+4,y+sd+2,sw*0.52,sd*0.36,0,0,7);ctx.fill();
-  ctx.fillStyle=lg(ctx,x,ty+sd,x,ty+sd+h,side,shadeHex(side,-18));
-  ctx.beginPath();ctx.moveTo(x,ty+sd);ctx.lineTo(x+sw,ty+sd);ctx.lineTo(x+sw,ty+sd+h);ctx.lineTo(x,ty+sd+h);ctx.closePath();ctx.fill();
-  /* ragged top */
-  var i,n=Math.max(3,(sw/7)|0),rng=typeof seeded==="function"?seeded((o.x*13+o.y)|0):Math.random;
-  ctx.fillStyle=lg(ctx,x,ty,x+sw,ty+sd,shadeHex(top,22),top);
-  ctx.beginPath();ctx.moveTo(x,ty+sd);
-  ctx.lineTo(x,ty+4);
-  for(i=0;i<=n;i++){
-    var px=x+(sw*i)/n, py=ty+(rng()*0.35+0.05)*sd*0.4 - (i%2?3:0)*sc;
-    ctx.lineTo(px,py);
-  }
-  ctx.lineTo(x+sw,ty+sd);ctx.closePath();ctx.fill();
-  ctx.strokeStyle="#3e4036";ctx.lineWidth=1.5;ctx.stroke();
-  /* mortar */
-  ctx.strokeStyle="rgba(40,42,34,0.35)";ctx.lineWidth=1;
-  for(i=1;i<4;i++){ctx.beginPath();ctx.moveTo(x+2,ty+sd*(i/4));ctx.lineTo(x+sw-2,ty+sd*(i/4)+1);ctx.stroke();}
-  ctx.fillStyle="rgba(70,120,50,0.28)";
-  fillEllipse(ctx,x+sw*0.3,ty+sd*0.35,sw*0.18,sd*0.12);
-  fillEllipse(ctx,x+sw*0.7,ty+sd*0.6,sw*0.14,sd*0.1);
-}
-function drawPillar(o){
-  var s=toScreen(o.x,o.y),sc=layout.scale,ys=CFG.YSCALE,sw=o.w*sc,sd=o.d*ys*sc,h=(o.h||36)*sc;
-  var cx=s.x+sw/2,top=o.top||"#9a9d88",side=o.side||"#616454";
-  ctx.fillStyle="rgba(0,0,0,0.3)";fillEllipse(ctx,cx,s.y+sd+2,sw*0.58,sd*0.4);
-  ctx.fillStyle=lg(ctx,s.x,s.y-h,s.x+sw,s.y,side,shadeHex(side,-20));
-  ctx.fillRect(s.x+sw*0.12,s.y-h+sd*0.3,sw*0.76,h);
-  ctx.fillStyle=lg(ctx,s.x,s.y-h,s.x+sw,s.y-h+sd,shadeHex(top,24),top);
-  fillEllipse(ctx,cx,s.y-h+sd*0.3,sw*0.5,sd*0.48);
-  ctx.strokeStyle="#3e4036";ctx.lineWidth=1.6;
-  ctx.beginPath();ctx.ellipse(cx,s.y-h+sd*0.3,sw*0.5,sd*0.48,0,0,7);ctx.stroke();
-  ctx.fillStyle=shadeHex(top,-16);
-  fillEllipse(ctx,cx,s.y+sd*0.15,sw*0.52,sd*0.42);
-  ctx.fillStyle="rgba(70,120,50,0.3)";fillEllipse(ctx,cx-sw*0.08,s.y-h+sd*0.2,sw*0.16,sd*0.1);
-  ctx.fillStyle="rgba(255,255,230,0.22)";fillEllipse(ctx,cx-sw*0.12,s.y-h+sd*0.18,sw*0.12,sd*0.08);
-}
 function drawProp(o,ghost){
   if(o.dead)return;
+  /* Arena painting already has ruins, crates, barrels, rocks and pillars.
+     Only draw trees (and nothing else as a grey 3D box). */
+  if(o.k!=="tree")return;
   if(o.k==="fence"||o.k==="wall"){drawFence(o);return;}
   if(o.k==="tree")drawTree(o);
-  else if(o.k==="crate")drawCrate(o);
-  else if(o.k==="rock")drawRock(o);
-  else if(o.k==="ruin")drawRuin(o);
-  else if(o.k==="pillar")drawPillar(o);
   else if(o.k==="bench")drawBench(o);
   else if(o.k==="bush")drawBush(o,ghost);
   else if(o.k==="car")drawCar(o);
@@ -354,7 +285,7 @@ function drawXtra(o){
   else if(k==="wash"){ctx.fillStyle="#90a4ae";ctx.fillRect(s.x,s.y+sd-h,6,h);ctx.fillRect(s.x+sw-6,s.y+sd-h,6,h);ctx.fillStyle="#42a5f5";ctx.globalAlpha=0.35;ctx.fillRect(s.x+6,s.y-h+4,sw-12,h-8);ctx.globalAlpha=1;ctx.fillStyle="#eceff1";ctx.fillRect(s.x,s.y-h,sw,6);}
   else if(k==="scaf"){ctx.strokeStyle="#ffb300";ctx.lineWidth=2;ctx.strokeRect(s.x,s.y-h,sw,h+sd);ctx.beginPath();ctx.moveTo(s.x,s.y-h);ctx.lineTo(s.x+sw,s.y+sd);ctx.moveTo(s.x+sw,s.y-h);ctx.lineTo(s.x,s.y+sd);ctx.stroke();ctx.fillStyle="#ffe082";ctx.fillRect(s.x,s.y-h*0.5,sw,3);}
   else if(k==="cart"){ctx.strokeStyle="#90a4ae";ctx.lineWidth=1.8;roundRect(ctx,s.x,s.y-h+4,sw,h,2);ctx.stroke();ctx.fillStyle="#1a1a1a";fillEllipse(ctx,s.x+4,s.y+sd,3,2.2);fillEllipse(ctx,s.x+sw-4,s.y+sd,3,2.2);}
-  else return;
+  else drawBox3D(o);
 }
 /* ===== ground chunks ===== */
 function chunkKey(cx,cy){return cx+","+cy;}
@@ -456,15 +387,12 @@ function drawGround(){
   var c0=Math.floor((game.camX-hw)/S),c1=Math.floor((game.camX+hw)/S);
   var r0=Math.floor((game.camY-hh)/S),r1=Math.floor((game.camY+hh)/S);
   var cx,cy;
-  if(typeof evictChunks==="function")evictChunks(c0,c1,r0,r1);
   for(cy=r0;cy<=r1;cy++)for(cx=c0;cx<=c1;cx++){
     if(cx<0||cy<0||cx*S>CFG.MAP_W||cy*S>CFG.MAP_H)continue;
     var ch=ensureChunk(cx,cy),s=toScreen(cx*S,cy*S);
     ctx.imageSmoothingEnabled=1;
-    ctx.imageSmoothingQuality="high";
     ctx.drawImage(ch.c,s.x,s.y,S*layout.scale,S*CFG.YSCALE*layout.scale);
   }
-  if(typeof drawWaterFx==="function")drawWaterFx();
 }
 
 /* ===== character sprite cache ===== */
@@ -1172,111 +1100,23 @@ function drawAmbientLive(){
   for(i=0;i<map.solids.length;i++){var oo=map.solids[i];if((oo.k!=="dump"&&oo.k!=="bag")||!onScreen(oo.x,oo.y,20))continue;var fi;s=toScreen(oo.x+oo.w/2,oo.y+oo.d/2);for(fi=0;fi<4;fi++){var fa=t*7+fi*1.7;ctx.fillStyle="#212121";fillEllipse(ctx,s.x+Math.cos(fa)*10*sc,s.y-12*sc+Math.sin(fa*1.4)*6*sc,1.4,1.1);}}
 }
 
-/* v20.2: tiled high-res terrain, cached per chunk. Mask types: 0 grass,1 dirt,2 water,3 shore,4 wheat,5 forest,6 bridge stone,7 wood. */
-var GROUND_KIND=["grass","dirt","water","stone","wheat","forest","bridge","wood"];
-function arenaImage(){return (typeof ART!=="undefined"&&(ART.mini||ART.arena))||(typeof GFX!=="undefined"&&GFX.arena)||null;}
-function groundMul(){return (typeof GFX!=="undefined"&&GFX.groundMul)||4;}
-function _gtex(name){return (typeof ART!=="undefined"&&ART.ground&&ART.ground[name])||null;}
-function _fillPat(g,tex,x0,y0,cw,ch,mul){
-  if(!tex||!tex.width){g.fillRect(0,0,cw,ch);return;}
-  var tw=tex.width,th=tex.height,ox=-((x0*mul)%tw),oy=-((y0*CFG.YSCALE*mul)%th);
-  if(ox>0)ox-=tw;if(oy>0)oy-=th;
-  try{
-    var pat=g.createPattern(tex,"repeat");
-    g.save();g.translate(ox,oy);g.fillStyle=pat;g.fillRect(-ox,-oy,cw-ox+tw,ch-oy+th);g.restore();
-  }catch(e){g.fillRect(0,0,cw,ch);}
-}
-function _typeAlpha(mask,sx,sy,sw,sh,cw,ch,tid){
-  var a=document.createElement("canvas");a.width=cw;a.height=ch;
-  var ag=a.getContext("2d");ag.imageSmoothingEnabled=0;
-  try{ag.drawImage(mask,sx,sy,sw,sh,0,0,cw,ch);}catch(e){return a;}
-  var id=ag.getImageData(0,0,cw,ch),d=id.data,i,v,ok;
-  for(i=0;i<d.length;i+=4){
-    v=d[i]; /* L/PNG palette written as gray */
-    ok=v===tid||(tid===0&&v<1);
-    d[i]=d[i+1]=d[i+2]=255;d[i+3]=ok?255:0;
-  }
-  ag.putImageData(id,0,0);
-  return a;
-}
+/* v20: baked arena ground, cached once per chunk — no per-frame image scale of the full map */
+function arenaImage(){return (typeof ART!=="undefined"&&ART.arena)||(typeof GFX!=="undefined"&&GFX.arena)||null;}
 function ensureChunk(cx,cy){
   var k=chunkKey(cx,cy);if(map.chunks[k]&&!map.chunks[k].dirty)return map.chunks[k];
-  var S=map.chunkS,mul=groundMul();
+  var S=map.chunkS,mul=(typeof GFX!=="undefined"&&GFX.chunkMul)||2;
   var c=document.createElement("canvas");c.width=(S*mul)|0;c.height=(S*CFG.YSCALE*mul)|0;
   var g=c.getContext("2d");g.imageSmoothingEnabled=1;g.imageSmoothingQuality="high";
-  var x0=cx*S,y0=cy*S,cw=c.width,ch=c.height,i,tex,tmp,alpha,kind,md,mask,sx,sy,sw,sh,hasWater=0;
-  g.fillStyle="#1a3d18";g.fillRect(0,0,cw,ch);
-  tex=_gtex("grass");
-  if(tex){_fillPat(g,tex,x0,y0,cw,ch,mul);}
-  mask=(typeof ART!=="undefined"&&ART.mask)||null;
-  md=(typeof MAP_DATA!=="undefined"&&MAP_DATA&&MAP_DATA.mask)||null;
-  if(mask&&mask.width&&md){
-    sx=x0/CFG.MAP_W*md.w;sy=y0/CFG.MAP_H*md.h;sw=S/CFG.MAP_W*md.w;sh=S/CFG.MAP_H*md.h;
-    tmp=document.createElement("canvas");tmp.width=cw;tmp.height=ch;
-    var tg=tmp.getContext("2d");
-    for(i=1;i<GROUND_KIND.length;i++){
-      kind=GROUND_KIND[i];tex=_gtex(kind);
-      if(!tex)continue;
-      alpha=_typeAlpha(mask,sx,sy,sw,sh,cw,ch,i);
-      /* skip empty */
-      var probe=alpha.getContext("2d").getImageData(0,0,1,1);
-      /* still composite; empty is cheap */
-      tg.setTransform(1,0,0,1,0,0);tg.globalCompositeOperation="copy";
-      _fillPat(tg,tex,x0,y0,cw,ch,mul);
-      tg.globalCompositeOperation="destination-in";
-      tg.drawImage(alpha,0,0);
-      g.globalCompositeOperation="source-over";
-      g.drawImage(tmp,0,0);
-      if(i===2)hasWater=1; /* may be empty; we mark later via typemap too */
-    }
+  var img=arenaImage(),x0=cx*S,y0=cy*S;
+  g.fillStyle="#102010";g.fillRect(0,0,c.width,c.height);
+  if(img&&img.width){
+    var sx=x0/CFG.MAP_W*img.width,sy=y0/CFG.MAP_H*img.height,sw=S/CFG.MAP_W*img.width,sh=S/CFG.MAP_H*img.height;
+    try{g.drawImage(img,sx,sy,sw,sh,0,0,c.width,c.height);}catch(e){}
+  }else{
+    g.setTransform(mul,0,0,mul,0,0);
+    g.fillStyle="#1e3a1c";g.fillRect(0,0,S,S*CFG.YSCALE);
   }
-  /* typemap hint for water fx if mask missed a cell */
-  if(!hasWater&&typeof sampleType==="function"){
-    var px,py;
-    for(py=y0+16;py<y0+S;py+=32)for(px=x0+16;px<x0+S;px+=32)if(sampleType(px,py)===1){hasWater=1;break;}
-  }
-  map.chunks[k]={c:c,dirty:0,cx:cx,cy:cy,hasWater:hasWater};return map.chunks[k];
-}
-function evictChunks(c0,c1,r0,r1){
-  var k,ch,keys=[],n=0,keep=10;
-  for(k in map.chunks){
-    ch=map.chunks[k];
-    if(!ch)continue;
-    if(ch.cx<c0-1||ch.cx>c1+1||ch.cy<r0-1||ch.cy>r1+1)keys.push(k);
-    else n++;
-  }
-  for(k=0;k<keys.length;k++)delete map.chunks[keys[k]];
-  if(n>keep){
-    /* drop the farthest cached if somehow too many stayed */
-    var arr=[],d;
-    for(k in map.chunks){ch=map.chunks[k];d=Math.abs(ch.cx-(c0+c1)/2)+Math.abs(ch.cy-(r0+r1)/2);arr.push({k:k,d:d});}
-    arr.sort(function(a,b){return b.d-a.d;});
-    for(k=0;k<arr.length-keep;k++)delete map.chunks[arr[k].k];
-  }
-}
-function drawWaterFx(){
-  if(!game)return;
-  var t=game.time||0,sc=layout.scale,i,s,pond=map.pond,wf=map.waterfall;
-  ctx.save();
-  if(pond){
-    s=toScreen(pond.x,pond.y);
-    ctx.globalAlpha=0.14+0.08*Math.sin(t*1.6);
-    ctx.strokeStyle="rgba(220,250,255,0.9)";ctx.lineWidth=1.4*sc;
-    for(i=0;i<3;i++){
-      var rr=(18+i*14)+Math.sin(t*1.3+i)*4;
-      ctx.beginPath();ctx.ellipse(s.x,s.y,(pond.rw||80)*0.35*sc+rr*0.4*sc,(pond.rh||60)*0.28*sc+rr*0.2*sc,0,0,7);ctx.stroke();
-    }
-  }
-  if(wf){
-    s=toScreen(wf.x,wf.y);
-    ctx.globalAlpha=0.55;
-    for(i=0;i<5;i++){
-      var fx=s.x+(i-2)*3.2*sc, fy=s.y+((t*80+i*17)%40)*sc;
-      ctx.fillStyle="rgba(210,240,255,"+(0.35+0.25*Math.sin(t*8+i))+")";
-      fillEllipse(ctx,fx,fy,2.2*sc,7*sc);
-    }
-  }
-  ctx.restore();ctx.globalAlpha=1;
+  map.chunks[k]={c:c,dirty:0,cx:cx,cy:cy};return map.chunks[k];
 }
 function drawWheatOverlay(ent){
   if(!ent||!inWheat||!inWheat(ent.x,ent.y))return;

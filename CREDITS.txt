@@ -236,12 +236,3 @@ high-frequency buzz); the hero attacks above are recorded sources.
 CC0: https://creativecommons.org/publicdomain/zero/1.0/
 CC-BY 3.0: https://creativecommons.org/licenses/by/3.0/
 CC-BY 4.0: https://creativecommons.org/licenses/by/4.0/
-
-Map ground (v20.2)
-------------------
-The playable arena is built from original tileable terrain textures
-(grass, dirt, stone bank, water, wheat, forest floor, flagstone and
-wood planks) authored for Block Z and blended with a layout mask
-traced from the compact island map. Props (trees, ruins, crates,
-barrels, rocks, pillars) are drawn as separate sprites, not baked
-into a stretched painting.

@@ -385,126 +385,32 @@ function inCamView(x,y,pad){
   pad=pad||20;var hw=worldW()*0.5+pad,hh=worldH()*0.5+pad;
   return Math.abs(x-game.camX)<hw&&Math.abs(y-game.camY)<hh;
 }
-var SPAWN_CLEAR_Z=22,SPAWN_CLEAR_BOSS=28;
-function spawnBlocked(x,y,rad){
-  rad=rad||SPAWN_CLEAR_Z;
-  if(x<8||y<8||x>CFG.MAP_W-8||y>CFG.MAP_H-8)return 1;
-  if(typeof sampleType==="function"&&sampleType(x,y)!==0)return 1;
-  if(typeof sampleSDF==="function"&&sampleSDF(x,y)<rad)return 1;
-  if(circleHitSolid(x,y,rad,"solid"))return 1;
-  if(map.grid){
-    var need=Math.ceil(rad/CFG.CELL)+1,cc,rr,c0,r0,px,py;
-    c0=clamp((x/CFG.CELL)|0,0,map.cols-1);r0=clamp((y/CFG.CELL)|0,0,map.rows-1);
-    for(rr=r0-need;rr<=r0+need;rr++){
-      if(rr<0||rr>=map.rows)return 1;
-      for(cc=c0-need;cc<=c0+need;cc++){
-        if(cc<0||cc>=map.cols)return 1;
-        px=(cc+0.5)*CFG.CELL;py=(rr+0.5)*CFG.CELL;
-        if((px-x)*(px-x)+(py-y)*(py-y)<=(rad+CFG.CELL*0.4)*(rad+CFG.CELL*0.4)){
-          if(map.grid[rr*map.cols+cc])return 1;
-        }
-      }
-    }
-  }
-  var i,s,cx,cy,R,a=map.solids||[];
-  for(i=0;i<a.length;i++){
-    s=a[i];if(!s||s.dead||s.k!=="tree")continue;
-    cx=s.x+s.w/2;cy=s.y+s.d/2;R=(s.canopy||34)*0.55;
-    if(dist(x,y,cx,cy)<R+rad*0.35)return 1;
-  }
-  return 0;
-}
-function placeOnGround(ent){
-  if(!ent)return ent;
-  var rad=Math.max(ent.r||16, ent.isBoss?SPAWN_CLEAR_BOSS:0),i,ang,d,px,py;
-  if(!spawnBlocked(ent.x,ent.y,rad)){if(typeof resolveCircle==="function")resolveCircle(ent);return ent;}
-  if(typeof resolveCircle==="function")resolveCircle(ent);
-  if(!spawnBlocked(ent.x,ent.y,rad))return ent;
-  for(d=8;d<=96;d+=8){
-    for(i=0;i<16;i++){
-      ang=i*(6.28318530718/16);
-      px=ent.x+Math.cos(ang)*d;py=ent.y+Math.sin(ang)*d;
-      if(!spawnBlocked(px,py,rad)){ent.x=px;ent.y=py;if(typeof resolveCircle==="function")resolveCircle(ent);return ent;}
-    }
-  }
-  if(map.spawns){
-    for(i=0;i<map.spawns.length;i++){
-      px=map.spawns[i].x;py=map.spawns[i].y;
-      if(!spawnBlocked(px,py,rad)){ent.x=px;ent.y=py;return ent;}
-    }
-  }
-  if(map.start){ent.x=map.start.x;ent.y=map.start.y;if(typeof resolveCircle==="function")resolveCircle(ent);}
-  return ent;
-}
 function pickSpawn(p){
   if(!map.flowDist)updateFlow(p.x,p.y);
   var hw=worldW()*0.5,hh=worldH()*0.5,diag=Math.sqrt(hw*hw+hh*hh);
-  var r0=diag+24,i,best=null,bestD=0,s,d,rad=SPAWN_CLEAR_Z;
-  function usable(x,y){
-    if(inCamView(x,y,20))return 0;
-    if(dist(p.x,p.y,x,y)<Math.max(140,r0-40))return 0;
-    if(spawnBlocked(x,y,rad))return 0;
-    if(map.flowDist){
-      var c=clamp((x/CFG.CELL)|0,0,map.cols-1),r=clamp((y/CFG.CELL)|0,0,map.rows-1);
-      if(map.flowDist[r*map.cols+c]<0)return 0;
-    }
-    return 1;
+  var r0=diag+28,r1=diag+90;
+  var bias=Math.atan2(p.lastMoveY||0,p.lastMoveX||0);
+  if(!(p.lastMoveX||p.lastMoveY))bias=p.facing||0;
+  function ok(x,y){
+    x=clamp(x,90,CFG.MAP_W-90);y=clamp(y,90,CFG.MAP_H-90);
+    if(inCamView(x,y,16))return 0;
+    if(dist(p.x,p.y,x,y)<r0-8)return 0;
+    if(circleHitSolid(x,y,16,"solid"))return 0;
+    var c=clamp((x/CFG.CELL)|0,0,map.cols-1),r=clamp((y/CFG.CELL)|0,0,map.rows-1),idx=r*map.cols+c;
+    if(map.grid[idx])return 0;
+    if(map.flowDist&&map.flowDist[idx]<0)return 0;
+    return{x:x,y:y};
   }
-  if(map.spawns&&map.spawns.length){
-    for(i=0;i<map.spawns.length;i++){
-      s=map.spawns[(i*7+((game&&game.time*10)|0))%map.spawns.length];
-      if(!usable(s.x,s.y))continue;
-      d=dist(p.x,p.y,s.x,s.y);
-      if(d>bestD){bestD=d;best=s;}
-    }
-    if(best)return {x:best.x,y:best.y};
-    /* still prefer a valid spawn even if on camera / close, never a blocked one */
-    for(i=0;i<map.spawns.length;i++){
-      s=map.spawns[i];
-      if(!spawnBlocked(s.x,s.y,rad))return {x:s.x,y:s.y};
-    }
+  var i,sp,ang,r;
+  for(i=0;i<32;i++){
+    ang=i<8?bias+(i%2?1:-1)*(0.35+i*0.12)+rand(-0.15,0.15):bias+i*2.399+rand(-0.2,0.2);
+    r=r0+(i*17%100)/100*(r1-r0);
+    sp=ok(p.x+Math.cos(ang)*r,p.y+Math.sin(ang)*r);if(sp)return sp;
   }
-  var ang,r,pt;
-  for(r=r0;r<=r0+320;r+=24){
-    for(i=0;i<20;i++){
-      ang=i*(6.283/20)+(p.facing||0);
-      pt={x:p.x+Math.cos(ang)*r,y:p.y+Math.sin(ang)*r};
-      if(usable(pt.x,pt.y))return pt;
-    }
+  for(r=r0;r<=r0+420;r+=36){
+    for(i=0;i<14;i++){ang=bias+i*(6.283/14);sp=ok(p.x+Math.cos(ang)*r,p.y+Math.sin(ang)*r);if(sp)return sp;}
   }
-  /* last resort: scan the island for a free cell */
-  if(map.grid){
-    var c,rr,wx,wy,opts=[];
-    for(rr=2;rr<map.rows-2;rr+=2){
-      for(c=2;c<map.cols-2;c+=2){
-        if(map.grid[rr*map.cols+c])continue;
-        wx=(c+0.5)*CFG.CELL;wy=(rr+0.5)*CFG.CELL;
-        if(!spawnBlocked(wx,wy,rad))opts.push({x:wx,y:wy});
-      }
-    }
-    if(opts.length){
-      best=opts[0];bestD=-1;
-      for(i=0;i<opts.length;i++){
-        d=dist(p.x,p.y,opts[i].x,opts[i].y);
-        if(d>bestD&&!inCamView(opts[i].x,opts[i].y,10)){bestD=d;best=opts[i];}
-      }
-      return {x:best.x,y:best.y};
-    }
-  }
-  if(map.start)return {x:map.start.x,y:map.start.y};
-  return {x:p.x+180,y:p.y};
-}
-function pickBossSpawn(p){
-  var rad=SPAWN_CLEAR_BOSS,cands=(map.bossSpawns&&map.bossSpawns.length)?map.bossSpawns.slice():[],i,s;
-  cands.push({x:(map.start&&map.start.x)||CFG.MAP_W/2,y:((map.start&&map.start.y)||CFG.MAP_H*0.7)-20});
-  for(i=0;i<cands.length;i++){
-    s=cands[i];
-    if(!spawnBlocked(s.x,s.y,rad))return {x:s.x,y:s.y};
-  }
-  s=pickSpawn(p||(game&&game.player)||{x:(map.start&&map.start.x)||CFG.MAP_W/2,y:(map.start&&map.start.y)||CFG.MAP_H*0.7});
-  if(s&&!spawnBlocked(s.x,s.y,rad))return s;
-  if(map.start)return {x:map.start.x,y:map.start.y};
-  return s;
+  ang=bias;return{x:clamp(p.x+Math.cos(ang)*r0,90,CFG.MAP_W-90),y:clamp(p.y+Math.sin(ang)*r0,90,CFG.MAP_H-90)};
 }
 function zoneAt(x,y){
   var i,z,best=map.zones[0];
@@ -586,27 +492,22 @@ function buildMap(seed){
   (function nudgeSpawns(){
     var i,e,s;
     for(i=0;i<map.spawns.length;i++){
-      s=map.spawns[i];e={x:s.x,y:s.y,r:28};resolveCircle(e);
-      if(typeof sampleSDF==="function" && sampleSDF(e.x,e.y)<28){
+      s=map.spawns[i];e={x:s.x,y:s.y,r:16};resolveCircle(e);
+      if(typeof sampleSDF==="function" && sampleSDF(e.x,e.y)<18){
         /* pull toward start until clear */
         var k,vx=(map.start.x-e.x),vy=(map.start.y-e.y),l=Math.hypot(vx,vy)||1;
-        for(k=0;k<16 && sampleSDF(e.x,e.y)<28;k++){e.x+=vx/l*6;e.y+=vy/l*6;resolveCircle(e);}
+        for(k=0;k<12 && sampleSDF(e.x,e.y)<18;k++){e.x+=vx/l*6;e.y+=vy/l*6;resolveCircle(e);}
       }
       s.x=e.x;s.y=e.y;
     }
   })();
   map.start=D.start||{x:D.w/2,y:D.h*0.7};
-  map.ruinsCenter=D.ruinsCenter||null;
-  map.bossSpawns=(D.bossSpawns||[]).slice();
-  map.waterfall=D.waterfall||null;
-  var rc=map.ruinsCenter||{x:D.w*0.6,y:D.h*0.25};
-  var br=(map.bridges||[]).filter(function(b){return b.main;})[0]||(map.bridges&&map.bridges[0]);
   map.view={
-    lago:{x:(D.pond&&D.pond.x)||map.start.x,y:((D.pond&&D.pond.y)||map.start.y)+80},
-    trigal:{x:(D.wheat&&D.wheat[0]&&D.wheat[0].x+D.wheat[0].w/2)||map.start.x,y:(D.wheat&&D.wheat[0]&&D.wheat[0].y+D.wheat[0].h/2)||map.start.y},
-    ruinas:{x:rc.x,y:rc.y},
-    puente:br?{x:br.x+br.w/2,y:br.y+br.h/2}:map.start,
-    park:map.start,gas:map.start,street:map.start,ruins:{x:rc.x,y:rc.y},lot:map.start
+    lago:{x:(D.pond&&D.pond.x)||500,y:(D.pond&&D.pond.y)+80||360},
+    trigal:{x:(D.wheat&&D.wheat[0]&&D.wheat[0].x+D.wheat[0].w/2)||280,y:(D.wheat&&D.wheat[0]&&D.wheat[0].y+D.wheat[0].h/2)||230},
+    ruinas:{x:680,y:200},
+    puente:{x:555,y:500},
+    park:map.start,gas:map.start,street:map.start,ruins:{x:680,y:200},lot:map.start
   };
   map.opens=[{x:map.play.x0,y:map.play.y0,w:map.play.x1-map.play.x0,h:map.play.y1-map.play.y0}];
   /* grid from baked walk mask (already includes prop footprints) */
@@ -720,6 +621,56 @@ function moveWithSlide(ent,dx,dy){
   steps=Math.max(1,Math.ceil(dist/3.2));s=1/steps;
   for(i=0;i<steps;i++){ent.x+=dx*s;ent.y+=dy*s;resolveCircle(ent);}
   if(typeof sampleSDF==="function" && sampleSDF(ent.x,ent.y)<(ent.r||13)*0.35 && ent._gx!=null){ent.x=ent._gx;ent.y=ent._gy;resolveCircle(ent);}
+}
+function pickSpawn(p){
+  if(!map.flowDist)updateFlow(p.x,p.y);
+  var hw=worldW()*0.5,hh=worldH()*0.5,diag=Math.sqrt(hw*hw+hh*hh);
+  var r0=diag+24,i,sp,best=null,bestD=0,s,d,ok;
+  function usable(x,y){
+    if(inCamView(x,y,20))return 0;
+    if(dist(p.x,p.y,x,y)<Math.max(140,r0-40))return 0;
+    if(circleHitSolid(x,y,16,"solid"))return 0;
+    var c=clamp((x/CFG.CELL)|0,0,map.cols-1),r=clamp((y/CFG.CELL)|0,0,map.rows-1);
+    if(map.grid[r*map.cols+c])return 0;
+    if(map.flowDist&&map.flowDist[r*map.cols+c]<0)return 0;
+    return 1;
+  }
+  if(map.spawns&&map.spawns.length){
+    for(i=0;i<map.spawns.length;i++){
+      s=map.spawns[(i*7+((game&&game.time*10)|0))%map.spawns.length];
+      if(!usable(s.x,s.y))continue;
+      d=dist(p.x,p.y,s.x,s.y);
+      if(d>bestD){bestD=d;best=s;}
+    }
+    if(best)return {x:best.x,y:best.y};
+    for(i=0;i<map.spawns.length;i++){
+      s=map.spawns[i];
+      if(!circleHitSolid(s.x,s.y,16,"solid"))return {x:s.x,y:s.y};
+    }
+  }
+  /* fallback: ring search, stay on island */
+  var ang,r,pt;
+  for(r=r0;r<=r0+280;r+=28){
+    for(i=0;i<16;i++){
+      ang=i*(6.283/16)+(p.facing||0);
+      pt={x:p.x+Math.cos(ang)*r,y:p.y+Math.sin(ang)*r};
+      if(usable(pt.x,pt.y))return pt;
+    }
+  }
+  if(map.spawns&&map.spawns.length)return {x:map.spawns[0].x,y:map.spawns[0].y};
+  return {x:map.start.x,y:map.start.y};
+}
+function pickBossSpawn(p){
+  /* open clearing south of the pond / north of the stone bridge */
+  var cands=[
+    {x:(map.start&&map.start.x)||552,y:((map.start&&map.start.y)||430)-20},
+    {x:620,y:400},{x:500,y:400},{x:640,y:360},{x:480,y:360}
+  ],i,s;
+  for(i=0;i<cands.length;i++){
+    s=cands[i];
+    if(!circleHitSolid(s.x,s.y,28,"solid"))return s;
+  }
+  return pickSpawn(p||(game&&game.player)||{x:552,y:430});
 }
 function zoneAt(x,y){
   var i,z,best=null,ba=1e15,a,t,n=10;
