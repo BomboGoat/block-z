@@ -1,8 +1,8 @@
 /* v18 graphics: textures, lighting, quality, blood, menu art */
-var GFX={q:2,sprMul:2,chunkMul:2,lights:1,ready:0,menuBg:null,tex:{},ft:16,slow:0,maxPart:240,dusk:1};
+var GFX={q:2,sprMul:2,chunkMul:2,groundMul:4,lights:1,ready:0,menuBg:null,tex:{},ft:16,slow:0,maxPart:240,dusk:1};
 function gfxIsPhone(){return /iPhone|iPad|Android/i.test(navigator.userAgent||"");}
 function gfxInit(){
-  GFX.q=2;GFX.sprMul=gfxIsPhone()?2:3;GFX.chunkMul=2;GFX.lights=1;GFX.maxPart=gfxIsPhone()?180:280;GFX.dprMax=2;
+  GFX.q=2;GFX.sprMul=gfxIsPhone()?2:3;GFX.chunkMul=2;GFX.groundMul=4;GFX.lights=1;GFX.maxPart=gfxIsPhone()?180:280;GFX.dprMax=2;
   if(typeof ensureMuzzleSpr==="function")ensureMuzzleSpr();
   if(typeof ensureBulletSprs==="function")ensureBulletSprs();
   if(typeof ensureFxSpr==="function")ensureFxSpr();

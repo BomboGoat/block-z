@@ -1,5 +1,5 @@
 /* v19: generated sprites, landscape rotate overlay, extra upgrade VFX */
-var ART={ready:0,imgs:{},meta:null,menuWide:null,arena:null};
+var ART={ready:0,imgs:{},meta:null,menuWide:null,arena:null,mini:null,mask:null,ground:{}};
 var ART_MAP={
   classic:{f:"classic_f",b:"classic_b"},
   trueno:{f:"trueno_f",laser:"trueno_laser_f"},
@@ -36,8 +36,32 @@ function artLoad(done){
     })(keys[i]);
   };
   mj.onerror=tick;mj.open("GET","assets/spr/meta.json?v=20");mj.send();
-  var mw=new Image();mw.onload=function(){ART.menuWide=mw;tick();};mw.onerror=tick;mw.src="assets/ui/menu-wide.webp?v=20";
-  var ar=new Image();ar.onload=function(){ART.arena=ar;if(map){map.chunks={};map.dirty=1;}tick();};ar.onerror=tick;ar.src="assets/env/arena.webp?v=20";
+  var mw=new Image();mw.onload=function(){ART.menuWide=mw;tick();};mw.onerror=tick;mw.src="assets/ui/menu-wide.webp?v=20.2";
+  var ground=[
+    ["mini","assets/env/arena_mini.webp"],
+    ["mask","assets/env/terrain_mask.png"],
+    ["grass","assets/env/tex_grass.webp"],
+    ["dirt","assets/env/tex_dirt.webp"],
+    ["stone","assets/env/tex_stone.webp"],
+    ["water","assets/env/tex_water.webp"],
+    ["wheat","assets/env/tex_wheat.webp"],
+    ["forest","assets/env/tex_forest.webp"],
+    ["bridge","assets/env/tex_bridge.webp"],
+    ["wood","assets/env/tex_wood.webp"]
+  ],gi;
+  left+=ground.length-1; /* replace the old arena slot: start left is 3 (xhr, menu, +1 already counted) so add length-1 */
+  function bumpGround(){if(map){map.chunks={};map.dirty=1;}tick();}
+  for(gi=0;gi<ground.length;gi++)(function(pair){
+    var im=new Image();
+    im.onload=function(){
+      if(pair[0]==="mini"){ART.mini=im;ART.arena=im;}
+      else if(pair[0]==="mask")ART.mask=im;
+      else ART.ground[pair[0]]=im;
+      bumpGround();
+    };
+    im.onerror=tick;
+    im.src=pair[1]+"?v=20.2";
+  })(ground[gi]);
 }
 function artEntry(look,dir,pose){
   if(!ART.ready||!ART.meta)return null;

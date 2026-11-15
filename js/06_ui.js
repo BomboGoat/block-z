@@ -693,7 +693,7 @@ function drawHUD(){
 function drawMinimap(){
   var s=layout.safe,mw=layout.isPortrait?84:118,mh=mw*(CFG.MAP_H/CFG.MAP_W),x=SW-s.r-mw-12,y=s.t+54;
   hudGlass(x-6,y-6,mw+12,mh+12,8);
-  var img=(typeof ART!=="undefined"&&ART.arena)||(typeof GFX!=="undefined"&&GFX.arena);
+  var img=(typeof ART!=="undefined"&&(ART.mini||ART.arena))||(typeof GFX!=="undefined"&&GFX.arena);
   if(img&&img.width){ctx.drawImage(img,x,y,mw,mh);}
   else{ctx.fillStyle="#1b5e20";ctx.fillRect(x,y,mw,mh);}
   var sx=mw/CFG.MAP_W,sy=mh/CFG.MAP_H,i,z;
