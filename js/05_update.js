@@ -366,9 +366,8 @@ function updateCam(dt){
     else if(t>1){tx=bx;ty=by;}
     else {u=1-t;u=u*u*(3-2*u);tx=bx+(p.x-bx)*u;ty=by+(p.y-by)*u;}
     k=1-Math.exp(-10*dt);
-    /* zoom in to the intro hold and KEEP that zoom (no zoom-out on the return pan) */
-    zin=t>3.7?((4.2-t)/0.5)*0.22:0.22;
-    want=base*(1-zin);
+    /* v20.2.3: no intro zoom — the boss is shown at exactly its gameplay size (no size jump when the fight starts) */
+    zin=0;want=base;
   }
   /* v20.2.1: after the intro the camera follows ONLY the player, like normal play */
   /* v20.2.2: hell arena only — gentle bias (max 15% of the view) so Thanos stays fully visible under the HUD */
@@ -479,6 +478,12 @@ function updateZombies(dt){
     var fh=circleHitSolid(z.x,z.y,z.r+2,"solid");
     if(fh&&fh.climbable)startVault(z,fh);
     if(typeof squeezeTick==="function")squeezeTick(z,dt,dist(z.x,z.y,p.x,p.y));
+    /* v20.2.3: a walker that makes no progress toward the hero for 8 s while off-screen (wedged in a
+       tree pocket) is quietly moved to a normal spawn point, so a round can never hang on one zombie */
+    z._pgT=(z._pgT||0)+dt;
+    if(z._pgT>=8){var dNow=dist(z.x,z.y,p.x,p.y);
+      if(z._pgD!=null&&dNow>z._pgD-24&&dNow>140&&!inCamView(z.x,z.y,30)&&typeof pickSpawn==="function"){var rs=pickSpawn(p);if(rs&&sampleType(rs.x,rs.y)===0&&sampleSDF(rs.x,rs.y)>=(z.r||10)){z.x=rs.x;z.y=rs.y;z._gx=null;z._sx=z.x;z._sy=z.y;}}
+      z._pgT=0;z._pgD=dist(z.x,z.y,p.x,p.y);}
     var moved=dist(z.x,z.y,z._sx||z.x,z._sy||z.y);
     if(moved<2.2){z._st=(z._st||0)+dt;
       if(z._st>0.35){
@@ -632,7 +637,7 @@ function updateHome(z,dt){
     return;
   }
   if(z.grabDash>0){
-    z.grabDash-=dt;ang=Math.atan2(z.ty-z.y,z.tx-z.x);sp=780;
+    z.grabDash-=dt;ang=Math.atan2(z.ty-z.y,z.tx-z.x);sp=780*(CFG.MOVE||1);
     if(typeof moveWithSlide==="function")moveWithSlide(z,Math.cos(ang)*sp*dt,Math.sin(ang)*sp*dt);
     else{z.x+=Math.cos(ang)*sp*dt;z.y+=Math.sin(ang)*sp*dt;}
     z.aimAng=ang;
@@ -658,7 +663,7 @@ function updateHome(z,dt){
     if(z.windup==="grab"){z.tx=p.x;z.ty=p.y;z.aimAng=Math.atan2(p.y-z.y,p.x-z.x);}
     if(z.windupT<=0){
       ang=Math.atan2(p.y-z.y,p.x-z.x);
-      if(z.windup==="grab"){z.tx=p.x;z.ty=p.y;d=dist(z.x,z.y,z.tx,z.ty);z.grabDash=Math.min(0.55,Math.max(0.22,d/780+0.08));sfx("dash");}
+      if(z.windup==="grab"){z.tx=p.x;z.ty=p.y;d=dist(z.x,z.y,z.tx,z.ty);z.grabDash=Math.min(0.6,Math.max(0.22,d/(780*(CFG.MOVE||1))+0.08));sfx("dash");}
       else if(z.windup==="sweep"){addLaser(z.x,z.y,ang-0.55,460,0.5,16,0);game.lasers[game.lasers.length-1].spin=2.2;}
       else if(z.windup==="burst"){addLaser(z.x,z.y,ang,420,0.28,18,0);addLaser(z.x,z.y,ang+0.18,420,0.28,18,0);}
       else if(z.windup==="dive"){z.diveT=0.32;}

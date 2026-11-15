@@ -24,6 +24,8 @@ function glowSpr(col){
 function hexA(h,a){var n=parseInt(h.slice(1),16);return "rgba("+((n>>16)&255)+","+((n>>8)&255)+","+(n&255)+","+a+")";}
 function hellBusy(){return game.particles&&game.particles.length>150;}
 function hellPart(x,y,col,life,vx,vy,sz,k){if(hellBusy())return;addParticle(x,y,col,life,vx,vy,sz,k||3);}
+/* v20.2.3: Thanos attack speeds follow the slower, more realistic movement pace */
+function TMV(){return (typeof CFG!=="undefined"&&CFG.MOVE)||1;}
 function smooth01(u){u=clamp(u,0,1);return u*u*(3-2*u);}
 function hellSetView(w){
   if(layout.viewW===w)return;
@@ -299,7 +301,7 @@ function thanosWind(z,g){
   else if(g==="space"){z.tt=0.65*f;var sp=hellSpot(p.x+(p.vx||0)*0.3,p.y+(p.vy||0)*0.3,32,52,z.r+4)||hellSpot(p.x,p.y,30,90,z.r)||{x:z.x,y:z.y};z.tx=sp.x;z.ty=sp.y;}
   else if(g==="reality")z.tt=0.8*f;
   else if(g==="soul")z.tt=0.75*f;
-  else if(g==="time"){z.tt=0.95*f;z.cx=p.x;z.cy=p.y;}
+  else if(g==="time"){z.tt=0.95*f/TMV();z.ttMax=z.tt;z.cx=p.x;z.cy=p.y;}
   else if(g==="mind")z.tt=0.6*f;
   if(z.combo)z.tt*=0.85;
 }
@@ -310,14 +312,14 @@ function thanosAct(z,g){
   for(i=0;i<8;i++)hellPart(z.x+rand(-8,8),z.y-46,col,0.6,rand(-90,90),rand(-90,10),rand(3,5),3);
   floatText(z.x,z.y-78,GEMS[g].n,col);
   if(g==="power"){
-    h.rings.push({x:z.x,y:z.y,r:14,vr:255,life:0.95,dmg:M?22:18,col:col,gaps:ringGaps(3)});
-    if(M)h.rings.push({x:z.x,y:z.y,r:14,vr:255,life:0.95,dmg:18,col:col,delay:0.4,gaps:ringGaps(3)});
+    h.rings.push({x:z.x,y:z.y,r:14,vr:255*TMV(),life:0.95/TMV(),dmg:M?22:18,col:col,gaps:ringGaps(3)});
+    if(M)h.rings.push({x:z.x,y:z.y,r:14,vr:255*TMV(),life:0.95/TMV(),dmg:18,col:col,delay:0.4,gaps:ringGaps(3)});
     sfx("thanos_boom",0.8);shake(12);z.ts="recover";z.tt=0.55;
   }else if(g==="space"){
     for(i=0;i<10;i++)hellPart(z.x+rand(-14,14),z.y+rand(-30,0),col,0.5,rand(-40,40),rand(-60,0),rand(3,5),3);
     z.x=z.tx;z.y=z.ty;resolveCircle(z);sfx("portal",0.9);
     for(i=0;i<10;i++)hellPart(z.x+rand(-14,14),z.y+rand(-30,0),col,0.5,rand(-40,40),rand(-60,0),rand(3,5),3);
-    z.ts="punch_wind";z.tt=M?0.36:0.44;z.lockA=Math.atan2(p.y-z.y,p.x-z.x);z.look.pose="walk";
+    z.ts="punch_wind";z.tt=(M?0.36:0.44)/TMV();z.lockA=Math.atan2(p.y-z.y,p.x-z.x);z.look.pose="walk";
   }else if(g==="reality"){
     n=M?3:2;
     for(i=0;i<n;i++){sp=hellSpot(p.x,p.y,110,170,z.r);if(sp)h.clones.push({x:sp.x,y:sp.y,t:0,fire:0.7+i*0.3,life:2.6,shot:0});}
@@ -335,7 +337,7 @@ function thanosAct(z,g){
     sfx("zap",0.8);z.ts="recover";z.tt=0.5;
   }else if(g==="mind"){
     n=M?5:3;
-    for(i=0;i<n;i++){a=Math.atan2(p.y-z.y,p.x-z.x)+(i-(n-1)/2)*0.55;h.orbs.push({x:z.x+Math.cos(a)*16,y:z.y+Math.sin(a)*10,vx:Math.cos(a)*150,vy:Math.sin(a)*150,life:3.6,dmg:13,col:col,home:2.3,r:6});}
+    for(i=0;i<n;i++){a=Math.atan2(p.y-z.y,p.x-z.x)+(i-(n-1)/2)*0.55;h.orbs.push({x:z.x+Math.cos(a)*16,y:z.y+Math.sin(a)*10,vx:Math.cos(a)*150*TMV(),vy:Math.sin(a)*150*TMV(),life:3.6,dmg:13,col:col,home:2.3,r:6});}
     sfx("zap",0.9);z.ts="recover";z.tt=0.45;
   }
 }
@@ -388,7 +390,7 @@ function updateThanos(z,dt){
   if(!z.p2&&z.hp<=z.maxHp*0.55&&z.ts==="walk"){
     z.p2=1;z.speed*=1.18;z.ts="recover";z.tt=1.0;z.look.pose="cast";z.poseT=1.0;
     floatText(z.x,z.y-80,"FASE 2","#ff1744");sfx("thanos_boom",0.9);sfx("sting");shake(14);h.flash=0.25;
-    h.rings.push({x:z.x,y:z.y,r:14,vr:220,life:0.8,dmg:12,col:"#ffffff"});
+    h.rings.push({x:z.x,y:z.y,r:14,vr:220*TMV(),life:0.8/TMV(),dmg:12,col:"#ffffff"});
     return;
   }
   z.tt-=dt;
@@ -420,7 +422,7 @@ function updateThanos(z,dt){
   case "soul":
     z.aimAng=Math.atan2(dy,dx);
     if(d<320&&!(p.dashT>0)&&!p.leap){
-      var pull=(z.p2?150:122)*dt;moveWithSlide(p,-dx/d*pull,-dy/d*pull);
+      var pull=(z.p2?150:122)*TMV()*dt;moveWithSlide(p,-dx/d*pull,-dy/d*pull);
       p.hp-=(z.p2?7:5.5)*(p.armorMul||1)*dt;if(p.hp<1)p.hp=1;
       var hl=Math.min(30*dt,z.maxHp*0.02-z.healSoul);if(hl>0){z.hp=Math.min(z.maxHp,z.hp+hl);z.healSoul+=hl;}
       if(Math.random()<0.6)hellPart(p.x,p.y-12,"#ff9a1f",0.5,-dx/d*120,-dy/d*120-20,3,3);
@@ -474,7 +476,7 @@ function hellAttacksTick(p,dt){
     if(l<o.r+p.r&&!dodge){hurtPlayer(p,o.dmg);o.life=0;for(var k=0;k<5;k++)hellPart(o.x,o.y,o.col,0.4,rand(-60,60),rand(-60,20),3,3);}
     if(o.life<=0||sampleType(o.x,o.y)===2)h.orbs.splice(i,1);}
   for(i=h.clones.length-1;i>=0;i--){o=h.clones[i];o.t+=dt;
-    if(!o.shot&&o.t>=o.fire){o.shot=1;var a=Math.atan2(p.y-o.y,p.x-o.x);h.orbs.push({x:o.x,y:o.y-10,vx:Math.cos(a)*135,vy:Math.sin(a)*135,life:3,dmg:12,col:"#ff2d4a",home:0.9,r:7});sfx("zap",0.5);}
+    if(!o.shot&&o.t>=o.fire){o.shot=1;var a=Math.atan2(p.y-o.y,p.x-o.x);h.orbs.push({x:o.x,y:o.y-10,vx:Math.cos(a)*135*TMV(),vy:Math.sin(a)*135*TMV(),life:3,dmg:12,col:"#ff2d4a",home:0.9,r:7});sfx("zap",0.5);}
     if(o.t>=o.life)h.clones.splice(i,1);}
   for(i=h.zones.length-1;i>=0;i--){o=h.zones[i];o.t+=dt;
     if(o.t>o.arm&&dist(p.x,p.y,o.x,o.y)<o.r&&!dodge){p.hp-=9*(p.armorMul||1)*dt;p.flash=0.05;if(p.hp<=0){p.hp=0;hurtPlayer(p,1);}}
@@ -588,7 +590,11 @@ hellAttacksTick=function(p,dt){
 };
 /* ---------- v20.2.3: Thanos drops the Infinity Gauntlet -> final cinematic -> level complete ---------- */
 var _hellHurtPlayer=hurtPlayer;
-hurtPlayer=function(p){if(HELL.active&&game&&game.hell&&game.hell.won)return;return _hellHurtPlayer.apply(this,arguments);};
+hurtPlayer=function(p,dmg){
+  if(HELL.active&&game&&game.hell&&game.hell.won)return;
+  /* v20.2.3: the hero is ~22% slower now, so Thanos hits a bit softer (keeps every hero x mega-power winnable) */
+  if(HELL.active&&typeof dmg==="number"&&dmg>1){var a=Array.prototype.slice.call(arguments);a[1]=dmg*0.72;return _hellHurtPlayer.apply(this,a);}
+  return _hellHurtPlayer.apply(this,arguments);};
 function hellDropGlove(x,y){
   var h=game.hell,sp=(sampleType(x,y)===0&&sampleSDF(x,y)>=10)?{x:x,y:y}:(hellSpot(x,y,0,40,14)||hellSpot(HELL_DATA.center.x,HELL_DATA.center.y,0,40,24)||{x:HELL_DATA.center.x,y:HELL_DATA.center.y});
   h.glove={x:sp.x,y:sp.y,t:0};h.phase="won";h.won=1;
@@ -807,7 +813,7 @@ function hellDrawUnder(){
   if(z&&z.ts==="wind"){
     if(z.gem==="power")drawMarker(z.x,z.y,240*(1-clamp(z.tt/0.9,0,1))+20,GEMS.power.c,t);
     if(z.gem==="space")drawMarker(z.tx,z.ty,30,GEMS.space.c,t);
-    if(z.gem==="time"){drawMarker(z.cx,z.cy,62,GEMS.time.c,t);s=toScreen(z.cx,z.cy);ctx.save();ctx.strokeStyle=GEMS.time.c;ctx.lineWidth=2*sc;ctx.beginPath();var ang=-1.57+6.283*(1-clamp(z.tt/0.95,0,1));ctx.moveTo(s.x,s.y);ctx.lineTo(s.x+Math.cos(ang)*40*sc,s.y+Math.sin(ang)*40*sc*CFG.YSCALE);ctx.stroke();ctx.restore();}
+    if(z.gem==="time"){drawMarker(z.cx,z.cy,62,GEMS.time.c,t);s=toScreen(z.cx,z.cy);ctx.save();ctx.strokeStyle=GEMS.time.c;ctx.lineWidth=2*sc;ctx.beginPath();var ang=-1.57+6.283*(1-clamp(z.tt/(z.ttMax||0.95),0,1));ctx.moveTo(s.x,s.y);ctx.lineTo(s.x+Math.cos(ang)*40*sc,s.y+Math.sin(ang)*40*sc*CFG.YSCALE);ctx.stroke();ctx.restore();}
   }
   if(z&&z.ts==="punch_wind")drawMarker(z.x,z.y,48,GEMS.space.c,t*2);
   for(i=0;i<h.clock.length;i++){o=h.clock[i];drawSlamRing(o.x,o.y,62*(1+(0.5-o.t)),hexA(GEMS.time.c,o.t*1.6));}
