@@ -280,6 +280,11 @@ function update(dt){
 function updatePlayerMove(p,dt,safe){
   var mx=0,my=0,mag,keys;
   if(p.grabbed){
+    /* v20.3: if the grabber dies mid-grab (burn, drone, poison...), let go — the hero used to stay locked forever */
+    var gh=null,gi;for(gi=0;gi<game.zombies.length;gi++){var gz=game.zombies[gi];if(gz.isHome&&!gz.dead&&!gz.dying&&gz.grabT>0){gh=gz;break;}}
+    if(!gh){p.grabbed=0;p.mashCount=0;p.mashPop=0;p.lift=0;}
+  }
+  if(p.grabbed){
     if(p.mashPop>0)p.mashPop=Math.max(0,p.mashPop-dt*5);
     keys=input.keys.ArrowLeft||input.keys.a||input.keys.A||input.keys.ArrowRight||input.keys.d||input.keys.D||input.keys.ArrowUp||input.keys.w||input.keys.W||input.keys.ArrowDown||input.keys.s||input.keys.S||input.keys[" "]||input.keys.Enter;
     if(keys){if(!p.mashKey){registerMash();p.mashKey=1;}}else p.mashKey=0;
