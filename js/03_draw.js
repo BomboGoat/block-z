@@ -67,14 +67,36 @@ function treeHides(o,x,y){
   if(y<cy)return 0;
   return dist(x,y,cx,cy)<R+12;
 }
+var _treeGrade={};
+function gradedTree(kind,img){
+  var c=_treeGrade[kind];if(c)return c;
+  c=document.createElement("canvas");c.width=img.width;c.height=img.height;
+  var g=c.getContext("2d"),w=c.width,h=c.height,gr;
+  g.drawImage(img,0,0);
+  g.globalCompositeOperation="source-atop";
+  g.fillStyle="rgba(70,84,52,0.13)";g.fillRect(0,0,w,h);            /* pull the flat sticker greens toward the painted ground */
+  gr=g.createLinearGradient(0,h*0.35,0,h);gr.addColorStop(0,"rgba(16,26,10,0)");gr.addColorStop(0.72,"rgba(16,26,10,0.26)");gr.addColorStop(1,"rgba(12,18,8,0.5)");
+  g.fillStyle=gr;g.fillRect(0,0,w,h);                               /* ambient occlusion under the canopy and at the root */
+  gr=g.createRadialGradient(w*0.36,h*0.2,4,w*0.36,h*0.2,w*0.7);gr.addColorStop(0,"rgba(255,236,170,0.14)");gr.addColorStop(1,"rgba(255,236,170,0)");
+  g.fillStyle=gr;g.fillRect(0,0,w,h);                               /* warm key light from the same side as the map */
+  _treeGrade[kind]=c;return c;
+}
 function drawTree(o){
   var s=toScreen(o.x+o.w/2,o.y+o.d/2),sc=layout.scale,R=(o.canopy||40)*sc,h=(o.h||16)*sc;
   var ghost=0,p=game&&game.player,zs,i;
   if(p&&treeHides(o,p.x,p.y))ghost=1;
   if(!ghost&&game&&game.zombies){zs=game.zombies;for(i=0;i<zs.length;i++)if(!zs[i].dead&&onScreen(zs[i].x,zs[i].y,40)&&treeHides(o,zs[i].x,zs[i].y)){ghost=1;break;}}
-  ctx.fillStyle="rgba(0,0,0,0.28)";fillEllipse(ctx,s.x+7,s.y+6,R*0.58,R*0.22);
   var kind=o.treeKind||"oak",img=typeof GFX!=="undefined"&&GFX.trees&&GFX.trees[kind];
   if(img&&img.width){
+    /* v20.3: soft canopy shadow cast on the ground + a dark contact patch at the trunk,
+       and a once-baked colour grade so the sprite sits in the painted ground instead of looking pasted */
+    if(typeof softShadowSpr==="function"){
+      var ss=softShadowSpr();
+      ctx.globalAlpha=ghost?0.18:0.34;ctx.drawImage(ss,s.x-R*0.55,s.y-R*0.3,R*1.75,R*0.66);
+      ctx.globalAlpha=ghost?0.3:0.62;ctx.drawImage(ss,s.x-R*0.42,s.y-R*0.13,R*0.84,R*0.3);
+      ctx.globalAlpha=1;
+    }
+    img=gradedTree(kind,img);
     var mul=kind==="pine"?2.85:kind==="bushy"?2.25:2.55;
     var H=R*mul,W=H*(img.width/img.height);
     var sway=Math.sin(((game&&game.time)||0)*1.15+(o.x||0)*0.02)*0.032;
