@@ -25,8 +25,8 @@ function resize(){
   layout.safe=typeof readSafeInsets==="function"?readSafeInsets():{l:12,t:12,r:12,b:12};
   layout.gameX=0;layout.gameY=0;layout.gameDrawW=SW;layout.gameDrawH=SH;
   /* landscape zoom-out: viewW~420, characters stay >=60px via artTargetH */
-  layout.baseViewW=420;
-  layout.viewW=420;
+  layout.baseViewW=380;
+  layout.viewW=380;
   layout.scale=layout.gameDrawW/layout.viewW;
   layout.viewH=layout.gameDrawH/(layout.scale*CFG.YSCALE);
   W=layout.viewW;H=layout.viewH;
@@ -213,6 +213,7 @@ function update(dt){
     }}
     updateCam(dt);return;
   }
+  if(typeof hellPreUpdate==="function"&&hellPreUpdate(dt))return;
   if(game.state!=="playing")return;
   updatePlayerMove(p,dt,0);
   if(typeof updateTruenoLaser==="function")updateTruenoLaser(p,dt);
@@ -220,7 +221,7 @@ function update(dt){
   var n=(p.grabbed||p.laserT>0)?null:findNearestZombie(p,heroRange(p));
   if(n)p.aimAng=Math.atan2(n.y-p.y,n.x-p.x);
   p.fireTimer-=dt;
-  if(!p.grabbed&&!(p.laserT>0)&&!(p.giantLeapT>0)&&p.fireTimer<=0&&n){fireWeapon(p);var cd=p.weapon==="smg"?Math.min(p.fireCooldown,0.16):p.fireCooldown;if(p.lastStand&&p.hp<p.maxHp*0.35)cd*=0.8;if(typeof extraFireCooldown==="function")cd=extraFireCooldown(p,cd);p.fireTimer=cd;}
+  if(!p.mega&&!p.grabbed&&!(p.laserT>0)&&!(p.giantLeapT>0)&&p.fireTimer<=0&&n){fireWeapon(p);var cd=p.weapon==="smg"?Math.min(p.fireCooldown,0.16):p.fireCooldown;if(p.lastStand&&p.hp<p.maxHp*0.35)cd*=0.8;if(typeof extraFireCooldown==="function")cd=extraFireCooldown(p,cd);p.fireTimer=cd;}
   if((p.hasMelee||p.weapon==="knife"||p.weapon==="fist")&&p.meleeSwing>0){
     if(!p.swingDone&&p.meleeSwing<=0.2){
       p.swingDone=1;
@@ -271,7 +272,8 @@ function update(dt){
   if(game.graceT>0)game.graceT-=dt;
   var alive=0;for(var ai=0;ai<game.zombies.length;ai++)if(!game.zombies[ai].dead)alive++;
   if(game.graceT<=0&&alive===0&&(!game.spawnQueue||!game.spawnQueue.length)&&game.state==="playing"&&!((game.wave===2||game.wave===5||game.wave===7||game.wave===9)&&!game.bossSpawned))onWaveCleared();
-  if(typeof updateEvents==='function')updateEvents(dt);
+  if(typeof updateEvents==='function'&&!(typeof HELL!=='undefined'&&HELL.active))updateEvents(dt);
+  if(typeof hellTick==='function')hellTick(dt);
   updateCam(dt);
 }
 function updatePlayerMove(p,dt,safe){
@@ -357,7 +359,7 @@ function bossCamDrop(b){
 }
 function updateCam(dt){
   var p=game.player,k=1-Math.exp(-CFG.CAM_LERP*dt),tx=p.x,ty=p.y,b=game.boss,t,u,bx,by,drop;
-  var base=layout.baseViewW||420, want=base, zin=0;
+  var base=layout.baseViewW||380, want=base, zin=0;
   if(game.state==="boss_intro"&&b){
     t=b.introT;drop=bossCamDrop(b);bx=b.x;by=b.y-drop;
     if(t>3.7){u=(4.2-t)/0.5;u=u*u*(3-2*u);tx=(game.introX||p.x)+(bx-(game.introX||p.x))*u;ty=(game.introY||p.y)+(by-(game.introY||p.y))*u;}
@@ -367,11 +369,8 @@ function updateCam(dt){
     /* zoom in to the intro hold and KEEP that zoom (no zoom-out on the return pan) */
     zin=t>3.7?((4.2-t)/0.5)*0.22:0.22;
     want=base*(1-zin);
-  }else if(game.bossFight&&b&&!b.dead&&!b.dying){
-    drop=bossCamDrop(b);
-    tx=p.x*0.40+b.x*0.60;ty=p.y*0.40+(b.y-drop)*0.60;
-    want=base*0.78; /* same scale as the intro hold, so the boss stays imposing */
   }
+  /* v20.2.1: after the intro the camera follows ONLY the player, like normal play */
   if(layout.viewW!==want){
     layout.viewW=want;
     layout.scale=layout.gameDrawW/layout.viewW;
@@ -433,6 +432,7 @@ function updateZombies(dt){
     if(z.isColossus){updateColossus(z,dt);continue;}
     if(z.isHome){updateHome(z,dt);continue;}
     if(z.isGorgon){updateGorgon(z,dt);continue;}
+    if(z.isThanos){updateThanos(z,dt);continue;}
     if(z.isBoss){updateMiniBoss(z,dt);continue;}
     if(z.stun>0){continue;}
     var fd=flowDir(z.x,z.y),spd=z.speed*(z.buffed?1.3:1)*(z.slow>0?0.5:1)*(typeof terrainSpeedMul==='function'?terrainSpeedMul(z.x,z.y):1)*(typeof eventZombieSpeedMul==='function'?eventZombieSpeedMul():1);

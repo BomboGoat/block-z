@@ -12,7 +12,8 @@ var ART_MAP={
   exploder:{f:"z_exploder_f"},crawler:{f:"z_crawler_f"},armored:{f:"z_armored_f"},
   spitter:{f:"z_spitter_f"},jumper:{f:"z_jumper_f"},screamer:{f:"z_screamer_f"},
   splitter:{f:"z_splitter_f"},mini:{f:"z_normal_f"},
-  gorgon:{f:"gorgon_f"},gorgon_open:{f:"gorgon_open_f"}
+  gorgon:{f:"gorgon_f"},gorgon_open:{f:"gorgon_open_f"},
+  thanos:{f:"thanos_walk_f"},thanos_cast:{f:"thanos_cast_f"},thanos_snap:{f:"thanos_snap_f"}
 };
 function artLookKey(look){
   if(!look)return null;
@@ -20,6 +21,7 @@ function artLookKey(look){
   if(look.kind==="colossus")return "colossus";
   if(look.kind==="home")return "home";
   if(look.kind==="gorgon")return look.open?"gorgon_open":"gorgon";
+  if(look.kind==="thanos")return look.pose==="cast"?"thanos_cast":look.pose==="snap"?"thanos_snap":"thanos";
   if(look.kind==="final"||(look.type==="boss"&&look.final)||look.final)return "final";
   return look.type||null;
 }
@@ -37,9 +39,9 @@ function artLoad(done){
       im.src=(ART.meta[k]&&ART.meta[k].file)||("assets/spr/"+k+".webp");
     })(keys[i]);
   };
-  mj.onerror=tick;mj.open("GET","assets/spr/meta.json?v=20.2.0");mj.send();
-  var mw=new Image();mw.onload=function(){ART.menuWide=mw;tick();};mw.onerror=tick;mw.src="assets/ui/menu-wide.webp?v=20.2.0";
-  var ar=new Image();ar.onload=function(){ART.arena=ar;if(map){map.chunks={};map.dirty=1;}tick();};ar.onerror=tick;ar.src="assets/env/arena.webp?v=20.2.0";
+  mj.onerror=tick;mj.open("GET","assets/spr/meta.json?v=20.2.1");mj.send();
+  var mw=new Image();mw.onload=function(){ART.menuWide=mw;tick();};mw.onerror=tick;mw.src="assets/ui/menu-wide.webp?v=20.2.1";
+  var ar=new Image();ar.onload=function(){ART.arena=ar;if(map){map.chunks={};map.dirty=1;}tick();};ar.onerror=tick;ar.src="assets/env/arena.webp?v=20.2.1";
 }
 function artEntry(look,dir,pose){
   if(!ART.ready||!ART.meta)return null;
@@ -48,15 +50,17 @@ function artEntry(look,dir,pose){
   if(pose==="laser"&&k==="trueno"&&ART_MAP[k].laser)name=ART_MAP[k].laser;
   var img=ART.imgs[name],meta=ART.meta[name];
   if(!img||!img.width||!meta)return null;
+  if(look.tint)img=artTint(name,img,look.tint);
   var fl=(dir<=1||dir===7)?1:(dir>=3&&dir<=5)?-1:1;
   return{img:img,meta:meta,flip:fl<0,key:k};
 }
 function artTargetH(look,sc){
-  var h=31*sc; /* ~62px at landscape viewW=420 */
+  var h=31*sc*(CFG.CHAR||1); /* v20.2.1: characters 18% smaller in world units, camera a bit closer */
 
   if(look&&look.kind==="colossus")h*=2.4;
   else if(look&&look.kind==="home")h*=1.85;
   else if(look&&look.kind==="gorgon")h*=2.5;
+  else if(look&&look.kind==="thanos")h*=2.75*(look.pose==="cast"?1.2:look.pose==="snap"?1.03:1);
   else if(look&&(look.kind==="final"||look.final||(look.type==="boss"&&!look.kind)))h*=2.65;
   else if(look&&(look.type==="tank"||look.type==="armored"))h*=1.25;
   else if(look&&(look.type==="crawler"||look.type==="mini"))h*=0.7;
@@ -392,4 +396,16 @@ function drawMenuArt(){
   g2.addColorStop(0,"rgba(16,4,4,0)");g2.addColorStop(1,"rgba(16,4,4,0.45)");
   ctx.fillStyle=g2;ctx.fillRect(0,0,SW,SH);
   return 1;
+}
+
+/* v20.2.1: tinted sprite cache (FURIA VERDE) — built once per sprite, no per-frame filters */
+var ART_TINT={};
+function artTint(name,img,tint){
+  var k=name+"|"+tint;if(ART_TINT[k])return ART_TINT[k];
+  var c=document.createElement("canvas");c.width=img.width;c.height=img.height;var g=c.getContext("2d");
+  g.drawImage(img,0,0);
+  g.globalCompositeOperation="multiply";g.fillStyle=tint==="hulk"?"#8cff7a":"#ffffff";g.fillRect(0,0,c.width,c.height);
+  g.globalCompositeOperation="source-atop";g.fillStyle="rgba(40,140,40,0.22)";g.fillRect(0,0,c.width,c.height);
+  g.globalCompositeOperation="destination-in";g.drawImage(img,0,0);
+  ART_TINT[k]=c;return c;
 }
