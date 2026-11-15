@@ -24,7 +24,7 @@ function drawWorld(){
   for(i=0;i<map.solids.length;i++){o=map.solids[i];if(o.dead)continue;if(vis(o.x,o.y,o.w,o.d))list.push({y:o.y+o.d,k:"p",o:o});}
   for(i=0;i<(map.decos||[]).length;i++){o=map.decos[i];if(vis(o.x,o.y,o.w,o.d))list.push({y:o.y+o.d,k:"p",o:o});}
   var menuSt=game.state==="title"||game.state==="select"||(typeof MENU_ST!=="undefined"&&MENU_ST[game.state]&&!(game.state==="settings"&&prevSettings==="pause"));
-  if(p&&!menuSt)list.push({y:p.y+p.r,k:"pl"});
+  if(p&&!menuSt&&game.state!=="hell_final")list.push({y:p.y+p.r,k:"pl"}); /* v20.3: the ending draws its own close-up hero */
   var zs=menuSt?game.titleZ:game.zombies;
   if(zs)for(i=0;i<zs.length;i++){o=zs[i];if(o.dead)continue;if(onScreen(o.x,o.y,80))list.push({y:o.y+o.r,k:"z",o:o});}
   if(game.player&&game.player.hasDog&&game.player.dog)list.push({y:game.player.dog.y+8,k:"dog"});

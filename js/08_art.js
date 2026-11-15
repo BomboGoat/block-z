@@ -214,12 +214,14 @@ function drawHeroRig(e,name,look,anim,pose,H,W,fx,fy,opts){
   }else if(hero==="trueno"){ /* lightning hands: arms thrust to the target while casting */
     if(atk>0||opts.laser){var u=opts.laser?1:Math.min(1,atk*3);armR=armR+(aimRot-armR)*u;armL=armL+(aimRot*0.85-armL)*u;}
   }
+  if(opts.armR!=null)armR=opts.armR;if(opts.armL!=null)armL=opts.armL; /* v20.3: posed by the ending cinematic */
   function drawArm(side,rot){
     var a=side<0?R.L:R.R,c=side<0?P.L:P.R,px=dX(a.p[0]),py=dY(a.p[1]);
     ctx.save();ctx.translate(px,py);ctx.rotate(rot);ctx.drawImage(c,-px-W*fx,-py-H*fy,W,H);ctx.restore();
   }
   /* body bob, breathing and lean are applied by the caller; head adds lag */
   var headY=run?Math.sin(ph*2-0.9)*H*0.012:Math.sin(t*2.2-0.6)*H*0.006,headR=run?-s1*0.03:Math.sin(t*1.1)*0.015;
+  if(opts.headR)headR+=opts.headR;
   drawArm(1,armR);
   if(run&&s1>=0){leg(-1,aR);leg(1,aL);}else{leg(1,aL);leg(-1,aR);}
   var neckY=Math.floor(ih*R.neck),torsoBot=Math.min(ih,Math.ceil(ih*(waist+0.07)));
