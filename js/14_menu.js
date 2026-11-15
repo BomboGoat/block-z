@@ -685,3 +685,9 @@ function menuAction(h){
 
 /* equipped skins show everywhere the hero is drawn (hero select cards, in-game) */
 (function(){var _mh=makeHeroLook;makeHeroLook=function(id){var l=_mh(id);try{var sk=equippedSkin(id||"classic");if(sk!=="orig")l.tint=sk;}catch(e){}return l;};})();
+/* the pause-screen mute toggles write through to the profile volumes (applyAudioLevels runs every frame) */
+(function(){
+  var _ms=setMuteSfx,_mm=setMuteMus;
+  setMuteSfx=function(v){if(PROF){if(v){if(PROF.set.sfx>0.001)PROF._sfxPrev=PROF.set.sfx;PROF.set.sfx=0;}else PROF.set.sfx=PROF._sfxPrev||0.9;profSave();}_ms(v);applyAudioLevels();};
+  setMuteMus=function(v){if(PROF){if(v){if(PROF.set.mus>0.001)PROF._musPrev=PROF.set.mus;PROF.set.mus=0;}else PROF.set.mus=PROF._musPrev||0.8;profSave();}_mm(v);applyAudioLevels();};
+})();
