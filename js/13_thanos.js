@@ -261,11 +261,11 @@ function hellPickTick(p,dt){
 function megaPick(p,id){
   var h=game.hell,i,q,M=MEGA[id];
   p.mega=id;p.megaCd=0.4;p.megaN=0;p.leapCd=0;p.flyCd=0;h.phase="transform";h.transformT=1.3;h.flash=0.4;
-  for(i=0;i<h.peds.length;i++){q=h.peds[i];q.gone=1;for(var k=0;k<8;k++)hellPart(q.x+rand(-10,10),q.y+rand(-6,6),q.id===id?MEGA[q.id].c:"#9e9e9e",0.7,rand(-60,60),rand(-120,-30),rand(3,5),3);}
-  for(i=0;i<26;i++)hellPart(p.x,p.y,i%2?M.c:M.c2,0.9,rand(-150,150),rand(-180,20),rand(3,6),3);
+  for(i=0;i<h.peds.length;i++){q=h.peds[i];q.gone=1;if(q.id!==id)continue;for(var k=0;k<6;k++)hellPart(q.x+rand(-10,10),q.y+rand(-6,6),MEGA[q.id].c,0.6,rand(-50,50),rand(-110,-30),rand(3,5),3);}
+  for(i=0;i<16;i++)hellPart(p.x,p.y,i%2?M.c:M.c2,0.8,rand(-130,130),rand(-160,10),rand(3,5),3);
   shake(12);sfx("thanos_boom",0.8);sfx(id==="hammer"?"storm":id==="armor"?"laser_loop":"stomp",0.9);
   if(id==="hammer"){p.megaDmg=1;}
-  if(id==="armor"){p.armorMul=(p.armorMul||1)*0.55;p.speedMul=(p.speedMul||1)*1.12;}
+  if(id==="armor"){p.armorMul=(p.armorMul||1)*0.55;p.speedMul=(p.speedMul||1)*1.12;p.maxHp=Math.round(p.maxHp*1.3);}
   if(id==="hulk"){p.maxHp=Math.round(p.maxHp*2.2);p.r=CFG.PLAYER_R*1.18;p.armorMul=(p.armorMul||1)*0.85;p.look._artScale=1.34;p.look.tint="hulk";}
   p.hp=p.maxHp;p.super=CFG.SUPER_COST*0.5;
   game.banner=null;game.message=M.n+" — "+M.sub;game.messageTimer=3.2;
@@ -346,7 +346,7 @@ function thanosStartSnap(z){
 }
 function thanosSnapFire(z){
   var h=game.hell,p=game.player,safe=h.safe.some(function(s){return dist(p.x,p.y,s.x,s.y)<s.r+p.r*0.5;});
-  z.look.pose="snap";z.poseT=1.2;h.flash=0.9;shake(22);sfx("thanos_boom",1);sfx("explode",1);
+  z.look.pose="snap";z.poseT=1.2;h.flash=0.5;shake(22);sfx("thanos_boom",1);sfx("explode",1);
   if(!safe){p.invuln=0;hurtPlayer(p,p.maxHp*0.55/(p.armorMul||1));floatText(p.x,p.y-30,"¡CHASQUIDO!","#ffd54f");}
   else floatText(p.x,p.y-30,"¡A SALVO!","#fff59d");
   h.safe=[];z.ts="stun";z.tt=3.2;z.noHurt=0;
@@ -497,7 +497,7 @@ function megaTick(p,dt){
     if(hm.out){var dx=hm.tx-hm.x,dy=hm.ty-hm.y,l=Math.sqrt(dx*dx+dy*dy);
       if(l<8||hm.t>0.75){hm.out=0;hm.tOut=hm.t;}else{hm.x+=dx/l*Math.min(l,430*dt);hm.y+=dy/l*Math.min(l,430*dt);}}
     else{var bx=p.x-hm.x,by=p.y-hm.y,bl=Math.sqrt(bx*bx+by*by);if(bl<14){h.hammer=null;sfx("thud",0.6);}else{hm.x+=bx/bl*Math.min(bl,520*dt);hm.y+=by/bl*Math.min(bl,520*dt);}}
-    if(z&&h.hammer&&dist(hm.x,hm.y,z.x,z.y)<z.r+12){if(hm.out&&!hm.h1){hm.h1=1;megaHit(z,44*dm,"#90caf9");hm.out=0;hm.tOut=hm.t;}else if(!hm.out&&!hm.h2&&hm.h1&&hm.t>hm.tOut+0.18){hm.h2=1;megaHit(z,26*dm,"#90caf9");}}
+    if(z&&h.hammer&&dist(hm.x,hm.y,z.x,z.y)<z.r+12){if(hm.out&&!hm.h1){hm.h1=1;megaHit(z,30*dm,"#90caf9");hm.out=0;hm.tOut=hm.t;}else if(!hm.out&&!hm.h2&&hm.h1&&hm.t>hm.tOut+0.18){hm.h2=1;megaHit(z,14*dm,"#90caf9");}}
     if(Math.random()<0.5)hellPart(hm.x,hm.y,"#bbdefb",0.25,0,0,3,3);
   }
   /* unibeam */
@@ -525,14 +525,14 @@ function megaTick(p,dt){
   if(!z||game.hell.phase!=="fight")return;
   if(M==="hammer"){
     if(d<60+z.r&&p.megaCd<=0){p.megaCd=0.5;p.megaN++;p.atkT=0.25;p.atkMax=0.25;
-      megaHit(z,52*dm,"#bbdefb");megaRing(p.x+Math.cos(p.aimAng)*22,p.y+Math.sin(p.aimAng)*14,6,200,0.28,"#90caf9");sfx("melee",1);shake(5);
-      if(p.megaN%4===0)megaBolt(z.x,z.y,70*dm);}
-    else if(d<300&&!h.hammer&&p.megaCd<=0){p.megaCd=0.85;p.megaN++;p.atkT=0.2;p.atkMax=0.2;
+      megaHit(z,46*dm,"#bbdefb");megaRing(p.x+Math.cos(p.aimAng)*22,p.y+Math.sin(p.aimAng)*14,6,200,0.28,"#90caf9");sfx("melee",1);shake(5);
+      if(p.megaN%4===0)megaBolt(z.x,z.y,55*dm);}
+    else if(d<300&&!h.hammer&&p.megaCd<=0){p.megaCd=0.95;p.megaN++;p.atkT=0.2;p.atkMax=0.2;
       a=Math.atan2(z.y-p.y,z.x-p.x);var far=Math.min(300,d+30);h.hammer={x:p.x,y:p.y,tx:p.x+Math.cos(a)*far,ty:p.y+Math.sin(a)*far,out:1,t:0,spin:0};sfx("whoosh",1);
-      if(p.megaN%4===0)megaBolt(z.x,z.y,70*dm);}
+      if(p.megaN%4===0)megaBolt(z.x,z.y,55*dm);}
   }else if(M==="armor"){
-    if(d<330&&p.megaCd<=0&&!(p.beamT>0)){p.megaCd=0.27;p.atkT=0.15;p.atkMax=0.15;
-      a=Math.atan2(z.y-p.y,z.x-p.x)+rand(-0.04,0.04);h.shots.push({x:p.x+Math.cos(a)*10,y:p.y+Math.sin(a)*8,vx:Math.cos(a)*560,vy:Math.sin(a)*560,life:0.8,dmg:27*dm});sfx("zap",0.45);}
+    if(d<330&&p.megaCd<=0&&!(p.beamT>0)){p.megaCd=0.25;p.atkT=0.15;p.atkMax=0.15;
+      a=Math.atan2(z.y-p.y,z.x-p.x)+rand(-0.04,0.04);h.shots.push({x:p.x+Math.cos(a)*10,y:p.y+Math.sin(a)*8,vx:Math.cos(a)*560,vy:Math.sin(a)*560,life:0.8,dmg:35*dm});sfx("zap",0.45);}
     /* auto flight-dash out of telegraphs */
     var danger=z.tele&&((z.gem==="time"&&dist(p.x,p.y,z.cx,z.cy)<70)||(z.gem==="power"&&d<240)||(z.gem==="space"));
     if(z.ts==="punch_wind"&&dist(p.x,p.y,z.x,z.y)<70)danger=1;
@@ -546,7 +546,7 @@ function megaTick(p,dt){
     if(d<56+z.r&&p.megaCd<=0){p.megaCd=0.42;p.megaN++;p.atkT=0.22;p.atkMax=0.22;
       megaHit(z,58*dm,"#a5d6a7");sfx("thud",1);shake(7);
       if(p.megaN%4===0){var tz2=z;megaRing(p.x,p.y,10,260,0.4,"#76ff03");if(dist(tz2.x,tz2.y,p.x,p.y)<95+tz2.r)megaHit(tz2,80*dm,"#76ff03");sfx("stomp",1);shake(12);}}
-    else if(d>125&&d<400&&p.leapCd<=0){
+    else if(d>125&&d<400&&p.leapCd<=0&&!game.hell.safe.length){
       a=Math.atan2(z.y-p.y,z.x-p.x);var lx=z.x-Math.cos(a)*(z.r+p.r+12),ly=z.y-Math.sin(a)*(z.r+p.r+12);
       if(sampleType(lx,ly)===0&&sampleSDF(lx,ly)>=p.r){p.leap={sx:p.x,sy:p.y,tx:lx,ty:ly,t:0,T:0.58};p.leapCd=3.0;sfx("jump",1);sfx("grunt",0.8);}
       else p.leapCd=0.5;
@@ -768,7 +768,7 @@ function hellLetterbox(a){var hb=SH*0.13*a;ctx.fillStyle="#000";ctx.fillRect(0,0
 function hellDrawScreen(){
   var st=game.state,h=game.hell,t,i;
   if(HELL.active&&h&&(st==="playing"||st==="hell_cine"||st==="pause"||st==="hell_trans"||st==="dead"||st==="level_done"))hellAtmosphere();
-  if(HELL.active&&h&&h.flash>0){ctx.fillStyle="rgba(255,255,240,"+clamp(h.flash*1.4,0,1)+")";ctx.fillRect(0,0,SW,SH);}
+  if(HELL.active&&h&&h.flash>0){ctx.fillStyle="rgba(255,255,240,"+clamp(h.flash*1.4,0,0.8)+")";ctx.fillRect(0,0,SW,SH);}
   if(st==="hell_trans"){
     t=clamp(HELL.transT/1.05,0,1);var P=toScreen(HELL.transP.x,HELL.transP.y),R=Math.max(SW,SH)*1.3*t*t;
     ctx.save();var col=HELL.transKind==="in"?"#b14cff":"#ffb300";
