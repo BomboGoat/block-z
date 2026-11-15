@@ -105,7 +105,14 @@ function profRunEnd(kind){
   if(kind==="hell"){
     if(MENU.hellDone)return;MENU.hellDone=1;
     PROF.stats.hell++;var hx=250,hc=300;grantAccountXP(hx);PROF.coins+=hc;
-    MENU.lastRun={xp:hx,coins:hc,hell:1};profSave();checkAchievements(1);return;
+    MENU.lastRun={xp:hx,coins:hc,hell:1};
+    if(MENU.runDone){profSave();checkAchievements(1);return;}
+    /* beating Thanos ends the run as a win: count it in runs / wins / per-hero wins too */
+    var st0=PROF.stats;MENU.runDone=1;st0.runs++;st0.kills+=kills;st0.bestRound=Math.max(st0.bestRound,10);
+    st0.time+=Math.max(0,(g.time||0)-(MENU.runT0||0));st0.bosses+=4;st0.wins++;st0.heroWins[p.hero]=(st0.heroWins[p.hero]||0)+1;
+    var lv1=account.level,wx=Math.round(10*14+kills*0.6+260),wc=Math.round(kills*0.5+60+150);grantAccountXP(wx);PROF.coins+=wc;
+    MENU.lastRun={xp:hx+wx,coins:hc+wc,win:true,hell:1,lvUp:account.level>lv1?account.level:0,round:10,kills:kills};
+    profSave();checkAchievements(1);return;
   }
   MENU.runDone=1;MENU.hellDone=0;
   var st=PROF.stats;st.runs++;st.kills+=kills;st.bestRound=Math.max(st.bestRound,win?10:round);
