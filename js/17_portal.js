@@ -59,11 +59,11 @@ function gpRevealUpdate(dt){
   gpSnd("title",1.55,T,function(){sfx("thanos_boom",0.8);});
   gpSnd("back",3.4,T,function(){sfx("whoosh",0.6);});
   hp.open=smooth01((T-1.25)/0.75);
-  var px=p.x,py=p.y-20,qx=hp.x,qy=hp.y-34,tx,ty,u,vw;
+  var px=p.x,py=p.y-20,qx=hp.x,qy=hp.y-70,tx,ty,u,vw;
   if(T<0.55){tx=px;ty=py;vw=base;}
-  else if(T<1.45){u=gpEase((T-0.55)/0.9);tx=px+(qx-px)*u;ty=py+(qy-py)*u;vw=base*(1-0.14*u);}
-  else if(T<3.4){tx=qx;ty=qy;vw=base*0.86;}
-  else{u=gpEase((T-3.4)/1.0);tx=qx+(px-qx)*u;ty=qy+(py-qy)*u;vw=base*(0.86+0.14*u);}
+  else if(T<1.45){u=gpEase((T-0.55)/0.9);tx=px+(qx-px)*u;ty=py+(qy-py)*u;vw=base*(1-0.04*u);}
+  else if(T<3.4){tx=qx;ty=qy;vw=base*0.96;}
+  else{u=gpEase((T-3.4)/1.0);tx=qx+(px-qx)*u;ty=qy+(py-qy)*u;vw=base*(0.96+0.04*u);}
   hellSetView(vw);
   var hw=worldW()*0.5,hh=worldH()*0.5;
   game.camX=clamp(tx,hw+8,CFG.MAP_W-hw-8);game.camY=clamp(ty,hh+8,CFG.MAP_H-hh-8);
@@ -226,7 +226,7 @@ hellDrawOver=function(){
 /* ---------- screen overlays ---------- */
 function gpTitle(T){
   var a=clamp((T-1.5)/0.25,0,1)*clamp((GP_RV-0.5-T)/0.45,0,1);if(a<=0)return;
-  var pu=T<1.75?1.6-0.6*smooth01((T-1.5)/0.25):1,cy=SH*0.3,fs=Math.round(Math.min(46,SH*0.115)),fs2=Math.round(fs*0.5);
+  var pu=T<1.75?1.6-0.6*smooth01((T-1.5)/0.25):1,cy=SH*0.25,fs=Math.round(Math.min(42,SH*0.105)),fs2=Math.round(fs*0.5);
   ctx.save();ctx.globalAlpha=a;ctx.textAlign="center";ctx.lineJoin="round";
   /* band */
   var bw=Math.min(SW*0.86,620),bh=fs*2.3,gb=ctx.createLinearGradient(SW/2-bw/2,0,SW/2+bw/2,0);gb.addColorStop(0,"rgba(20,2,10,0)");gb.addColorStop(0.2,"rgba(20,2,10,0.72)");gb.addColorStop(0.8,"rgba(20,2,10,0.72)");gb.addColorStop(1,"rgba(20,2,10,0)");
@@ -270,7 +270,7 @@ hellDrawScreen=function(){
   var st=game.state;
   if(st==="portal_reveal"){
     var T=GP.T,la=clamp(T/0.4,0,1)*clamp((GP_RV-T)/0.45,0,1);
-    hellLetterbox(la);
+    var lb=SH*0.085*la;ctx.fillStyle="#000";ctx.fillRect(0,0,SW,lb);ctx.fillRect(0,SH-lb,SW,lb);
     if(T<0.35){ctx.fillStyle="rgba(255,120,40,"+(0.25*(1-T/0.35))+")";ctx.fillRect(0,0,SW,SH);}
     gpTitle(T);
     if(T>1.6&&T<3.4){ctx.save();ctx.globalAlpha=0.5;ctx.font="12px system-ui";ctx.fillStyle="#fff";ctx.textAlign="right";ctx.fillText("Toca para continuar",SW-layout.safe.r-14,SH-8);ctx.restore();}
@@ -279,3 +279,7 @@ hellDrawScreen=function(){
   if(st==="portal_enter"){gpEnterScreen(GP.eT);return 1;}
   return _gpScreen();
 };
+/* v20.3.4: preload the HD ending art for the current hero once the portal opens / the arena starts */
+function gpHDPreload(){try{var p=game.player;if(!p||typeof finHDLoad!=="function")return;var e=artEntry(p.look||makeHeroLook(p.hero),angDir(Math.PI/2),"idle");if(e)finHDLoad(e.name);}catch(err){}}
+(function(){var oE=hellEnter;hellEnter=function(){gpHDPreload();return oE.apply(this,arguments);};
+  var oO=hellOpenPortal;hellOpenPortal=function(){gpHDPreload();return oO.apply(this,arguments);};})();

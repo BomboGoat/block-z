@@ -3,7 +3,7 @@
    own painted ground, minimap and walk grid (HELL_DATA). Thanos arrives with a cinematic, the hero
    picks ONE mega-power from 3 pedestals, and the fight is Thanos alone (no zombies). */
 var HELL={img:null,island:null,islandImg:null,building:0,active:0};
-(function(){try{var im=new Image();im.onload=function(){HELL.img=im;if(HELL.active&&typeof ART!=="undefined"){ART.arena=im;if(map){map.chunks={};}}};im.src="assets/env/hell.webp?v=20.3.3";}catch(e){}})();
+(function(){try{var im=new Image();im.onload=function(){HELL.img=im;if(HELL.active&&typeof ART!=="undefined"){ART.arena=im;if(map){map.chunks={};}}};im.src="assets/env/hell.webp?v=20.3.4";}catch(e){}})();
 var GEMS={
   power:{c:"#c77dff",n:"PODER"},space:{c:"#4d8dff",n:"ESPACIO"},reality:{c:"#ff2d4a",n:"REALIDAD"},
   soul:{c:"#ff9a1f",n:"ALMA"},time:{c:"#2fe37a",n:"TIEMPO"},mind:{c:"#ffe14a",n:"MENTE"}
@@ -613,7 +613,7 @@ function hellOpenExit(x,y){hellDropGlove(x,y);} /* legacy name */
 var FIN={rise0:0.6,rise1:2.0,aim0:1.7,aim1:2.4,slide0:2.45,lock:3.25,gem0:3.75,gemDt:0.42,burst:6.4,voice:6.9,raise0:10.15,raise1:10.9,insert:11.05,snap:12.45,white:13.0,done:13.7};
 FIN.soy=FIN.voice+1.48;FIN.name=FIN.voice+2.88;
 var SNAPIMG={pre:null,post:null};
-(function(){try{["pre","post"].forEach(function(k){var im=new Image();im.onload=function(){SNAPIMG[k]=im;};im.src="assets/spr/snap_"+k+".webp?v=20.3.3";});}catch(e){}})();
+(function(){try{["pre","post"].forEach(function(k){var im=new Image();im.onload=function(){SNAPIMG[k]=im;};im.src="assets/spr/snap_"+k+".webp?v=20.3.4";});}catch(e){}})();
 function heroName(p){return (HEROES.filter(function(x){return x.id===p.hero;})[0]||{}).name||"Héroe";}
 function hellPlayBuf(name,gain){
   try{
@@ -652,6 +652,16 @@ function finPower(T){
   var pw=s/6*0.75;if(T>=FIN.burst)pw=0.75+0.25*smooth01((T-FIN.burst)/0.6);
   return pw;
 }
+/* v20.3.4: the ending close-up uses 2x super-resolved hero art (cut into its own rig) so the hero stays crisp at
+   cinematic zoom; falls back to the game sprite until it has loaded */
+var FIN_HD={};
+function finHDLoad(name){if(FIN_HD[name]!==undefined)return;FIN_HD[name]=null;try{var im=new Image();im.onload=function(){FIN_HD[name]=im;};im.src="assets/spr/"+name+"_hd.webp?v=20.3.4";}catch(e){}}
+var FIN_HDT={};
+function finHDImg(name,tint){var hd=FIN_HD[name];if(!hd)return null;if(!tint)return hd;
+  var k=name+"|"+tint;if(FIN_HDT[k])return FIN_HDT[k];
+  var sv=ART_TINT[k];delete ART_TINT[k];var r=null;try{r=artTint(name,hd,tint);}catch(err){r=null;}if(sv)ART_TINT[k]=sv;else delete ART_TINT[k];
+  return (FIN_HDT[k]=r);}
+function finHD(e){var p=game.player,tint=p&&p.look&&p.look.tint;if(!HERO_RIG[e.name])return e;var im=finHDImg(e.name,tint);if(!im)return e;return {img:im,meta:e.meta,name:e.name,flip:e.flip};}
 function hellFinalStart(){
   var p=game.player,h=game.hell;
   h.glove=null;game.state="hell_final";HELL.finT=0;HELL.finVoice=null;
@@ -660,6 +670,7 @@ function hellFinalStart(){
   if(h.hammer)h.hammer=null;
   p.aimAng=p.facing=p.faceAng=Math.PI/2;p.gauntlet=1;
   HELL.finCam={x:game.camX,y:game.camY};
+  try{var fe=artEntry(game.player.look||makeHeroLook(p.hero),angDir(Math.PI/2),"idle");if(fe){var fim=finHDImg(fe.name,p.look&&p.look.tint);if(fim)rigParts(fe.name,fim);}}catch(err){}
   game.message="";game.messageTimer=0;
   finSnd("thanos_boom",0.4);shake(4);
 }
@@ -786,7 +797,8 @@ function finDrawStage(T,F,p,t){
   hg.setTransform(1,0,0,1,0,0);hg.clearRect(0,0,hc.width,hc.height);hg.setTransform(M);
   var main=ctx,hand=null;ctx=hg;
   try{ctx.save();ctx.translate(ox,oy);
-    if(R)hand=drawHeroRig(e,e.name,look,0,"idle",H,W,fx,fy,{armR:armR,armL:armL,headR:headR,aim:0});
+    var eh=finHD(e);ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";
+    if(R)hand=drawHeroRig(eh,eh.name,look,0,"idle",H,W,fx,fy,{armR:armR,armL:armL,headR:headR,aim:0});
     else ctx.drawImage(e.img,-W*fx,-H*fy,W,H);
     ctx.restore();}catch(err){}
   ctx=main;
