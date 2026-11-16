@@ -472,7 +472,8 @@ function drawHeroShowcaseRaw(hero,x,footY,H,skin,glow){
   if(HERO_RIG[e.name])hand=drawHeroRig(e,e.name,look,0,"idle",H,W,fx,fy,{aim:0.9,wpn:HERO_WPN[hero]});
   else ctx.drawImage(e.img,-W*fx,-H*fy,W,H);
   ctx.restore();
-  if(hand&&typeof drawWeapon34==="function"){var q=hand.matrixTransform(M0.inverse());drawWeapon34(ctx,q.x,q.y,0.6,HERO_WPN[hero],H/110*1.25*0.9,0,look.skin,hero==="classic"||hero==="neizan");}
+  if(hand&&typeof drawWeapon34==="function"){var q=hand.matrixTransform(M0.inverse());/* v20.4: Neizan rests the long double-barrel pointing down at the ground (it no longer pokes into the stats panel) */
+    var nzM=hero==="neizan";drawWeapon34(ctx,q.x,q.y,nzM?1.42:0.6,HERO_WPN[hero],H/110*1.25*0.9*(nzM?0.8:1),0,look.skin,nzM?false:hero==="classic");}
 }
 
 /* ---------- animated logo ---------- */
