@@ -470,11 +470,16 @@ function drawHeroShowcaseRaw(hero,x,footY,H,skin,glow){
   var m=e.meta,W=H*(m.w/m.h),fx=m.fx!=null?m.fx:0.5,fy=m.fy!=null?m.fy:1;
   var M0=ctx.getTransform();ctx.save();ctx.translate(x,footY);
   var hand=null;
-  if(HERO_RIG[e.name])hand=drawHeroRig(e,e.name,look,0,"idle",H,W,fx,fy,{aim:0.9,wpn:HERO_WPN[hero]});
-  else ctx.drawImage(e.img,-W*fx,-H*fy,W,H);
+  /* v20.5.1: menus show the intact painted sprite (one fused piece, no cut limbs) with a whole-body idle:
+     slow breathing stretch anchored at the feet and a gentle sway; the weapon rests in the painted hand. */
+  var tt=MENU.t||0,br=1+Math.sin(tt*2.2)*0.012,sw=Math.sin(tt*1.1)*0.012;
+  ctx.rotate(sw);ctx.scale(1/Math.sqrt(br),br);
+  ctx.drawImage(e.img,-W*fx,-H*fy,W,H);
+  var hxn=m.hx!=null?m.hx:0.9,hyn=m.hy!=null?m.hy:0.64;
+  hand=new DOMPoint(-W*fx+hxn*W,-H*fy+hyn*H).matrixTransform(ctx.getTransform());
   ctx.restore();
-  if(hand&&typeof drawWeapon34==="function"){var q=hand.matrixTransform(M0.inverse());/* v20.4: Neizan rests the long double-barrel pointing down at the ground (it no longer pokes into the stats panel) */
-    var nzM=hero==="neizan";drawWeapon34(ctx,q.x,q.y,nzM?1.42:0.6,HERO_WPN[hero],H/110*1.25*0.9*(nzM?0.8:1),0,look.skin,nzM?false:hero==="classic");}
+  if(hand&&typeof drawWeapon34==="function"&&HERO_WPN[hero]&&HERO_WPN[hero]!=="bolt"){var q=hand.matrixTransform(M0.inverse());
+    var nzM=hero==="neizan",wa={classic:1.25,mr:1.15,gompa:1.3,neizan:1.42}[hero]||1.2;drawWeapon34(ctx,q.x,q.y,wa,HERO_WPN[hero],H/110*1.25*0.9*(nzM?0.8:1),0,look.skin,false);}
 }
 
 /* ---------- animated logo ---------- */
