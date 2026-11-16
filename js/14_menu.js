@@ -521,7 +521,7 @@ function menuGo(st){
   if(st!=="title"&&game.state==="title")MENU.parentOk=1;
   game.state=st;MENU.enterT=MENU.t;MENU.scroll=0;MENU.press=null;
   if(st==="heroes"){MENU.heroIdx=Math.max(0,HEROES.findIndex(function(h){return h.id===selectedHero;}));}
-  if(st==="credits"&&!MENU.credits){MENU.credits=["Cargando…"];try{var x=new XMLHttpRequest();x.onload=function(){MENU.credits=String(x.responseText||"").split(/\r?\n/);};x.open("GET","CREDITS.txt?v=20.4.1");x.send();}catch(e){}}
+  if(st==="credits"&&!MENU.credits){MENU.credits=["Cargando…"];try{var x=new XMLHttpRequest();x.onload=function(){MENU.credits=String(x.responseText||"").split(/\r?\n/);};x.open("GET","CREDITS.txt?v=20.5");x.send();}catch(e){}}
   if(typeof layoutMenuButtons==="function")layoutMenuButtons();
 }
 function drawMenuTitle(){
@@ -777,7 +777,7 @@ function drawRunRewards(){
 /* ---------- input ---------- */
 function menuHitAt(x,y){for(var i=MENU.hits.length-1;i>=0;i--){var h=MENU.hits[i];if(x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h)return h;}return null;}
 function menuDown(p){if(typeof menuDirty!=="undefined")menuDirty=1;
-  /* v20.4.1: no tap parallax — on a phone every tap made the forest jump towards the finger */
+  /* v20.5: no tap parallax — on a phone every tap made the forest jump towards the finger */
   var h=menuHitAt(p.x,p.y);
   if(h&&h.id.indexOf("sl_")===0){MENU.drag={kind:"slider",h:h};menuSlide(p.x);return;}
   if(h&&h.id==="creditsArea"){MENU.drag={kind:"scroll",y:p.y,s0:MENU.scroll};return;}
