@@ -408,7 +408,9 @@ function zLegParts(img,waist){
     gl.putImageData(dL,0,0);gr.putImageData(dR,0,0);Tc.getContext("2d").putImageData(d,0,0);
     var lm=Math.floor(mid+pad*1.6+2),rm=Math.max(0,Math.floor(mid-pad*1.6-2));
     Lc._bb=[0,y0,Math.min(iw,lm),ih-y0];Rc._bb=[rm,y0,iw-rm,ih-y0];
-    res={L:Lc,R:Rc,T:Tc,y0:y0,tb:tb};
+    res={L:Lc,R:Rc,T:Tc,y0:y0,tb:tb,th:Math.min(ih,Math.ceil(tb+hb)+1)};
+    /* GPU-friendly copies: canvases that went through getImageData can stay CPU-backed and re-upload every draw */
+    if(typeof createImageBitmap==="function"){var R0=res;["L","R","T"].forEach(function(k){try{createImageBitmap(R0[k]).then(function(bm){bm._bb=R0[k]._bb;R0[k]=bm;}).catch(function(){});}catch(e2){}});}
   }catch(err){res=null;}
   img[key]=res;return res;
 }
@@ -424,12 +426,12 @@ function drawSpriteWalk(e,look,anim,pose,H,W,fx,fy){
   var mid=iw*0.5;
   function destX(sx){return -W*fx+(sx/iw)*W;}
   function destY(sy){return -H*fy+(sy/ih)*H;}
-  var P=zLegParts(e.img,waist);
+  var P=(e._zlW===waist&&e._zlI===e.img)?e._zlP:null;if(!P){P=zLegParts(e.img,waist);if(P){e._zlP=P;e._zlW=waist;e._zlI=e.img;}}
   if(P){
     var legP=function(side,ang){var c=side<0?P.L:P.R,bb=c._bb,hx=destX(mid+side*iw*0.11),hy=destY(ih*waist),lift=Math.max(0,Math.sin(ang))*H*0.05;
       ctx.save();ctx.translate(hx,hy-lift);ctx.rotate(ang);ctx.drawImage(c,bb[0],bb[1],bb[2],bb[3],destX(bb[0])-hx,destY(bb[1])-hy,W*bb[2]/iw,H*bb[3]/ih);ctx.restore();};
     if(Math.sin(ph)>=0){legP(-1,aR);legP(1,aL);}else{legP(1,aL);legP(-1,aR);}
-    ctx.drawImage(P.T,-W*fx,-H*fy,W,H);
+    var th=P.th||ih;ctx.drawImage(P.T,0,0,iw,th,-W*fx,-H*fy,W,H*th/ih);
     return;
   }
   var overlap=0.08, srcY=Math.max(0,Math.floor(ih*(waist-overlap))), srcH=ih-srcY, pad=Math.floor(iw*0.07);
