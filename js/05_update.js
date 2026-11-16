@@ -276,7 +276,7 @@ function update(dt){
   }
   if(game.graceT>0)game.graceT-=dt;
   var alive=0;for(var ai=0;ai<game.zombies.length;ai++)if(!game.zombies[ai].dead)alive++;
-  if(game.graceT<=0&&alive===0&&(!game.spawnQueue||!game.spawnQueue.length)&&game.state==="playing"&&!((game.wave===2||game.wave===5||game.wave===7||game.wave===9)&&!game.bossSpawned))onWaveCleared();
+  if(!(game.graceT>0)&&alive===0&&(!game.spawnQueue||!game.spawnQueue.length)&&game.state==="playing"&&!((game.wave===2||game.wave===5||game.wave===7||game.wave===9)&&!game.bossSpawned))onWaveCleared();
   if(typeof updateEvents==='function'&&!(typeof HELL!=='undefined'&&HELL.active))updateEvents(dt);
   if(typeof hellTick==='function')hellTick(dt);
   updateCam(dt);
