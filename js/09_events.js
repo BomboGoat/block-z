@@ -1,10 +1,9 @@
 /* v20 temporary round events */
 /* v20.3.3: the bridge flood ("riada") event was removed */
+/* v20.5.1: storm (tormenta), blood moon (luna de sangre) and the wheat fire (fuego) were removed too; fog and giant
+   poison stay removed. Only the two pickup events remain (supply crate, treasure), and not every round. */
 var EVENT_DEFS={
-  tormenta:{name:"Tormenta",banner:"¡Tormenta!",icon:"⚡",mild:0,dur:[16,24],col:"#90caf9"},
-  fuego:{name:"Fuego en el trigal",banner:"¡El trigal arde!",icon:"🔥",mild:0,dur:[16,24],col:"#ff8a50"},
   caja:{name:"Caja de suministros",banner:"¡Caja de suministros!",icon:"📦",mild:1,dur:[20,28],col:"#ffd54f"},
-  luna:{name:"Luna de sangre",banner:"¡Luna de sangre!",icon:"🔴",mild:0,dur:[18,26],col:"#e53935"},
   tesoro:{name:"Tesoro",banner:"¡Tesoro en las ruinas!",icon:"💎",mild:1,dur:[20,28],col:"#ffe082"}
 };
 function randRange(a,b){return a+Math.random()*(b-a);}
@@ -43,8 +42,7 @@ function pickEventIds(waveIdx){
     if(Math.random()<0.42){id=pickFrom(mild);if(id)ids.push(id);}
     return ids;
   }
-  ids.push(pickFrom(all));
-  if(waveIdx>=2&&Math.random()<0.45){id=pickFrom(all);if(id)ids.push(id);}
+  if(Math.random()<0.55){id=pickFrom(all);if(id)ids.push(id);}
   return ids.filter(Boolean);
 }
 function openSpotNear(x,y,rad){
