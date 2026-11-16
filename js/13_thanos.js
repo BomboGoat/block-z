@@ -1097,9 +1097,10 @@ function hellDrawOver(){
     var hx,hy,rot;
     if(h.hammer){s=toScreen(h.hammer.x,h.hammer.y);hx=s.x;hy=s.y-18*sc;rot=h.hammer.spin;}
     else{hx=p._handSx!=null?p._handSx:toScreen(p.x,p.y).x+8*sc;hy=p._handSy!=null?p._handSy:toScreen(p.x,p.y).y-20*sc;rot=-0.4+(p.atkT>0?-1.4*(p.atkT/0.25):0);}
+    if(typeof drawMegaHammer==="function")drawMegaHammer(hx,hy,rot,sc,t,!!h.hammer);else{
     ctx.save();ctx.translate(hx,hy);ctx.rotate(rot);ctx.scale(sc*0.7,sc*0.7);
     ctx.fillStyle="#6d4c41";ctx.fillRect(-1.5,-2,3,15);ctx.fillStyle="#b0bec5";ctx.fillRect(-8,-9,16,8);ctx.fillStyle="#eceff1";ctx.fillRect(-8,-9,16,2.5);ctx.fillStyle="#ffca28";ctx.fillRect(-2,-9,4,8);
-    ctx.strokeStyle="#1a140c";ctx.lineWidth=1.2;ctx.strokeRect(-8,-9,16,8);ctx.restore();
+    ctx.strokeStyle="#1a140c";ctx.lineWidth=1.2;ctx.strokeRect(-8,-9,16,8);ctx.restore();}
   }
   if(p.mega==="armor"&&game.state!=="hell_final"){s=toScreen(p.x,p.y);var cy2=s.y-artTargetH(p.look,sc)*0.62;ctx.save();ctx.globalCompositeOperation="lighter";ctx.globalAlpha=0.8+0.2*Math.sin(t*10);ctx.drawImage(glowSpr("#80deea"),s.x-7*sc,cy2-7*sc,14*sc,14*sc);ctx.restore();
     if(p.beamT>0){var e2=toScreen(p.x+Math.cos(p.beamA)*380,p.y+Math.sin(p.beamA)*380);ctx.save();ctx.globalCompositeOperation="lighter";ctx.lineCap="round";

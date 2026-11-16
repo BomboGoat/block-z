@@ -235,7 +235,7 @@ function drawHeroRig(e,name,look,anim,pose,H,W,fx,fy,opts){
   var aim=opts.aim!=null?opts.aim:0,sa=Math.atan2(Math.sin(aim)*CFG.YSCALE,Math.cos(aim));
   var la=flip<0?Math.PI-sa:sa;la=Math.atan2(Math.sin(la),Math.cos(la));
   var aimRot=clamp(la-Math.PI/2,-2.6,0.5);   /* rotation that points the hanging arm at the target */
-  var gun=opts.wpn&&opts.wpn!=="bell"&&opts.wpn!=="bolt"&&opts.wpn!=="knife"&&opts.wpn!=="fist"&&opts.wpn!=="machete";
+  var gun=opts.wpn&&opts.wpn!=="bell"&&opts.wpn!=="bolt"&&opts.wpn!=="knife"&&opts.wpn!=="fist"&&opts.wpn!=="machete"&&opts.wpn!=="mega_hulk";
   if(gun){armR=aimRot+(opts.muzzle>0?0.18*Math.max(0,1-atk*2.5):0)+(run?s1*0.05:0);
     /* v20.3.1: the off-hand used to swing ~60 deg across the chest toward the gun (it can't reach it from the near
        shoulder), leaving a fist floating on the belly. Now it stays attached and relaxed: a small brace toward the
@@ -252,6 +252,7 @@ function drawHeroRig(e,name,look,anim,pose,H,W,fx,fy,opts){
     if(atk>0||opts.laser){var u=opts.laser?1:Math.min(1,atk*3);armR=armR+(aimRot-armR)*u;armL=armL+(clamp(aimRot*0.3,-0.48,0.12)-armL)*u;} /* v20.3.1: off-hand braces, no chest cross */
   }
   if(opts.armR!=null)armR=opts.armR;if(opts.armL!=null)armL=opts.armL; /* v20.3: posed by the ending cinematic */
+  opts._armL=armL;opts._armR=armR; /* v20.3.3: mega overlays (repulsor palms) */
   function drawArm(side,rot){
     var a=side<0?R.L:R.R,c=side<0?P.L:P.R,px=dX(a.p[0]),py=dY(a.p[1]);
     ctx.save();ctx.translate(px,py);ctx.rotate(rot);ctx.drawImage(c,-px-W*fx,-py-H*fy,W,H);ctx.restore();
