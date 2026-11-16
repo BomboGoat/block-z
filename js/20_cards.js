@@ -107,6 +107,7 @@ function hcUpdate(dt){
     else if(o.k==="bellfall"&&!o.done&&o.t>=0.5){o.done=1;hcArea(o.x,o.y,40,hcDmg(p,70),0.5);shake(8);sfx("thud");if(typeof gfxBoom==="function")gfxBoom(o.x,o.y,26);}
     else if(o.k==="strike"&&!o.done&&o.t>=0.62){o.done=1;hcArea(o.x,o.y,46,hcDmg(p,64));if(typeof gfxBoom==="function")gfxBoom(o.x,o.y,40);sfx("explode");shake(8);}
     else if(o.k==="laser"){o.tick-=dt;var u=clamp(o.t/o.life,0,1),la=o.a0+(o.a1-o.a0)*(0.5-0.5*Math.cos(u*Math.PI));o.a=la;if(o.tick<=0){o.tick=0.08;var lz=hcAlive(),lx=p.x+Math.cos(la)*430,ly=p.y+Math.sin(la)*430;for(var L=0;L<lz.length;L++){var z4=lz[L];if(distSegHC(z4.x,z4.y,p.x,p.y,lx,ly)<z4.r+10)hcHit(z4,hcDmg(p,22),p.x);}}}
+    else if(o.k==="slug"&&!o.done&&o.t>=o.life){o.done=1;explodeAt(o.tx,o.ty,58,hcDmg(p,48),{friendly:1,knock:180});shake(8);}
     if(o.t>=o.life)CFX.splice(i,1);
   }
 }
@@ -130,14 +131,13 @@ function hcSpawnBullet(p,a,spd,dmg,fl){
   b.pistol=0;b.revolver=0;b.rifle=0;b.smg=0;b.shot=0;b.gl=0;b.expl=0;b.fire=0;b.ice=0;b.poison=0;b.knife=0;b.trail=0;b.bell=0;b.cannon=0;
   for(var k in fl)b[k]=fl[k];game.bullets.push(b);return b;
 }
-/* slug flight resolves into an explosion */
 (function(){
+  var _sg=startGame;startGame=function(){CFX.length=0;if(typeof PL!=="undefined")PL.imp.length=0;return _sg.apply(this,arguments);};
   var _u=update;
   update=function(dt){
     var r=_u.apply(this,arguments);
     if(game&&game.player&&game.state==="playing"){hcTick(game.player,dt);hcUpdate(dt);
-      for(var i=0;i<CFX.length;i++){var o=CFX[i];if(o.k==="slug"&&!o.done&&o.t>=o.life){o.done=1;explodeAt(o.tx,o.ty,58,hcDmg(game.player,48),{friendly:1,knock:180});shake(8);}}
-      if(game.player.hc_neizan_e)game.player.fireAmmo=game.player.fireAmmo||0;}
+}
     else if(game&&game.state!=="pause"&&game.state!=="upgrade"&&CFX.length&&game.state!=="playing"){CFX.length=0;}
     return r;
   };
