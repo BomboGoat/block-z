@@ -597,6 +597,7 @@ function draw(){
   if(game.state==="victory")drawEndScreen(1);
   if((game.state==="dead"||game.state==="victory")&&typeof drawRunRewards==="function")drawRunRewards();
 }
+var menuAcc=30,menuLastT=0,menuDirty=1;
 function frame(now){
   var t=now||Date.now(),dt=Math.min(0.033,(t-last)/1000);last=t;
   if(skipDtClamp){dt=0.016;skipDtClamp=0;}
@@ -609,6 +610,10 @@ function frame(now){
     requestAnimationFrame(frame);return;
   }
   var gdt=dt*((game&&game.timeScale)||1);
+  /* v20.3.2: menu screens render at ~30 fps (the scene is slow ambient motion); gameplay is untouched */
+  var menuNow=game&&typeof MENU_ST!=="undefined"&&MENU_ST[game.state]&&!(game.state==="settings"&&typeof prevSettings!=="undefined"&&prevSettings==="pause");
+  if(menuNow){menuAcc+=t-menuLastT;menuLastT=t;try{update(gdt);if(menuAcc>=30||menuDirty){menuAcc=menuAcc>=30?Math.min(menuAcc-30,30):menuAcc;menuDirty=0;draw();}}catch(e){showBootError(e);}requestAnimationFrame(frame);return;}
+  menuLastT=t;menuAcc=30;menuDirty=1;
   try{update(gdt);draw();}catch(e){showBootError(e);}
   requestAnimationFrame(frame);
 }
