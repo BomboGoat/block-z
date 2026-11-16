@@ -343,6 +343,73 @@ function drawHeroRig(e,name,look,anim,pose,H,W,fx,fy,opts){
   if(ctx.getTransform&&typeof DOMPoint!=="undefined")return new DOMPoint(lx,ly).matrixTransform(ctx.getTransform());
   return null;
 }
+/* v20.4: zombies/bosses get the same joint treatment as the heroes. The old walk swung everything below the waist,
+   so the hanging hands (and shirt rags) were sliced off the arms and swung with the legs. Now the legs are grown up
+   from the feet (connected pixels only, so a hand hanging beside the hip stays on the body), split along the real gap
+   between them, and the static body keeps the arms, hands and a hip overlap that covers the joint. Cached per image. */
+var _zlegBudget=0,_zlegFrame=-1;
+function zLegParts(img,waist){
+  var key="_zleg"+Math.round(waist*100);if(img[key]!==undefined)return img[key];
+  var fr=(game&&game.time)||0;if(_zlegFrame!==fr){_zlegFrame=fr;_zlegBudget=2;}
+  if(_zlegBudget<=0)return null;_zlegBudget--;
+  var iw=img.naturalWidth||img.width,ih=img.naturalHeight||img.height,res=null;
+  try{
+    var c=document.createElement("canvas");c.width=iw;c.height=ih;var g=c.getContext("2d");g.drawImage(img,0,0);
+    var d=g.getImageData(0,0,iw,ih),px=d.data,x,y,o,TH=40;
+    var y0=Math.max(0,Math.floor(ih*(waist-0.08))),wy=Math.floor(ih*waist),tb=Math.min(ih,Math.ceil(ih*(waist+0.07)));
+    /* band from the feet */
+    var fx0=iw,fx1=-1;for(y=Math.floor(ih*0.86);y<ih;y++)for(x=0;x<iw;x++)if(px[(y*iw+x)*4+3]>60){if(x<fx0)fx0=x;if(x>fx1)fx1=x;}
+    if(fx1<0){img[key]=null;return null;}
+    var mgn=Math.round(iw*0.05),b0=Math.max(0,fx0-mgn),b1=Math.min(iw-1,fx1+mgn);
+    /* grow leg runs upward from the feet */
+    var leg=new Uint8Array(iw*ih),prev=null,cur,mid0=iw*0.5;
+    for(y=ih-1;y>=y0;y--){cur=new Uint8Array(iw);var rs=-1;
+      for(x=0;x<=iw;x++){var on=x<iw&&x>=b0&&x<=b1&&px[(y*iw+x)*4+3]>TH;
+        if(on&&rs<0)rs=x;else if(!on&&rs>=0){var keep=false,k;
+          if(y>=ih*0.86||!prev)keep=true;else for(k=Math.max(0,rs-1);k<=Math.min(iw-1,x);k++)if(prev[k]){keep=true;break;}
+          /* above the waist only the central hip strip counts (arms/hands hang outside it) */
+          if(keep&&y<wy){var cx=(rs+x)/2;if(Math.abs(cx-iw*0.5)>iw*0.24)keep=false;}
+          if(keep)for(k=rs;k<x;k++){cur[k]=1;leg[y*iw+k]=1;}rs=-1;}}
+      prev=cur;}
+    /* hands that overlap the thigh: flood from the arm pixels beside the hip through arm-coloured pixels; those stay on the body */
+    var sr=0,sg=0,sb=0,sn=0,qq=[],hm=new Uint8Array(iw*ih),ys=Math.max(0,wy-Math.floor(ih*0.06));
+    for(y=ys;y<tb;y++)for(x=0;x<iw;x++){o=y*iw+x;if(leg[o]||px[o*4+3]<=TH||Math.abs(x-mid0)<iw*0.13)continue;var o4=o*4,mx=Math.max(px[o4],px[o4+1],px[o4+2]);if(mx<55)continue;sr+=px[o4];sg+=px[o4+1];sb+=px[o4+2];sn++;hm[o]=1;qq.push(o);}
+    if(sn>8){sr/=sn;sg/=sn;sb/=sn;var qh=0,DD=78*78;
+      while(qh<qq.length){var q=qq[qh++],qx=q%iw,qy=(q/iw)|0,dx2,dy2;
+        for(dy2=-1;dy2<=1;dy2++)for(dx2=-1;dx2<=1;dx2++){var nx=qx+dx2,ny=qy+dy2;if(nx<0||ny<ys||nx>=iw||ny>=ih)continue;var ni=ny*iw+nx;if(hm[ni]||px[ni*4+3]<=TH)continue;
+          var n4=ni*4,e1=px[n4]-sr,e2=px[n4+1]-sg,e3=px[n4+2]-sb;if(e1*e1+e2*e2+e3*e3>DD)continue;hm[ni]=1;qq.push(ni);}}
+      /* grow 2px to take the hand's outline too, then hand pixels leave the legs */
+      for(var gi=0;gi<2;gi++){var add=[];for(y=ys;y<ih;y++)for(x=1;x<iw-1;x++){o=y*iw+x;if(hm[o]||!leg[o])continue;if(hm[o-1]||hm[o+1]||(y>0&&hm[o-iw])||(y<ih-1&&hm[o+iw]))add.push(o);}for(var ai=0;ai<add.length;ai++)hm[add[ai]]=1;}
+      for(o=0;o<iw*ih;o++)if(hm[o])leg[o]=0;}
+    /* shirt rags hanging over the hips: flood from the hem through shirt-coloured pixels (limited depth); they stay on the body */
+    (function(){var r2=0,g2=0,b2=0,n2=0,y1=Math.max(0,tb-Math.floor(ih*0.05)),yl=Math.min(ih,tb+Math.floor(ih*0.12)),Q=[],sm=new Uint8Array(iw*ih),xx,yy,oo;
+      for(yy=y1;yy<tb;yy++)for(xx=0;xx<iw;xx++){oo=yy*iw+xx;var p4=oo*4;if(px[p4+3]<=TH||Math.abs(xx-mid0)>iw*0.2)continue;var mx2=Math.max(px[p4],px[p4+1],px[p4+2]);if(mx2<60)continue;r2+=px[p4];g2+=px[p4+1];b2+=px[p4+2];n2++;}
+      if(n2<8)return;r2/=n2;g2/=n2;b2/=n2;var D2=56*56;
+      for(xx=0;xx<iw;xx++){oo=(tb-1)*iw+xx;var p5=oo*4;if(px[p5+3]>TH){var f1=px[p5]-r2,f2=px[p5+1]-g2,f3=px[p5+2]-b2;if(f1*f1+f2*f2+f3*f3<=D2){sm[oo]=1;Q.push(oo);}}}
+      var h2=0;while(h2<Q.length){var q2=Q[h2++],qx2=q2%iw,qy2=(q2/iw)|0,d1,d2;
+        for(d2=0;d2<=1;d2++)for(d1=-1;d1<=1;d1++){var nx2=qx2+d1,ny2=qy2+d2;if(nx2<0||nx2>=iw||ny2>=yl)continue;var nj=ny2*iw+nx2;if(sm[nj]||px[nj*4+3]<=TH)continue;
+          var m4=nj*4,k1=px[m4]-r2,k2=px[m4+1]-g2,k3=px[m4+2]-b2;if(k1*k1+k2*k2+k3*k3>D2)continue;sm[nj]=1;Q.push(nj);}}
+      for(var gj=0;gj<1;gj++){var ad=[];for(yy=tb;yy<yl;yy++)for(xx=1;xx<iw-1;xx++){oo=yy*iw+xx;if(sm[oo]||!leg[oo])continue;if(sm[oo-1]||sm[oo+1]||sm[oo-iw])ad.push(oo);}for(var aj=0;aj<ad.length;aj++)sm[ad[aj]]=1;}
+      for(oo=tb*iw;oo<iw*ih;oo++)if(sm[oo])leg[oo]=0;})();
+    /* split line between the legs */
+    var mid=iw*0.5,c0=Math.floor(mid-iw*0.16),c1=Math.ceil(mid+iw*0.16),sp=new Float32Array(ih),gapY=ih,run2=0;
+    for(y=y0;y<ih;y++){var bestA=1e9,bc=-1;for(x=c0+1;x<c1-1;x++){var al=(leg[y*iw+x-1]?px[(y*iw+x-1)*4+3]:0)+(leg[y*iw+x]?px[(y*iw+x)*4+3]:0)*2+(leg[y*iw+x+1]?px[(y*iw+x+1)*4+3]:0);if(al<bestA||(al===bestA&&Math.abs(x-mid)<Math.abs(bc-mid))){bestA=al;bc=x;}}
+      if(bestA<160){sp[y]=bc;run2++;if(run2===3&&gapY===ih)gapY=y-2;}else{sp[y]=-1;run2=0;}}
+    var last=mid;for(y=y0;y<ih;y++){if(sp[y]<0||y<gapY)sp[y]=(y<gapY?mid:last);last=sp[y];}
+    var Lc=document.createElement("canvas"),Rc=document.createElement("canvas"),Tc=document.createElement("canvas");Lc.width=Rc.width=Tc.width=iw;Lc.height=Rc.height=Tc.height=ih;
+    var gl=Lc.getContext("2d"),gr=Rc.getContext("2d"),dL=gl.createImageData(iw,ih),dR=gr.createImageData(iw,ih),pL=dL.data,pR=dR.data,pad=iw*0.07;
+    for(y=y0;y<ih;y++)for(x=0;x<iw;x++){if(!leg[y*iw+x])continue;o=(y*iw+x)*4;var A=px[o+3],wl,wr;
+      if(y<gapY){wl=clamp((mid+pad*1.6-x)/(pad*0.8),0,1);wr=clamp((x-(mid-pad*1.6))/(pad*0.8),0,1);}else{wl=x<sp[y]?1:0;wr=1-wl;}
+      if(wl>0){pL[o]=px[o];pL[o+1]=px[o+1];pL[o+2]=px[o+2];pL[o+3]=A*wl;}
+      if(wr>0){pR[o]=px[o];pR[o+1]=px[o+1];pR[o+2]=px[o+2];pR[o+3]=A*wr;}
+      if(y>=tb)px[o+3]=0;}
+    gl.putImageData(dL,0,0);gr.putImageData(dR,0,0);Tc.getContext("2d").putImageData(d,0,0);
+    var lm=Math.floor(mid+pad*1.6+2),rm=Math.max(0,Math.floor(mid-pad*1.6-2));
+    Lc._bb=[0,y0,Math.min(iw,lm),ih-y0];Rc._bb=[rm,y0,iw-rm,ih-y0];
+    res={L:Lc,R:Rc,T:Tc,y0:y0,tb:tb};
+  }catch(err){res=null;}
+  img[key]=res;return res;
+}
 function drawSpriteWalk(e,look,anim,pose,H,W,fx,fy){
   var iw=e.img.naturalWidth||e.img.width, ih=e.img.naturalHeight||e.img.height;
   if(pose!=="walk"){ctx.drawImage(e.img,-W*fx,-H*fy,W,H);return;}
@@ -352,9 +419,18 @@ function drawSpriteWalk(e,look,anim,pose,H,W,fx,fy){
   var ph=(anim||0)*(boss?5.1:sham?3.3:6.6); /* v20.3: zombies shamble at a slower, heavier cadence */
   var amp=boss?0.20:sham?0.30:0.26;
   var aL=Math.sin(ph)*amp, aR=Math.sin(ph+Math.PI)*amp;
-  var overlap=0.08, srcY=Math.max(0,Math.floor(ih*(waist-overlap))), srcH=ih-srcY, mid=iw*0.5, pad=Math.floor(iw*0.07);
+  var mid=iw*0.5;
   function destX(sx){return -W*fx+(sx/iw)*W;}
   function destY(sy){return -H*fy+(sy/ih)*H;}
+  var P=zLegParts(e.img,waist);
+  if(P){
+    var legP=function(side,ang){var c=side<0?P.L:P.R,bb=c._bb,hx=destX(mid+side*iw*0.11),hy=destY(ih*waist),lift=Math.max(0,Math.sin(ang))*H*0.05;
+      ctx.save();ctx.translate(hx,hy-lift);ctx.rotate(ang);ctx.drawImage(c,bb[0],bb[1],bb[2],bb[3],destX(bb[0])-hx,destY(bb[1])-hy,W*bb[2]/iw,H*bb[3]/ih);ctx.restore();};
+    if(Math.sin(ph)>=0){legP(-1,aR);legP(1,aL);}else{legP(1,aL);legP(-1,aR);}
+    ctx.drawImage(P.T,-W*fx,-H*fy,W,H);
+    return;
+  }
+  var overlap=0.08, srcY=Math.max(0,Math.floor(ih*(waist-overlap))), srcH=ih-srcY, pad=Math.floor(iw*0.07);
   function leg(side,ang){
     var srcX=side<0?0:Math.max(0,Math.floor(mid-pad));
     var srcW=side<0?Math.min(iw,Math.ceil(mid+pad))-srcX:iw-srcX;
@@ -434,7 +510,7 @@ function tryDrawArt(wx,wy,look,ang,anim,opts){
     game.player._handSx=opts._hand.x;game.player._handSy=opts._hand.y;
     game.player._handLift=s.y-opts._hand.y;
   }
-  if(opts.muzzle>0&&look&&look.kind==="player"&&opts._hand&&opts.wpn&&opts.wpn!=="knife"&&opts.wpn!=="fist"&&opts.wpn!=="bell"&&opts.wpn!=="bolt"&&opts.wpn!=="machete"){
+  if(opts.muzzle>0&&look&&look.kind==="player"&&opts._hand&&opts.wpn&&opts.wpn!=="dbshot"&&opts.wpn!=="minigun"&&opts.wpn!=="knife"&&opts.wpn!=="fist"&&opts.wpn!=="bell"&&opts.wpn!=="bolt"&&opts.wpn!=="machete"){
     if(typeof ensureMuzzleSpr==="function"){
       var ms=ensureMuzzleSpr(),ma=Math.min(1,opts.muzzle*16),mz=16*sc*(opts.scale||1);
       var max=opts._hand.x+Math.cos(opts.aim||ang||0)*10*sc,may=opts._hand.y+Math.sin(opts.aim||ang||0)*10*sc*((typeof CFG!=="undefined"&&CFG.YSCALE)||0.7);

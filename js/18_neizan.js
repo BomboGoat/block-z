@@ -50,11 +50,14 @@ function drawBellProj(b){
   var sc=layout.scale,len=15*sc*(b.heavy?1.12:1),spr=ensureBellSpr(),w=len,h=len*0.5;
   var sp=b.spinA||0,vx=b.vx||0,vy=(b.vy||0)*CFG.YSCALE,va=Math.atan2(vy,vx),vl=Math.sqrt(vx*vx+vy*vy)||1;
   ctx.save();
-  /* swoosh: a soft tapered ribbon behind the dumbbell */
-  var tl=22*sc,nx=-vy/vl,ny=vx/vl,ex=s.x-vx/vl*tl,ey=s.y-vy/vl*tl,gw=h*0.55;
-  var gr=ctx.createLinearGradient(s.x,s.y,ex,ey);gr.addColorStop(0,"rgba(236,240,245,0.42)");gr.addColorStop(1,"rgba(236,240,245,0)");
-  ctx.fillStyle=gr;ctx.beginPath();ctx.moveTo(s.x+nx*gw,s.y+ny*gw);ctx.quadraticCurveTo(s.x-vx/vl*tl*0.5+nx*gw*0.7,s.y-vy/vl*tl*0.5+ny*gw*0.7,ex,ey);
-  ctx.quadraticCurveTo(s.x-vx/vl*tl*0.5-nx*gw*0.7,s.y-vy/vl*tl*0.5-ny*gw*0.7,s.x-nx*gw,s.y-ny*gw);ctx.closePath();ctx.fill();
+  /* swoosh: a thin tapered ribbon + two speed streaks from the plates */
+  var tl=20*sc,ux=vx/vl,uy=vy/vl,nx=-uy,ny=ux,ex=s.x-ux*tl,ey=s.y-uy*tl,gw=h*0.3;
+  var gr=ctx.createLinearGradient(s.x,s.y,ex,ey);gr.addColorStop(0,"rgba(240,244,248,0.32)");gr.addColorStop(1,"rgba(240,244,248,0)");
+  ctx.fillStyle=gr;ctx.beginPath();ctx.moveTo(s.x+nx*gw,s.y+ny*gw);ctx.quadraticCurveTo(s.x-ux*tl*0.45+nx*gw*0.35,s.y-uy*tl*0.45+ny*gw*0.35,ex,ey);
+  ctx.quadraticCurveTo(s.x-ux*tl*0.45-nx*gw*0.35,s.y-uy*tl*0.45-ny*gw*0.35,s.x-nx*gw,s.y-ny*gw);ctx.closePath();ctx.fill();
+  ctx.lineCap="round";ctx.lineWidth=Math.max(1,0.9*sc);var sk,so;
+  for(sk=-1;sk<=1;sk+=2){so=w*0.42*Math.abs(Math.sin(sp))*sk+h*0.25*sk;var g2=ctx.createLinearGradient(s.x,s.y,s.x-ux*tl*0.8,s.y-uy*tl*0.8);g2.addColorStop(0,"rgba(255,255,255,0.5)");g2.addColorStop(1,"rgba(255,255,255,0)");
+    ctx.strokeStyle=g2;ctx.beginPath();ctx.moveTo(s.x+nx*so,s.y+ny*so);ctx.lineTo(s.x+nx*so*0.8-ux*tl*0.8,s.y+ny*so*0.8-uy*tl*0.8);ctx.stroke();}
   /* ghost frames of the spin */
   var k;for(k=2;k>=1;k--){var gx=s.x-vx/vl*k*5*sc,gy=s.y-vy/vl*k*5*sc;ctx.save();ctx.globalAlpha=0.18/k;ctx.translate(gx,gy);ctx.rotate(sp-k*0.42);ctx.scale(1,0.55+0.45*Math.abs(Math.cos((sp-k*0.42)*0.5)));ctx.drawImage(spr,-w/2,-h/2,w,h);ctx.restore();}
   /* the dumbbell: tumbles end over end (in-plane spin + foreshortening) */
