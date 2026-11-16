@@ -297,13 +297,13 @@ function thanosGemNext(z){
 function thanosWind(z,g){
   var p=game.player,h=game.hell,f=z.p2?0.78:1;
   z.gem=g;z.ts="wind";z.look.pose="cast";z.tele=1;sfx("growl",0.5);
-  if(g==="power")z.tt=0.9*f;
+  if(g==="power"){z.tt=1.0*f;z.ringG=ringGaps(3);z.ringG2=z.ringG.map(function(a){return a+Math.PI/3;});}
   else if(g==="space"){z.tt=0.65*f;var sp=hellSpot(p.x+(p.vx||0)*0.3,p.y+(p.vy||0)*0.3,32,52,z.r+4)||hellSpot(p.x,p.y,30,90,z.r)||{x:z.x,y:z.y};z.tx=sp.x;z.ty=sp.y;}
   else if(g==="reality")z.tt=0.8*f;
-  else if(g==="soul")z.tt=0.75*f;
+  else if(g==="soul")z.tt=0.9*f;
   else if(g==="time"){z.tt=0.95*f/TMV();z.ttMax=z.tt;z.cx=p.x;z.cy=p.y;}
-  else if(g==="mind")z.tt=0.6*f;
-  if(z.combo)z.tt*=0.85;
+  else if(g==="mind")z.tt=0.75*f;
+  if(z.combo)z.tt*=0.9;z.ttMax=z.tt;z.windFx=0;
 }
 function thanosAct(z,g){
   var p=game.player,h=game.hell,i,n,a,sp,M=z.p2;
@@ -312,21 +312,23 @@ function thanosAct(z,g){
   for(i=0;i<8;i++)hellPart(z.x+rand(-8,8),z.y-46,col,0.6,rand(-90,90),rand(-90,10),rand(3,5),3);
   floatText(z.x,z.y-78,GEMS[g].n,col);
   if(g==="power"){
-    h.rings.push({x:z.x,y:z.y,r:14,vr:255*TMV(),life:0.95/TMV(),dmg:M?22:18,col:col,gaps:ringGaps(3)});
-    if(M)h.rings.push({x:z.x,y:z.y,r:14,vr:255*TMV(),life:0.95/TMV(),dmg:18,col:col,delay:0.4,gaps:ringGaps(3)});
+    h.rings.push({x:z.x,y:z.y,r:14,vr:240*TMV(),life:0.95/TMV(),dmg:M?20:16,col:col,gaps:z.ringG||ringGaps(3)});
+    if(M)h.rings.push({x:z.x,y:z.y,r:14,vr:240*TMV(),life:0.95/TMV(),dmg:16,col:col,delay:0.55,gaps:z.ringG2||ringGaps(3)});
+    h.fx.push({k:"burst",x:z.x,y:z.y,t:0.45,max:0.45,col:col});
     sfx("thanos_boom",0.8);shake(12);z.ts="recover";z.tt=0.55;
   }else if(g==="space"){
     for(i=0;i<10;i++)hellPart(z.x+rand(-14,14),z.y+rand(-30,0),col,0.5,rand(-40,40),rand(-60,0),rand(3,5),3);
-    z.x=z.tx;z.y=z.ty;resolveCircle(z);sfx("portal",0.9);
+    h.fx.push({k:"rift",x:z.x,y:z.y,t:0.5,max:0.5,col:col});
+    z.x=z.tx;z.y=z.ty;resolveCircle(z);sfx("portal",0.9);h.fx.push({k:"rift",x:z.x,y:z.y,t:0.55,max:0.55,col:col});
     for(i=0;i<10;i++)hellPart(z.x+rand(-14,14),z.y+rand(-30,0),col,0.5,rand(-40,40),rand(-60,0),rand(3,5),3);
-    z.ts="punch_wind";z.tt=(M?0.36:0.44)/TMV();z.lockA=Math.atan2(p.y-z.y,p.x-z.x);z.look.pose="walk";
+    z.ts="punch_wind";z.tt=(M?0.42:0.52)/TMV();z.ttMax=z.tt;z.lockA=Math.atan2(p.y-z.y,p.x-z.x);z.look.pose="walk";
   }else if(g==="reality"){
     n=M?3:2;
-    for(i=0;i<n;i++){sp=hellSpot(p.x,p.y,110,170,z.r);if(sp)h.clones.push({x:sp.x,y:sp.y,t:0,fire:0.7+i*0.3,life:2.6,shot:0});}
-    for(i=0;i<(M?3:2);i++){sp=hellSpot(p.x,p.y,20,120,14);if(sp)h.zones.push({x:sp.x,y:sp.y,r:30,t:0,arm:0.9,life:4.2,col:col});}
+    for(i=0;i<n;i++){sp=hellSpot(p.x,p.y,110,170,z.r);if(sp){h.clones.push({x:sp.x,y:sp.y,t:0,fire:0.9+i*0.35,life:2.8,shot:0});h.fx.push({k:"rift",x:sp.x,y:sp.y,t:0.5,max:0.5,col:col});}}
+    for(i=0;i<(M?3:2);i++){sp=hellSpot(p.x,p.y,48,130,14);if(sp)h.zones.push({x:sp.x,y:sp.y,r:28,t:0,arm:1.1,life:3.8,col:col});}
     sfx("portal",0.7);z.ts="recover";z.tt=0.5;
   }else if(g==="soul"){
-    z.ts="soul";z.tt=M?2.1:1.7;z.healSoul=0;sfx("growl",0.8);z.look.pose="cast";
+    z.ts="soul";z.tt=M?1.9:1.5;z.healSoul=0;sfx("growl",0.8);z.look.pose="cast";
   }else if(g==="time"){
     h.clock.push({x:z.cx,y:z.cy,t:0.5});
     if(dist(p.x,p.y,z.cx,z.cy)<62&&!(p.dashT>0)&&!p.leap){
@@ -337,7 +339,7 @@ function thanosAct(z,g){
     sfx("zap",0.8);z.ts="recover";z.tt=0.5;
   }else if(g==="mind"){
     n=M?5:3;
-    for(i=0;i<n;i++){a=Math.atan2(p.y-z.y,p.x-z.x)+(i-(n-1)/2)*0.55;h.orbs.push({x:z.x+Math.cos(a)*16,y:z.y+Math.sin(a)*10,vx:Math.cos(a)*150*TMV(),vy:Math.sin(a)*150*TMV(),life:3.6,dmg:13,col:col,home:2.3,r:6});}
+    for(i=0;i<n;i++){a=Math.atan2(p.y-z.y,p.x-z.x)+(i-(n-1)/2)*0.55;h.orbs.push({x:z.x+Math.cos(a)*16,y:z.y+Math.sin(a)*10,vx:Math.cos(a)*145*TMV(),vy:Math.sin(a)*145*TMV(),life:2.9,dmg:12,col:col,home:1.45,r:6,trail:[]});}
     sfx("zap",0.9);z.ts="recover";z.tt=0.45;
   }
 }
@@ -390,7 +392,7 @@ function updateThanos(z,dt){
   if(!z.p2&&z.hp<=z.maxHp*0.55&&z.ts==="walk"){
     z.p2=1;z.speed*=1.18;z.ts="recover";z.tt=1.0;z.look.pose="cast";z.poseT=1.0;
     floatText(z.x,z.y-80,"FASE 2","#ff1744");sfx("thanos_boom",0.9);sfx("sting");shake(14);h.flash=0.25;
-    h.rings.push({x:z.x,y:z.y,r:14,vr:220*TMV(),life:0.8/TMV(),dmg:12,col:"#ffffff"});
+    h.rings.push({x:z.x,y:z.y,r:14,vr:200*TMV(),life:0.8/TMV(),dmg:10,col:"#ffffff",delay:0.6,gaps:ringGaps(4)});
     return;
   }
   z.tt-=dt;
@@ -403,30 +405,32 @@ function updateThanos(z,dt){
       if(typeof chaseDir==="function"&&map.flowBoss){var cg=chaseDir(z,dx,dy,d);if(cg){ax=cg.x;ay=cg.y;}}
       moveWithSlide(z,ax*sp*dt,ay*sp*dt);
     }
-    if(d<z.r+p.r+6)hurtPlayer(p,z.damage);
+    if(d<z.r+p.r+2)hurtPlayer(p,Math.round(z.damage*0.8));
     break;
   case "wind":
     z.aimAng=Math.atan2(dy,dx);
     if(z.gem==="soul"&&Math.random()<0.5)hellPart(p.x,p.y-10,"#ff9a1f",0.4,rand(-20,20),rand(-40,0),3,3);
+    if(Math.random()<0.55){var ga=Math.random()*6.283,gd=rand(26,44);hellPart(z.x+Math.cos(ga)*gd,z.y-40+Math.sin(ga)*gd*0.6,GEMS[z.gem].c,0.35,-Math.cos(ga)*gd*2.6,-Math.sin(ga)*gd*1.6,rand(2,3.5),3);}
     if(z.tt<=0)thanosAct(z,z.gem);
     break;
   case "punch_wind":
     z.aimAng=z.lockA=Math.atan2(dy,dx);
     if(z.tt<=0){
       z.look.pose="snap";z.poseT=0.3;sfx("melee",1);shake(8);
-      if(d<48+p.r&&!(p.dashT>0)&&!p.leap)hurtPlayer(p,z.p2?28:24);
+      if(d<48+p.r*0.4&&!(p.dashT>0)&&!p.leap)hurtPlayer(p,z.p2?24:20);
+      megaRing(z.x+Math.cos(z.lockA)*20,z.y+Math.sin(z.lockA)*14,8,240,0.3,"#4d8dff");h.fx.push({k:"burst",x:z.x+Math.cos(z.lockA)*24,y:z.y+Math.sin(z.lockA)*16,t:0.3,max:0.3,col:"#4d8dff"});
       for(i=0;i<6;i++)hellPart(z.x+Math.cos(z.lockA)*30,z.y+Math.sin(z.lockA)*20,"#4d8dff",0.4,rand(-80,80),rand(-80,20),rand(3,5),3);
       z.ts="recover";z.tt=0.5;
     }
     break;
   case "soul":
     z.aimAng=Math.atan2(dy,dx);
-    if(d<320&&!(p.dashT>0)&&!p.leap){
-      var pull=(z.p2?150:122)*TMV()*dt;moveWithSlide(p,-dx/d*pull,-dy/d*pull);
-      p.hp-=(z.p2?7:5.5)*(p.armorMul||1)*dt;if(p.hp<1)p.hp=1;
+    z.soulHold=d<THANOS_SOUL_R&&!(p.dashT>0)&&!p.leap;
+    if(z.soulHold){
+      var pull=(z.p2?120:100)*TMV()*dt*(d<z.r+p.r+14?0:1);moveWithSlide(p,-dx/d*pull,-dy/d*pull);
+      p.hp-=(z.p2?6:4.5)*(p.armorMul||1)*dt;if(p.hp<1)p.hp=1;
       var hl=Math.min(30*dt,z.maxHp*0.02-z.healSoul);if(hl>0){z.hp=Math.min(z.maxHp,z.hp+hl);z.healSoul+=hl;}
       if(Math.random()<0.6)hellPart(p.x,p.y-12,"#ff9a1f",0.5,-dx/d*120,-dy/d*120-20,3,3);
-      if(d<z.r+p.r+6)hurtPlayer(p,z.damage);
     }
     if(z.tt<=0){z.ts="recover";z.tt=0.45;z.look.pose="walk";}
     break;
@@ -454,6 +458,7 @@ function ringGap(o,p){
   if(!o.gaps)return 0;var a=Math.atan2(p.y-o.y,p.x-o.x),i,da;
   for(i=0;i<o.gaps.length;i++){da=Math.atan2(Math.sin(a-o.gaps[i]),Math.cos(a-o.gaps[i]));if(Math.abs(da)<0.36)return 1;}return 0;
 }
+var THANOS_SOUL_R=230;
 function ringGaps(n){var b=Math.random()*6.283,g=[],i;for(i=0;i<n;i++)g.push(b+i*6.283/n);return g;}
 function drawGapRing(o,col){
   var s=toScreen(o.x,o.y),sc=layout.scale,i,a0,a1,gs=o.gaps.slice().sort(function(a,b){return a-b;});
@@ -472,7 +477,7 @@ function hellAttacksTick(p,dt){
     dx=p.x-o.x;dy=p.y-o.y;l=Math.sqrt(dx*dx+dy*dy)||1;
     var sp=Math.sqrt(o.vx*o.vx+o.vy*o.vy)||1,ca=Math.atan2(o.vy,o.vx),ta=Math.atan2(dy,dx),da=Math.atan2(Math.sin(ta-ca),Math.cos(ta-ca));
     ca+=clamp(da,-o.home*dt,o.home*dt);o.vx=Math.cos(ca)*sp;o.vy=Math.sin(ca)*sp;o.x+=o.vx*dt;o.y+=o.vy*dt;
-    if(Math.random()<0.4)hellPart(o.x,o.y,o.col,0.3,0,-10,2.5,3);
+    if(o.trail){o.trail.push(o.x,o.y);if(o.trail.length>12)o.trail.splice(0,2);}else if(Math.random()<0.4)hellPart(o.x,o.y,o.col,0.3,0,-10,2.5,3);
     if(l<o.r+p.r&&!dodge){hurtPlayer(p,o.dmg);o.life=0;for(var k=0;k<5;k++)hellPart(o.x,o.y,o.col,0.4,rand(-60,60),rand(-60,20),3,3);}
     if(o.life<=0||sampleType(o.x,o.y)===2)h.orbs.splice(i,1);}
   for(i=h.clones.length-1;i>=0;i--){o=h.clones[i];o.t+=dt;
@@ -962,6 +967,10 @@ function thanosDrawZ(z){
   var dying=z.ts==="dying";
   if(dying){var u=clamp(z.dyingT/3.2,0,1);ctx.globalAlpha=1-u*u;opts.lift=-u*10;}
   if(z.ts==="stun")opts.lift=-3;
+  /* v20.3.3: anticipation — rises while charging a gem, pulls back before the punch */
+  var _zx=z.x,_zy=z.y;
+  if(z.ts==="wind"){var wu=1-clamp(z.tt/(z.ttMax||0.8),0,1);opts.lift=(opts.lift||0)+smooth01(wu)*5;}
+  if(z.ts==="punch_wind"){var pu=smooth01(1-clamp(z.tt/(z.ttMax||0.44),0,1));z.x-=Math.cos(z.lockA||0)*6*pu;z.y-=Math.sin(z.lockA||0)*6*pu;}
   /* gem aura under */
   var gcol=z.tele&&z.gem?GEMS[z.gem].c:z.ts==="snap_wind"?"#ffd54f":"#9c4dff";
   ctx.save();ctx.globalCompositeOperation="lighter";ctx.globalAlpha=(dying?0.2:0.28+0.12*Math.sin((game.time||0)*6))*(z.alpha==null?1:z.alpha);
@@ -970,11 +979,12 @@ function thanosDrawZ(z){
   if(!(typeof tryDrawArt==="function"&&tryDrawArt(z.x,z.y,z.look,z.aimAng||0,z.anim,opts))){
     drawChar34(z.x,z.y,makeZombieLook("tank",1),z.aimAng||0,z.anim,opts);
   }
+  z.x=_zx;z.y=_zy;
   /* gauntlet glow */
   var e=typeof artEntry==="function"?artEntry(z.look,angDir(z.aimAng||0),"walk"):null;
   if(e&&!dying){
     var m=e.meta,Hh=artTargetH(z.look,sc),Ww=Hh*(m.w/m.h),gx=m.gx!=null?m.gx:0.2,gy=m.gy!=null?m.gy:0.64,fx=m.fx!=null?m.fx:0.5;
-    var px=s.x+(gx-fx)*Ww*(e.flip?-1:1),py=s.y-(1-gy)*Hh;
+    var px=s.x+(gx-fx)*Ww*(e.flip?-1:1),py=s.y-(1-gy)*Hh;z._gsx=px-s.x;z._gsy=py-s.y;
     var gr=(14+16*(z.glow||0.5))*sc*(0.9+0.1*Math.sin((game.time||0)*9));
     ctx.save();ctx.globalCompositeOperation="lighter";ctx.globalAlpha=Math.min(1,0.45+0.4*(z.glow||0.5))*(z.alpha==null?1:z.alpha);
     var cyc=z.tele&&z.gem?GEMS[z.gem].c:GEMS[GEM_ORDER[((game.time||0)*2|0)%6]].c;
@@ -1037,11 +1047,15 @@ function hellDrawUnder(){
     if(arm){ctx.globalCompositeOperation="lighter";ctx.globalAlpha=0.35;ctx.drawImage(glowSpr(o.col),s.x-o.r*sc,s.y-o.r*0.7*sc,o.r*2*sc,o.r*1.4*sc);}ctx.restore();}
   var z=game.boss;
   if(z&&z.ts==="wind"){
-    if(z.gem==="power")drawMarker(z.x,z.y,240*(1-clamp(z.tt/0.9,0,1))+20,GEMS.power.c,t);
+    if(z.gem==="power")thDrawPowerTele(z,t);
+    if(z.gem==="soul")thDrawSoulTele(z,t);
     if(z.gem==="space")drawMarker(z.tx,z.ty,30,GEMS.space.c,t);
     if(z.gem==="time"){drawMarker(z.cx,z.cy,62,GEMS.time.c,t);s=toScreen(z.cx,z.cy);ctx.save();ctx.strokeStyle=GEMS.time.c;ctx.lineWidth=2*sc;ctx.beginPath();var ang=-1.57+6.283*(1-clamp(z.tt/(z.ttMax||0.95),0,1));ctx.moveTo(s.x,s.y);ctx.lineTo(s.x+Math.cos(ang)*40*sc,s.y+Math.sin(ang)*40*sc*CFG.YSCALE);ctx.stroke();ctx.restore();}
   }
-  if(z&&z.ts==="punch_wind")drawMarker(z.x,z.y,48,GEMS.space.c,t*2);
+  if(z&&z.ts==="punch_wind")thDrawPunchTele(z,t);
+  if(z&&z.ts==="soul")thDrawSoulTele(z,t,1);
+  if(z&&z.ts==="wind")thDrawGather(z,t);
+  for(i=0;i<h.rings.length;i++){o=h.rings[i];if(o.delay>0&&o.gaps)thDrawPendingRing(o,t);}
   for(i=0;i<h.clock.length;i++){o=h.clock[i];drawSlamRing(o.x,o.y,62*(1+(0.5-o.t)),hexA(GEMS.time.c,o.t*1.6));}
   for(i=0;i<h.safe.length;i++){o=h.safe[i];s=toScreen(o.x,o.y);
     ctx.save();ctx.globalCompositeOperation="lighter";ctx.globalAlpha=0.55+0.25*Math.sin(t*8);ctx.drawImage(glowSpr("#ffd54f"),s.x-o.r*1.6*sc,s.y-o.r*1.1*sc,o.r*3.2*sc,o.r*2.2*sc);ctx.restore();
@@ -1062,11 +1076,16 @@ function hellDrawOver(){
     ctx.save();ctx.globalAlpha=0.45*ca;tryDrawArt(o.x,o.y,{kind:"thanos",type:"boss",pose:o.t>o.fire-0.4&&!o.shot?"cast":"walk"},Math.atan2(p.y-o.y,p.x-o.x),0,{h:40,r:16,noShadow:1});
     ctx.globalCompositeOperation="lighter";ctx.globalAlpha=0.35*ca;s=toScreen(o.x,o.y);ctx.drawImage(glowSpr("#ff2d4a"),s.x-34*sc,s.y-80*sc,68*sc,80*sc);ctx.restore();}
   ctx.save();ctx.globalCompositeOperation="lighter";
-  for(i=0;i<h.orbs.length;i++){o=h.orbs[i];s=toScreen(o.x,o.y);var r=(o.r+5)*sc;ctx.drawImage(glowSpr(o.col),s.x-r*1.6,s.y-14*sc-r*1.6,r*3.2,r*3.2);}
+  for(i=0;i<h.orbs.length;i++){o=h.orbs[i];s=toScreen(o.x,o.y);var r=(o.r+5)*sc;
+    if(o.trail&&o.trail.length>3){ctx.strokeStyle=hexA(o.col,0.55);ctx.lineCap="round";ctx.lineWidth=o.r*1.1*sc;ctx.beginPath();for(var tj=0;tj<o.trail.length;tj+=2){var ts2=toScreen(o.trail[tj],o.trail[tj+1]);if(tj)ctx.lineTo(ts2.x,ts2.y-14*sc);else ctx.moveTo(ts2.x,ts2.y-14*sc);}ctx.lineTo(s.x,s.y-14*sc);ctx.stroke();}
+    ctx.drawImage(glowSpr(o.col),s.x-r*1.6,s.y-14*sc-r*1.6,r*3.2,r*3.2);ctx.drawImage(glowSpr("#ffffff"),s.x-r*0.6,s.y-14*sc-r*0.6,r*1.2,r*1.2);}
   for(i=0;i<h.shots.length;i++){o=h.shots[i];s=toScreen(o.x,o.y);var ln=Math.atan2(o.vy*CFG.YSCALE,o.vx);ctx.save();ctx.translate(s.x,s.y-16*sc);ctx.rotate(ln);ctx.drawImage(glowSpr("#80deea"),-14*sc,-6*sc,28*sc,12*sc);ctx.restore();}
   ctx.restore();
   for(i=0;i<h.fx.length;i++){o=h.fx[i];
     if(o.k==="ring"){ctx.save();ctx.globalCompositeOperation="lighter";drawSlamRing(o.x,o.y,o.r,hexA(o.col,clamp(o.t/o.max,0,1)));ctx.restore();}
+    else if(o.k==="burst"){s=toScreen(o.x,o.y);var bu=1-clamp(o.t/o.max,0,1),bw=(30+90*bu)*sc;ctx.save();ctx.globalCompositeOperation="lighter";ctx.globalAlpha=(1-bu)*0.9;ctx.drawImage(glowSpr(o.col),s.x-bw,s.y-bw*0.55-10*sc,bw*2,bw*1.1);ctx.globalAlpha=(1-bu)*0.7;ctx.drawImage(glowSpr("#ffffff"),s.x-bw*0.4,s.y-bw*0.25-10*sc,bw*0.8,bw*0.5);ctx.restore();}
+    else if(o.k==="rift"){s=toScreen(o.x,o.y);var ru=clamp(o.t/o.max,0,1),rw=(10+22*Math.sin(ru*Math.PI))*sc;ctx.save();ctx.globalAlpha=0.85*ru;ctx.fillStyle="#05010d";ctx.beginPath();ctx.ellipse(s.x,s.y,rw,rw*0.42,0,0,7);ctx.fill();
+      ctx.globalCompositeOperation="lighter";ctx.strokeStyle=o.col;ctx.lineWidth=3*sc;ctx.beginPath();ctx.ellipse(s.x,s.y,rw,rw*0.42,0,0,7);ctx.stroke();ctx.drawImage(glowSpr(o.col),s.x-rw*1.4,s.y-rw*2.2,rw*2.8,rw*2.6);ctx.restore();}
     else if(o.k==="bolt"){s=toScreen(o.x,o.y);var a2=clamp(o.t/o.max,0,1),x0=s.x,y0=s.y-14*sc,k2,yy,xx=x0;
       ctx.save();ctx.globalCompositeOperation="lighter";ctx.lineCap="round";
       ctx.drawImage(glowSpr("#90caf9"),x0-40*sc,y0-30*sc,80*sc,60*sc);
@@ -1196,3 +1215,44 @@ function drawLevelDone(){
 window.__hell={enter:function(){hellEnter();},pick:function(id){var p=game.player;megaPick(p,id);},state:function(){return{st:game.state,h:game.hell&&game.hell.phase,boss:game.boss&&{hp:game.boss.hp,max:game.boss.maxHp,ts:game.boss.ts}};},openPortal:hellOpenPortal,cineEnd:function(){hellCineEnd();},snap:function(){thanosStartSnap(game.boss);},kill:function(){var z=game.boss;if(!z)return;z.snapDone=1;thanosDie(z);},glove:function(){return game.hell&&game.hell.glove;},final:function(){hellFinalStart();},finT:function(){return HELL.finT;}};
 var _hellZoneAt=typeof zoneAt==="function"?zoneAt:null;
 zoneAt=function(x,y){if(HELL.active)return{name:"Planeta perdido"};return _hellZoneAt?_hellZoneAt(x,y):null;};
+
+/* ---------- v20.3.3: clearer Thanos telegraphs ---------- */
+function thEll(s,r,a0,a1){ctx.beginPath();ctx.ellipse(s.x,s.y,r,r*CFG.YSCALE,0,a0,a1);}
+function thDrawPowerTele(z,t){ /* expanding danger ring with the 3 SAFE lanes shown in bright white */
+  var s=toScreen(z.x,z.y),sc=layout.scale,u=1-clamp(z.tt/(z.ttMax||0.9),0,1),R=(40+200*u)*sc,g=z.ringG||[],i,a,col=GEMS.power.c;
+  ctx.save();ctx.globalAlpha=0.16+0.18*u;ctx.fillStyle=col;thEll(s,R,0,7);ctx.fill();
+  ctx.globalAlpha=0.6+0.4*Math.sin(t*14);ctx.strokeStyle=col;ctx.lineWidth=3*sc;ctx.setLineDash([10*sc,7*sc]);thEll(s,R,0,7);ctx.stroke();ctx.setLineDash([]);
+  ctx.globalAlpha=0.9;ctx.lineCap="round";
+  for(i=0;i<g.length;i++){a=g[i];var ex=Math.cos(a),ey=Math.sin(a)*CFG.YSCALE;
+    ctx.strokeStyle="rgba(255,255,255,0.9)";ctx.lineWidth=4*sc;ctx.beginPath();ctx.moveTo(s.x+ex*R*0.35,s.y+ey*R*0.35);ctx.lineTo(s.x+ex*(R+18*sc),s.y+ey*(R+18*sc));ctx.stroke();
+    ctx.strokeStyle="rgba(170,255,200,0.9)";ctx.lineWidth=5*sc;thEll(s,R,a-0.34,a+0.34);ctx.stroke();}
+  ctx.restore();
+}
+function thDrawPendingRing(o,t){ /* phase-2 follow-up ring: shows where it will come from and its gaps */
+  var s=toScreen(o.x,o.y),sc=layout.scale,R=(22+8*Math.sin(t*16))*sc,i,a;
+  ctx.save();ctx.globalAlpha=0.8;ctx.strokeStyle=o.col;ctx.lineWidth=3*sc;thEll(s,R,0,7);ctx.stroke();
+  ctx.strokeStyle="rgba(255,255,255,0.85)";ctx.lineWidth=3*sc;ctx.lineCap="round";
+  for(i=0;i<o.gaps.length;i++){a=o.gaps[i];ctx.beginPath();ctx.moveTo(s.x+Math.cos(a)*R,s.y+Math.sin(a)*R*CFG.YSCALE);ctx.lineTo(s.x+Math.cos(a)*(R+60*sc),s.y+Math.sin(a)*(R+60*sc)*CFG.YSCALE);ctx.stroke();}
+  ctx.restore();
+}
+function thDrawPunchTele(z,t){ /* filling disc = exact punch reach */
+  var s=toScreen(z.x,z.y),sc=layout.scale,u=1-clamp(z.tt/(z.ttMax||0.44),0,1),R=48*sc,col=GEMS.space.c;
+  ctx.save();ctx.globalAlpha=0.18+0.22*u;ctx.fillStyle=col;thEll(s,R*u,0,7);ctx.fill();
+  ctx.globalAlpha=0.85;ctx.strokeStyle=col;ctx.lineWidth=3*sc;thEll(s,R,0,7);ctx.stroke();
+  var a=z.lockA||0;ctx.strokeStyle="#ffffff";ctx.lineWidth=2.5*sc;ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(s.x+Math.cos(a)*R,s.y+Math.sin(a)*R*CFG.YSCALE);ctx.stroke();
+  ctx.restore();
+}
+function thDrawSoulTele(z,t,active){ /* reach of the soul pull: get out of the circle */
+  var s=toScreen(z.x,z.y),sc=layout.scale,R=THANOS_SOUL_R*sc,col=GEMS.soul.c,u=active?1:1-clamp(z.tt/(z.ttMax||0.9),0,1);
+  ctx.save();ctx.globalAlpha=active?0.1:0.06+0.1*u;ctx.fillStyle=col;thEll(s,R,0,7);ctx.fill();
+  ctx.globalAlpha=0.55+0.35*Math.sin(t*12);ctx.strokeStyle=col;ctx.lineWidth=2.5*sc;ctx.setLineDash(active?[]:[9*sc,7*sc]);thEll(s,R,0,7);ctx.stroke();ctx.setLineDash([]);
+  if(!active){ctx.globalAlpha=0.5;ctx.lineWidth=2*sc;thEll(s,R*(1-u)+20*sc*u,0,7);ctx.stroke();}
+  ctx.restore();
+}
+function thDrawGather(z,t){ /* gem energy converging into the gauntlet while Thanos charges */
+  var s=toScreen(z.x,z.y),sc=layout.scale,u=1-clamp(z.tt/(z.ttMax||0.8),0,1),col=GEMS[z.gem].c,R=(34*(1-u)+6)*sc;
+  var gx=s.x+(z._gsx!=null?z._gsx:0),gy=s.y+(z._gsy!=null?z._gsy:-46*sc);
+  ctx.save();ctx.globalCompositeOperation="lighter";ctx.globalAlpha=0.35+0.5*u;ctx.strokeStyle=col;ctx.lineWidth=(2+3*u)*sc;
+  ctx.beginPath();ctx.arc(gx,gy,R,0,7);ctx.stroke();
+  ctx.globalAlpha=0.25+0.5*u;var gw=(18+26*u)*sc;ctx.drawImage(glowSpr(col),gx-gw,gy-gw,gw*2,gw*2);ctx.restore();
+}
