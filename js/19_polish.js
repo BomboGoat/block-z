@@ -137,8 +137,8 @@ function plLeafSpr(i){return plStamp("leaf"+i,16,10,function(g){var cols=[["#7cb
   var gr=g.createLinearGradient(0,0,16,10);gr.addColorStop(0,cols[0]);gr.addColorStop(1,cols[1]);g.fillStyle=gr;g.beginPath();g.moveTo(1,5);g.quadraticCurveTo(8,-1,15,5);g.quadraticCurveTo(8,11,1,5);g.fill();g.strokeStyle="rgba(0,0,0,0.25)";g.lineWidth=0.8;g.beginPath();g.moveTo(2,5);g.lineTo(14,5);g.stroke();});}
 function plButterSpr(i){return plStamp("bf"+i,20,14,function(g){var c=["#ffca28","#f06292","#4fc3f7"][i];g.fillStyle=c;g.beginPath();g.ellipse(6,5,5,4.5,-0.4,0,7);g.fill();g.beginPath();g.ellipse(14,5,5,4.5,0.4,0,7);g.fill();g.globalAlpha=0.85;g.beginPath();g.ellipse(7,10,3.4,3,0.3,0,7);g.fill();g.beginPath();g.ellipse(13,10,3.4,3,-0.3,0,7);g.fill();g.globalAlpha=1;g.fillStyle="#2b1d0e";g.fillRect(9.3,2,1.4,10);});}
 function plAmbInit(){
-  var A={leaves:[],bf:[],birds:null,birdT:6};for(var i=0;i<12;i++)A.leaves.push({x:Math.random(),y:Math.random(),k:i%4,s:0.6+Math.random()*0.7,ph:Math.random()*6.28,glint:i>=7});
-  for(var j=0;j<3;j++)A.bf.push({ox:0,oy:0,ph:Math.random()*6.28,k:j,r:40+Math.random()*60,sp:0.4+Math.random()*0.4,set:0});
+  var A={leaves:[],bf:[],birds:null,birdT:6};for(var i=0;i<8;i++)A.leaves.push({x:Math.random(),y:Math.random(),k:i%4,s:0.6+Math.random()*0.7,ph:Math.random()*6.28,glint:i>=5});
+  for(var j=0;j<2;j++)A.bf.push({ox:0,oy:0,ph:Math.random()*6.28,k:j,r:40+Math.random()*60,sp:0.4+Math.random()*0.4,set:0});
   PL.amb=A;return A;
 }
 function plDrawAmbient(dt){
@@ -153,13 +153,16 @@ function plDrawAmbient(dt){
     var wx=o.ox+Math.cos(o.ph)*o.r,wy=o.oy+Math.sin(o.ph*1.3)*o.r*0.5;if(!onScreen(wx,wy,20))continue;
     var s=toScreen(wx,wy),hh=(18+6*Math.sin(o.ph*3))*sc,fl=Math.abs(Math.sin(t*16+i*2));
     if(typeof softShadowSpr==="function"){ctx.globalAlpha=0.18;ctx.drawImage(softShadowSpr(),s.x-3*sc,s.y-1*sc,6*sc,2.4*sc);ctx.globalAlpha=1;}
-    ctx.save();ctx.translate(s.x,s.y-hh);ctx.scale(0.25+0.75*fl,1);var bw=6*sc;ctx.drawImage(plButterSpr(o.k),-bw,-bw*0.7,bw*2,bw*1.4);ctx.restore();}}
-  /* leaves + pollen drift in screen space with a little camera parallax */
-  var n=busy?6:A.leaves.length,cx=(game.camX||0)*sc*0.15,cy=(game.camY||0)*sc*0.1;
+    var bw=6*sc,fw=0.25+0.75*fl;ctx.drawImage(plButterSpr(o.k),s.x-bw*fw,s.y-hh-bw*0.7,bw*2*fw,bw*1.4);}}
+  /* leaves + pollen drift in screen space with a little camera parallax. v20.5 perf: one setTransform per sprite
+     (no save/restore, no composite switches); pollen uses a pre-lit glow sprite at normal blending */
+  var n=busy?4:A.leaves.length,cx=(game.camX||0)*sc*0.15,cy=(game.camY||0)*sc*0.1,M=ctx.getTransform(),K=M.a,E=M.e,F=M.f,gs=plGlow("255,240,170","pollen");
   for(i=0;i<n;i++){o=A.leaves[i];o.y+=dt*0.03*o.s;o.x+=dt*0.018*o.s;o.ph+=dt*(1.5+o.s);
     var lx=((o.x*SW-cx)%SW+SW)%SW,ly=((o.y*SH-cy)%SH+SH)%SH;lx+=Math.sin(o.ph)*10*sc;
-    if(o.glint){ctx.save();ctx.globalCompositeOperation="lighter";ctx.globalAlpha=0.35+0.35*Math.sin(o.ph*2);var gz=3.5*sc;ctx.drawImage(plGlow("255,240,170","pollen"),lx-gz,ly-gz,gz*2,gz*2);ctx.restore();continue;}
-    ctx.save();ctx.translate(lx,ly);ctx.rotate(Math.sin(o.ph)*0.9);ctx.scale(1,0.5+0.5*Math.abs(Math.cos(o.ph*0.7)));ctx.globalAlpha=0.55;var lw=2.8*sc*o.s;ctx.drawImage(plLeafSpr(o.k),-lw,-lw*0.6,lw*2,lw*1.2);ctx.restore();}
+    if(o.glint){ctx.globalAlpha=0.3+0.3*Math.sin(o.ph*2);var gz=3.5*sc;ctx.drawImage(gs,lx-gz,ly-gz,gz*2,gz*2);continue;}
+    var ro=Math.sin(o.ph)*0.9,cr=Math.cos(ro),sr=Math.sin(ro),sy2=0.5+0.5*Math.abs(Math.cos(o.ph*0.7)),lw=2.8*sc*o.s;
+    ctx.setTransform(K*cr,K*sr,-K*sr*sy2,K*cr*sy2,E+K*lx,F+K*ly);ctx.globalAlpha=0.55;ctx.drawImage(plLeafSpr(o.k),-lw,-lw*0.6,lw*2,lw*1.2);}
+  ctx.setTransform(M);
   ctx.globalAlpha=1;
 }
 var _plLast=0;
