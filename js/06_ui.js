@@ -85,6 +85,7 @@ function drawHero(){
 function drawZ(z){
   if(z.isGorgon&&typeof drawGorgonZ==="function"){if(z.dying)ctx.globalAlpha=clamp(z.deathT*2,0,1);drawGorgonZ(z);ctx.globalAlpha=1;return;}
   if(z.dying)ctx.globalAlpha=clamp(z.deathT*2,0,1);
+  if(z.demodog&&typeof drawDemodog==="function"){drawDemodog(z);ctx.globalAlpha=1;return;}
   var look=z.look||makeZombieLook(z.type,1);
   var opts={h:z.h,r:z.r,moving:z.isHome?0:1,flash:z.hitFlash>0,hpBar:(!game.lineup&&(z.isBoss||z.type==="tank"||z.type==="armored")&&!z.bName)?z.hp/z.maxHp:0};
   if(z.leapT>0||z.vaultT>0)opts.air=1;
