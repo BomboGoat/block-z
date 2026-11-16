@@ -25,7 +25,13 @@ const E={
  pistol_up:["crowd","dmg",">"],smg_up:["crowd","dmg",">",["smg"]],shotgun_up:["close","dmg",">",["shotgun"]],revolver_up:["crowd","dmg",">",["revolver"]],
  rifle_up:["crowd","dmg",">",["rifle"]],gl_up:["crowd","dmg",">",["gl"]],
  hero_nzWide:["crowd","proj",">"],hero_nzSlug:["crowd","dmgPerHit",">"],hero_nzKnock:["crowd","knock",">"],hero_nzDouble:["crowd","proj",">"],
- hero_nzMini:["stat","miniT",">"],hero_nzArmor:["hurt","taken","<"]
+ hero_nzMini:["stat","miniT",">"],hero_nzArmor:["hurt","taken","<"],
+ /* v20.5 signature cards (Épica / Mítica / Legendaria) */
+ hc_classic_e:["crowd","proj",">"],hc_classic_m:["crowd","dmg",">"],hc_classic_l:["crowd","dmg",">",null,{T:9}],
+ hc_trueno_e:["close","dmg",">"],hc_trueno_m:["crowd","dmg",">"],hc_trueno_l:["crowd","dmg",">",null,{T:9}],
+ hc_mr_e:["crowd","dmg",">"],hc_mr_m:["close","dmg",">"],hc_mr_l:["crowd","dmg",">"],
+ hc_gompa_e:["close","dmg",">"],hc_gompa_m:["crowd","dmg",">"],hc_gompa_l:["crowd","dmg",">",null,{T:9}],
+ hc_neizan_e:["crowd","burn",">"],hc_neizan_m:["crowd","dmg",">"],hc_neizan_l:["crowd","dmg",">",null,{T:9}]
 };
 const HERO_E={trueno:{multishot:["crowd","hits",">"],range:["spread","hits",">"]}};
 const SUPER_E=["crowd","dmg",">",null,{T:4}];

@@ -560,6 +560,14 @@ function buildMap(seed){
     if(!arr)return;
     for(i=0;i<arr.length;i++){p=arr[i];addSolid({k:p.k,x:p.x,y:p.y,w:p.w,d:p.d,h:p.h,canopy:p.canopy,treeKind:p.treeKind,shape:p.shape,cr:p.cr,top:p.top,side:p.side});}
   }
+  /* v20.5: tree clean-up. A few sprite trees overlapped each other (two pines fused into one blob, a pine standing
+     inside the oak's trunk, a bush squeezed between two trees) or clipped the ruins. They are removed here and their
+     baked walk cells are freed so no invisible obstacle is left behind. tests/tree_audit.js checks the spacing. */
+  if(!D._treeFix){D._treeFix=1;var TREE_DROP=[[277,422],[684,316],[892,204],[604,92],[367,77],[537,122]];
+    D.trees=(D.trees||[]).filter(function(t){var drop=TREE_DROP.some(function(q){return Math.abs(t.x-q[0])<2&&Math.abs(t.y-q[1])<2;});
+      if(drop&&D.walk){var c=D.cell,x0=Math.floor(t.x/c),x1=Math.floor((t.x+t.w-1)/c),y0=Math.floor(t.y/c),y1=Math.floor((t.y+t.d-1)/c),xx,yy,k;
+        for(yy=y0;yy<=y1;yy++)for(xx=x0;xx<=x1;xx++){k=yy*D.cols+xx;if(D.typemap&&D.typemap[k]===2){D.walk[k]=0;D.typemap[k]=0;}}}
+      return !drop;});}
   addAll(D.trees);addAll(D.ruins);addAll(D.crates);addAll(D.barrels);addAll(D.rocks);
   map.spawns=(D.spawns||[]).slice();
   (function nudgeSpawns(){
