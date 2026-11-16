@@ -535,7 +535,8 @@ function updateGigante(p,dt){
 }
 function startTruenoLaser(p,ang){
   if(typeof game!=="undefined"&&game&&game.state!=="playing")return;
-  p.laserT=3;p.laserMax=3;p.laserAng=ang;p.laserLen=truenoLaserLen(p);p.laserW=15;p.laserDps=38;p.laserTick=0;
+  p.laserT=3;p.laserMax=3;p.laserAng=ang;p.laserLen=truenoLaserLen(p);p.laserW=15;p.laserDps=52;p.laserTick=0;p.laserTgt=null;p.laserScan=0;p.laserLock=0;
+  /* v20.5.2: dps 38 -> 52 (+37%); the beam homes onto the nearest enemy and arcs to up to 2 more near the tip */
   p.boltFlash=0.12;shake(3);sfx("laser_hum");sfx("storm");
 }
 function stopTruenoLaser(p){
@@ -554,6 +555,15 @@ function updateTruenoLaser(p,dt){
   if(input.super&&Math.sqrt((input.sjx||0)*(input.sjx||0)+(input.sjy||0)*(input.sjy||0))>0.2){
     want=Math.atan2(input.sjy,input.sjx);
   }
+  /* v20.5.2 homing: with no thumb on the Super stick the beam sweeps onto the nearest enemy in reach (bosses too)
+     and re-targets when it dies or leaves; the thumb still overrides. Scans every 0.15 s, no allocations. */
+  var T=p.laserTgt;
+  if(T&&(T.dead||T.dying||T.ghost||dist(p.x,p.y,T.x,T.y)>p.laserLen*1.3))T=p.laserTgt=null;
+  p.laserScan-=dt;
+  if(p.laserScan<=0){p.laserScan=T?0.4:0.15;var nT=findNearestZombie(p,p.laserLen*1.15,true);
+    if(nT&&(!T||(nT!==T&&dist(p.x,p.y,nT.x,nT.y)<dist(p.x,p.y,T.x,T.y)*0.7)))T=p.laserTgt=nT;} /* a much closer threat takes over */
+  if(want==null&&T){var hw0=heroHandWorld(p,p.laserAng);want=Math.atan2(T.y-hw0.y,T.x-hw0.x);rate=6.5;}
+  p.laserLock=T&&want!=null?Math.min(1,(p.laserLock||0)+dt*4):Math.max(0,(p.laserLock||0)-dt*4);
   if(want!=null){
     var d=Math.atan2(Math.sin(want-p.laserAng),Math.cos(want-p.laserAng));
     p.laserAng+=d*(1-Math.exp(-rate*dt));
@@ -574,6 +584,11 @@ function updateTruenoLaser(p,dt){
         if(Math.random()<0.28)addParticle(z.x+rand(-5,5),z.y+rand(-5,5),"#e3f2fd",0.16,rand(-30,30),rand(-40,16),rand(3,6),3);
       }
     }
+    /* chain arcs from the beam tip to up to 2 enemies close to it (not already in the beam) */
+    var A=p.laserArcs||(p.laserArcs=[{t:0},{t:0}]),na=0,ai;
+    for(i=0;i<game.zombies.length&&na<2;i++){z=game.zombies[i];if(z.dead||z.dying||z.ghost)continue;
+      if(dist(x2,y2,z.x,z.y)>95+z.r)continue;if(distSeg(z.x,z.y,ho.x,ho.y,x2,y2)<half+z.r)continue;
+      hurtZombie(z,tick*0.45,p.x,1,{quiet:1,noCrit:1});ai=A[na++];ai.z=z;ai.t=0.16;ai.seed=Math.random()*100;hit=1;}
     if(hit&&Math.random()<0.45){sfx("crackle");shake(1);}
   }
   if(Math.random()<0.08){
@@ -581,6 +596,7 @@ function updateTruenoLaser(p,dt){
     pushBolt({pts:zigPts(px-nx*6,py-ny*6,px+nx*6+off,py+ny*6-off,3),life:0.07,maxLife:0.07,fork:1,lift:heroHandLiftPx(p)});
   }
   if(Math.random()<0.18)addParticle(x2,y2,"#bbdefb",0.14,rand(-22,22),rand(-22,22),rand(3,6),3);
+  if(p.laserArcs)for(i=0;i<p.laserArcs.length;i++)if(p.laserArcs[i].t>0)p.laserArcs[i].t-=dt;
   if(p.laserT<=0)stopTruenoLaser(p);
 }
 function goToMenu(){if(game&&game.player){stopTruenoLaser(game.player);if(typeof stopGigante==="function")stopGigante(game.player);}if(typeof stopCombatLoops==="function")stopCombatLoops();stopMusic();game=createTitleState();skipDtClamp=1;layoutMenuButtons();startMusic("menu");}
