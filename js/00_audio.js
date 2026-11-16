@@ -121,7 +121,7 @@ function sfxAllowed(name){
   if(SFX_UI[name])return 1;
   if(typeof game==="undefined"||!game)return 0;
   if(game.state==="playing")return 1;
-  if(game.state==="hell_cine"||game.state==="hell_trans"||game.state==="level_done"||game.state==="hell_final")return 1;
+  if(game.state==="hell_cine"||game.state==="hell_pick"||game.state==="hell_trans"||game.state==="level_done"||game.state==="hell_final")return 1;
   if(game.state==="boss_intro"&&SFX_BOSS[name])return 1;
   return 0;
 }
