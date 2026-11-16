@@ -75,7 +75,10 @@ function drawHero(){
   if(p.fireAura){var s=toScreen(p.x,p.y);ctx.fillStyle="rgba(255,87,34,0.18)";fillEllipse(ctx,s.x,s.y,50*layout.scale,36*layout.scale);}
   if(p.hasOrbit){for(var i=0;i<3;i++){var a=p.orbitAngle+i*2.094,ox=p.x+Math.cos(a)*36,oy=p.y+Math.sin(a)*36,os=toScreen(ox,oy);ctx.fillStyle="#eceff1";ctx.beginPath();ctx.arc(os.x,os.y,4*layout.scale,0,7);ctx.fill();}}
   if(p.hero==="neizan"&&(p.miniT>0||p.miniSpin>0||p.miniPut>0))wpn="minigun";
-  var heroOpts={h:40,r:p.r,scale:p.scale||1,moving:Math.abs(p.vx)+Math.abs(p.vy)>20,wpn:wpn,aim:p.aimAng,twoHand:two,muzzle:p.muzzle,flash:p.flash>0,lift:(p.grabbed?26:0)+(p.airH||0),cacheHand:1,nzKick:p.nzKick||0,heavy:(p.miniT>0||p.miniSpin>0)?1:0};
+  var aimA=p.aimAng;
+  /* v20.4: with nothing to shoot for a moment Neizan carries the long guns low and forward instead of aiming at the last target */
+  if(p.hero==="neizan"&&!(p.miniT>0)&&!(p.miniSpin>0)&&(game.time-(p.nzLast||-9))>0.9){var fa=p.faceAng!=null?p.faceAng:(p.facing||0);aimA=Math.cos(fa)>=0?0.35:Math.PI-0.35;}
+  var heroOpts={h:40,r:p.r,scale:p.scale||1,moving:Math.abs(p.vx)+Math.abs(p.vy)>20,wpn:wpn,aim:aimA,twoHand:two,muzzle:p.muzzle,flash:p.flash>0,lift:(p.grabbed?26:0)+(p.airH||0),cacheHand:1,nzKick:p.nzKick||0,heavy:(p.miniT>0||p.miniSpin>0)?1:0};
   if(game.state==="hell_final"){heroOpts.wpn=null;heroOpts.moving=0;}
   else if(p.laserT>0){heroOpts.pose="laser";heroOpts.wpn=null;heroOpts.moving=0;}
   else if(p.atkT>0||p.meleeSwing>0||p.muzzle>0){heroOpts.pose="atk";heroOpts.atk=1;heroOpts.atkT=p.atkT||p.meleeSwing||p.muzzle;heroOpts.atkMax=p.atkMax||0.2;heroOpts.atkKind=p.atkKind;heroOpts.meleeSwing=p.meleeSwing||0;}

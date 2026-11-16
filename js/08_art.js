@@ -296,7 +296,7 @@ function drawHeroRig(e,name,look,anim,pose,H,W,fx,fy,opts){
   var la=flip<0?Math.PI-sa:sa;la=Math.atan2(Math.sin(la),Math.cos(la));
   var aimRot=clamp(la-Math.PI/2,-2.6,0.5);   /* rotation that points the hanging arm at the target */
   var gun=opts.wpn&&opts.wpn!=="bell"&&opts.wpn!=="bolt"&&opts.wpn!=="knife"&&opts.wpn!=="fist"&&opts.wpn!=="machete"&&opts.wpn!=="mega_hulk";
-  if(gun){armR=aimRot+(opts.muzzle>0?0.18*Math.max(0,1-atk*2.5):0)+(run?s1*0.05:0)+(opts.nzKick||0)*0.42+(opts.heavy?Math.sin(t*40)*0.025:0);
+  if(gun){armR=aimRot+(opts.muzzle>0?0.18*Math.max(0,1-atk*2.5):0)+(run?s1*0.05:0)+(opts.nzKick||0)*0.24+(opts.heavy?Math.sin(t*40)*0.025:0);
     /* v20.3.1: the off-hand used to swing ~60 deg across the chest toward the gun (it can't reach it from the near
        shoulder), leaving a fist floating on the belly. Now it stays attached and relaxed: a small brace toward the
        aim, a twitch with the recoil, and a reduced counter-swing while running. */

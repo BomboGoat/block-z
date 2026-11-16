@@ -136,7 +136,8 @@ function fireNeizanSecond(p){
     updateZKnock(dt);
     if(p.stompCd>0)p.stompCd-=dt;
     if(p.hero!=="neizan")return;
-    if(p.nzKick>0)p.nzKick=Math.max(0,p.nzKick-dt*4.5);
+    if(p.atkT>0||p.miniT>0)p.nzLast=game.time;
+    if(p.nzKick>0)p.nzKick=Math.max(0,p.nzKick-dt*5.5);
     if(p.nzShellT>0){p.nzShellT-=dt;if(p.nzShellT<=0){nzShell(p,"#c62828",1);nzShell(p,"#b71c1c",1);if(typeof sfx==="function")sfx("click",0.35);}}
     if(p.nzSecond>0){p.nzSecond-=dt;if(p.nzSecond<=0)fireNeizanSecond(p);}
     updateMinigun(p,dt);
@@ -147,8 +148,8 @@ function fireNeizanSecond(p){
     return _um.apply(this,arguments);
   };
 })();
-function miniStop(p,quiet){
-  if(!(p.miniT>0)&&!(p.miniSpin>0))return;
+function miniStop(p,quiet,force){
+  if(!force&&!(p.miniT>0)&&!(p.miniSpin>0))return;
   p.miniT=0;p.miniSpin=0;p.miniFire=0;p.miniPut=0.45;
   if(typeof stopMiniLoop==="function")stopMiniLoop();
   if(!quiet)sfx("minigun_stop",0.8);
@@ -173,7 +174,7 @@ function updateMinigun(p,dt){
     var rate=15*(p.miniRate||1);p.miniAcc+=dt*rate;
     while(p.miniAcc>=1){p.miniAcc-=1;miniShot(p);}
   }else{p.miniIdle=(p.miniIdle||0)+dt;if(p.miniFire&&p.miniIdle>0.3){p.miniFire=0;if(typeof stopMiniLoop==="function")stopMiniLoop();}}
-  if(p.miniT<=0)miniStop(p);
+  if(p.miniT<=0)miniStop(p,0,1);
 }
 function miniShot(p){
   var ang=p.miniAng+(Math.random()-0.5)*0.12,ho=heroHandWorld(p,ang),lift=heroHandLiftPx(p),b=newBullet();
@@ -181,7 +182,7 @@ function miniShot(p){
   b.damage=5*p.damageMul*atkMul(p);b.life=0.42*(p.rangeMul||1);b.pierceLeft=1;b.bounce=0;b.hit=new Set();b.mini=1;b.knock=26;
   b.fire=p.fireAmmo;game.bullets.push(b);
   p.muzzle=0.03;p.miniFlash=0.05;markAttack(p,"shoot",0.08);p.recoil=0.6;
-  p.knockT=0.06;p.knockVx=-Math.cos(ang)*55;p.knockVy=-Math.sin(ang)*55;
+  p.knockT=0.05;p.knockVx=-Math.cos(ang)*18;p.knockVy=-Math.sin(ang)*18;
   p._mshell=(p._mshell||0)+1;if(p._mshell%2===0)nzShell(p,"#ffd54f",0);
   if(game.shake<1.8)shake(1.4);
 }
@@ -200,7 +201,7 @@ function miniShot(p){
     function ell(x,y,rx,ry,f){c.beginPath();c.ellipse(x,y,rx,ry,0,0,7);c.fillStyle=f;c.fill();c.strokeStyle=o;c.lineWidth=lw*0.85;c.stroke();}
     var kick=isP?(p.nzKick||0):0,put=isP&&wpn==="minigun"&&p.miniPut>0?(1-p.miniPut/0.45):0;
     c.save();c.translate(hx,hy);
-    if(kick>0){c.translate(-Math.cos(ang)*kick*5*sc,-Math.sin(ang)*kick*5*sc);ang+=-dir*kick*0.55;}
+    if(kick>0){c.translate(-Math.cos(ang)*kick*5*sc,-Math.sin(ang)*kick*5*sc);ang+=-dir*kick*0.32;}
     if(put>0){ang+=dir*put*1.1;c.globalAlpha=1-put*0.9;}
     c.rotate(ang);if(dir<0)c.scale(1,-1);
     if(wpn==="dbshot"){
