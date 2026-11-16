@@ -533,13 +533,31 @@ function drawBossMenace(){
   if(!(intro||fight)||!b)return;
   var sc=layout.scale,s=toScreen(b.x,b.y),a=1,t=b.introT||0;
   if(intro)a=t>3.8?clamp((4.2-t)/0.4,0,1):t<0.8?clamp(t/0.8,0,1):1;
-  /* dark vignette + fight tint (readable) */
+  /* dark vignette + fight tint (readable). v20.5.1 perf: baked once per boss look/screen size into a device-resolution
+     layer and blitted 1:1 with the fade alpha (was a full-screen radial gradient + full-screen tint every frame) */
+  var M=ctx.getTransform();
+  if(M.b===0&&M.c===0&&M.e===0&&M.f===0&&canvas&&canvas.width>0){
+    var mk=(b.isGorgon?"g":b.isHome?"h":b.isColossus?"c":"o")+(b.p2?1:0)+(intro?1:0)+"_"+canvas.width+"x"+canvas.height+"_"+SW+"x"+SH;
+    var mc=_bmCache[mk];
+    if(!mc){
+      for(var kk in _bmCache)if(kk.split("_").slice(1).join("_")!==mk.split("_").slice(1).join("_"))delete _bmCache[kk];
+      mc=document.createElement("canvas");mc.width=canvas.width;mc.height=canvas.height;var mg=mc.getContext("2d");mg.setTransform(M.a,0,0,M.d,0,0);
+      _bmPaint(mg,b,intro,1);_bmCache[mk]=mc;
+    }
+    ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=a;ctx.drawImage(mc,0,0);ctx.globalAlpha=1;ctx.setTransform(M);
+  }else _bmPaint(ctx,b,intro,a);
+  _bmFx(b,intro,s,sc,t,a);
+}
+var _bmCache={};
+function _bmPaint(ctx,b,intro,a){
   var g=ctx.createRadialGradient(SW/2,SH/2,Math.min(SW,SH)*0.28,SW/2,SH/2,Math.max(SW,SH)*0.78);
   g.addColorStop(0,"rgba(0,0,0,0)");
   g.addColorStop(1,b.isGorgon?"rgba(30,0,6,"+((b.p2?0.55:0.46)*a)+")":b.isHome?"rgba(40,0,0,"+(0.42*a)+")":b.isColossus?"rgba(30,8,4,"+(0.34*a)+")":"rgba(10,0,16,"+(0.4*a)+")");
   ctx.fillStyle=g;ctx.fillRect(0,0,SW,SH);
   ctx.fillStyle=b.isGorgon?(intro?"rgba(0,0,0,0.34)":b.p2?"rgba(90,0,14,0.13)":"rgba(40,0,10,0.09)"):b.isHome?(b.p2?"rgba(80,0,10,0.12)":"rgba(70,8,12,0.08)"):b.isColossus?"rgba(60,20,10,0.07)":"rgba(20,0,30,0.09)";
   ctx.globalAlpha=a;ctx.fillRect(0,0,SW,SH);ctx.globalAlpha=1;
+}
+function _bmFx(b,intro,s,sc,t,a){
   /* Homelander looming shadow during intro, flickering aura, heat haze */
   if(b.isHome){
     if(intro&&t>1){

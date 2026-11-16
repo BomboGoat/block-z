@@ -20,7 +20,7 @@ function resize(){
   var maxPix=8*1024*1024;if(SW*SH*dpr*dpr>maxPix)dpr=Math.sqrt(maxPix/(SW*SH));
   canvas.width=(SW*dpr)|0;canvas.height=(SH*dpr)|0;
   canvas.style.width=SW+"px";canvas.style.height=SH+"px";
-  ctx=canvas.getContext("2d");ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx=canvas.getContext("2d",{alpha:false}); /* v20.5.1: opaque canvas (every frame paints a full background) — the compositor skips blending the whole page layer */ctx.setTransform(dpr,0,0,dpr,0,0);
   layout.isPortrait=SH>=SW;
   layout.safe=typeof readSafeInsets==="function"?readSafeInsets():{l:12,t:12,r:12,b:12};
   layout.gameX=0;layout.gameY=0;layout.gameDrawW=SW;layout.gameDrawH=SH;

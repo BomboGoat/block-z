@@ -3,7 +3,7 @@
    own painted ground, minimap and walk grid (HELL_DATA). Thanos arrives with a cinematic, the hero
    picks ONE mega-power from 3 pedestals, and the fight is Thanos alone (no zombies). */
 var HELL={img:null,island:null,islandImg:null,building:0,active:0};
-(function(){try{var im=new Image();im.onload=function(){HELL.img=im;if(HELL.active&&typeof ART!=="undefined"){ART.arena=im;if(map){map.chunks={};}}};im.src="assets/env/hell.webp?v=20.5";}catch(e){}})();
+(function(){try{var im=new Image();im.onload=function(){HELL.img=im;if(HELL.active&&typeof ART!=="undefined"){ART.arena=im;if(map){map.chunks={};}}};im.src="assets/env/hell.webp?v=20.5.1";}catch(e){}})();
 var GEMS={
   power:{c:"#c77dff",n:"PODER"},space:{c:"#4d8dff",n:"ESPACIO"},reality:{c:"#ff2d4a",n:"REALIDAD"},
   soul:{c:"#ff9a1f",n:"ALMA"},time:{c:"#2fe37a",n:"TIEMPO"},mind:{c:"#ffe14a",n:"MENTE"}
@@ -613,7 +613,7 @@ function hellOpenExit(x,y){hellDropGlove(x,y);} /* legacy name */
 var FIN={rise0:0.6,rise1:2.0,aim0:1.7,aim1:2.4,slide0:2.45,lock:3.25,gem0:3.75,gemDt:0.42,burst:6.4,voice:6.9,raise0:10.15,raise1:10.9,insert:11.05,snap:12.45,white:13.0,done:13.7};
 FIN.soy=FIN.voice+1.48;FIN.name=FIN.voice+2.88;
 var SNAPIMG={pre:null,post:null};
-(function(){try{["pre","post"].forEach(function(k){var im=new Image();im.onload=function(){SNAPIMG[k]=im;};im.src="assets/spr/snap_"+k+".webp?v=20.5";});}catch(e){}})();
+(function(){try{["pre","post"].forEach(function(k){var im=new Image();im.onload=function(){SNAPIMG[k]=im;};im.src="assets/spr/snap_"+k+".webp?v=20.5.1";});}catch(e){}})();
 function heroName(p){return (HEROES.filter(function(x){return x.id===p.hero;})[0]||{}).name||"Héroe";}
 function hellPlayBuf(name,gain){
   try{
@@ -655,7 +655,7 @@ function finPower(T){
 /* v20.3.4: the ending close-up uses 2x super-resolved hero art (cut into its own rig) so the hero stays crisp at
    cinematic zoom; falls back to the game sprite until it has loaded */
 var FIN_HD={};
-function finHDLoad(name){if(FIN_HD[name]!==undefined)return;FIN_HD[name]=null;try{var im=new Image();im.onload=function(){FIN_HD[name]=im;};im.src="assets/spr/"+name+"_hd.webp?v=20.5";}catch(e){}}
+function finHDLoad(name){if(FIN_HD[name]!==undefined)return;FIN_HD[name]=null;try{var im=new Image();im.onload=function(){FIN_HD[name]=im;};im.src="assets/spr/"+name+"_hd.webp?v=20.5.1";}catch(e){}}
 var FIN_HDT={};
 function finHDImg(name,tint){var hd=FIN_HD[name];if(!hd)return null;if(!tint)return hd;
   var k=name+"|"+tint;if(FIN_HDT[k])return FIN_HDT[k];
@@ -756,6 +756,10 @@ function finCanvas(i){
   if(c.width!==w||c.height!==h){c.width=w;c.height=h;}
   return c;
 }
+var _finPrevBB=null;
+function finBox(ox,oy,H,M,c){var x0=Math.floor((ox-H*0.75)*M.a+M.e),x1=Math.ceil((ox+H*0.75)*M.a+M.e),y0=Math.floor((oy-H*1.4)*M.d+M.f),y1=Math.ceil((oy+H*0.25)*M.d+M.f);
+  x0=Math.max(0,x0);y0=Math.max(0,y0);x1=Math.min(c.width,x1);y1=Math.min(c.height,y1);return {x:x0,y:y0,w:Math.max(1,x1-x0),h:Math.max(1,y1-y0)};}
+function finBoxU(a,b){if(!b)return a;var x0=Math.min(a.x,b.x),y0=Math.min(a.y,b.y),x1=Math.max(a.x+a.w,b.x+b.w),y1=Math.max(a.y+a.h,b.y+b.h);return {x:x0,y:y0,w:x1-x0,h:y1-y0};}
 function finRot(px,py,ox,oy,a){var c=Math.cos(a),s=Math.sin(a),dx=px-ox,dy=py-oy;return {x:ox+dx*c-dy*s,y:oy+dx*s+dy*c};}
 /* draw part of a polyline network: segment list with cumulative distance (in hero heights) */
 function finVeinStroke(g,net,a,b,H,t,col,lw,alpha){
@@ -794,7 +798,10 @@ function finDrawStage(T,F,p,t){
   var armR=finKeys(FIN_ARM_R,T)+(T>FIN.lock?Math.sin(t*31)*0.02*trem:0),armL=finKeys(FIN_ARM_L,T)+Math.sin(t*27)*0.015*trem,headR=finKeys(FIN_HEAD,T);
   /* hero into an offscreen layer (mask for the energy, source for the aura) */
   var M=ctx.getTransform(),hc=finCanvas(0),hg=hc.getContext("2d");
-  hg.setTransform(1,0,0,1,0,0);hg.clearRect(0,0,hc.width,hc.height);hg.setTransform(M);
+  /* v20.5.1 perf: every offscreen pass (clear, tint, aura, veins, mask, blit) is limited to the hero's device-pixel box
+     (plus last frame's box for clearing) instead of the whole screen — same pixels, a fraction of the fill */
+  var BB=finBox(ox,oy,H,M,hc),BU=finBoxU(BB,_finPrevBB);_finPrevBB=BB;
+  hg.setTransform(1,0,0,1,0,0);hg.clearRect(BU.x,BU.y,BU.w,BU.h);hg.setTransform(M);
   var main=ctx,hand=null;ctx=hg;
   try{ctx.save();ctx.translate(ox,oy);
     var eh=finHD(e);ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";
@@ -810,16 +817,17 @@ function finDrawStage(T,F,p,t){
   var adx=hx-sR.x,ady=hy-sR.y,al=Math.sqrt(adx*adx+ady*ady)||1,ux=adx/al,uy=ady/al;
   /* aura: tinted silhouette, scaled up, additive, behind the hero */
   if(pw>0.02||F.flash>0){
-    var tc=finCanvas(1),tg=tc.getContext("2d");tg.setTransform(1,0,0,1,0,0);tg.globalCompositeOperation="source-over";tg.clearRect(0,0,tc.width,tc.height);tg.drawImage(hc,0,0);
-    tg.globalCompositeOperation="source-in";tg.fillStyle=pw>0.02?gt:"#ffd54f";tg.fillRect(0,0,tc.width,tc.height);tg.globalCompositeOperation="source-over";
+    var tc=finCanvas(1),tg=tc.getContext("2d");tg.setTransform(1,0,0,1,0,0);tg.globalCompositeOperation="source-over";tg.clearRect(BU.x,BU.y,BU.w,BU.h);
+    tg.save();tg.beginPath();tg.rect(BB.x,BB.y,BB.w,BB.h);tg.clip();tg.drawImage(hc,BB.x,BB.y,BB.w,BB.h,BB.x,BB.y,BB.w,BB.h);
+    tg.globalCompositeOperation="source-in";tg.fillStyle=pw>0.02?gt:"#ffd54f";tg.fillRect(BB.x,BB.y,BB.w,BB.h);tg.restore();tg.globalCompositeOperation="source-over";
     var ccx=ox*M.a+M.e,ccy=(oy-H*0.5)*M.d+M.f;
     ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalCompositeOperation="lighter";
     var sc2=[1.03,1.065,1.11],al2=[0.5,0.3,0.16];
     for(var si=0;si<3;si++){var ss=sc2[si]+0.012*Math.sin(t*11+si);ctx.globalAlpha=Math.min(1,(pw*0.9+F.flash*0.6)*al2[si]*(0.85+0.15*Math.sin(t*13+si*2)));
-      ctx.setTransform(ss,0,0,ss,ccx*(1-ss),ccy*(1-ss));ctx.drawImage(tc,0,0);}
+      ctx.setTransform(ss,0,0,ss,ccx*(1-ss),ccy*(1-ss));ctx.drawImage(tc,BB.x,BB.y,BB.w,BB.h,BB.x,BB.y,BB.w,BB.h);}
     ctx.restore();
   }
-  ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(hc,0,0);ctx.restore();
+  ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(hc,BB.x,BB.y,BB.w,BB.h,BB.x,BB.y,BB.w,BB.h);ctx.restore();
   /* energy veins + gem waves, masked to the body */
   if(T>FIN.lock-0.05&&R){
     var net=[],dC=0;
@@ -833,7 +841,8 @@ function finDrawStage(T,F,p,t){
     d=seg(C,Wt,dC,9);var dW=d;d=seg(Wt,hpL,dW,10);d=seg(hpL,knL,d,11);seg(knL,ftL,d,12);
     d=seg(Wt,hpR,dW,13);d=seg(hpR,knR,d,14);seg(knR,ftR,d,15);
     seg(sR,Wt,dC-0.05,16);seg(sL,{x:dX(0.42),y:dY(R.waist-0.02)},dC+0.1,17);
-    var ec=finCanvas(2),eg=ec.getContext("2d");eg.setTransform(1,0,0,1,0,0);eg.globalCompositeOperation="source-over";eg.clearRect(0,0,ec.width,ec.height);eg.setTransform(M);
+    var ec=finCanvas(2),eg=ec.getContext("2d");eg.setTransform(1,0,0,1,0,0);eg.globalCompositeOperation="source-over";eg.clearRect(0,0,ec.width,ec.height);
+    eg.save();eg.beginPath();eg.rect(BB.x,BB.y,BB.w,BB.h);eg.clip();eg.setTransform(M);
     eg.lineCap="round";eg.lineJoin="round";
     var reach=(T-FIN.lock)*1.1,base=0.15+0.85*pw,maxD=0;for(var ni=0;ni<net.length;ni++)maxD=Math.max(maxD,net[ni].d1);
     finVeinStroke(eg,net,0,reach,H,t,gt,H*0.045,0.3*base);
@@ -844,8 +853,8 @@ function finDrawStage(T,F,p,t){
       /* a band of the gem's colour sweeping up the whole body */
       var by=oy-H*(rw*0.55-0.05);if(by>oy-H*1.1&&by<oy+H*0.1){var bg=eg.createLinearGradient(0,by-H*0.09,0,by+H*0.09);bg.addColorStop(0,hexA(wv.c,0));bg.addColorStop(0.5,hexA(wv.c,0.55));bg.addColorStop(1,hexA(wv.c,0));eg.fillStyle=bg;eg.fillRect(ox-H,by-H*0.09,H*2,H*0.18);}}
     if(pw>0.05){var bgl=eg.createRadialGradient(C.x,C.y,0,C.x,C.y,H*0.6);bgl.addColorStop(0,hexA(gt,0.32*pw+0.1*Math.sin(t*10)*pw));bgl.addColorStop(1,hexA(gt,0.05*pw));eg.fillStyle=bgl;eg.fillRect(ox-H,oy-H*1.2,H*2,H*1.3);}
-    eg.setTransform(1,0,0,1,0,0);eg.globalCompositeOperation="destination-in";eg.drawImage(hc,0,0);eg.globalCompositeOperation="source-over";
-    ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalCompositeOperation="lighter";ctx.drawImage(ec,0,0);ctx.restore();
+    eg.setTransform(1,0,0,1,0,0);eg.globalCompositeOperation="destination-in";eg.drawImage(hc,BB.x,BB.y,BB.w,BB.h,BB.x,BB.y,BB.w,BB.h);eg.globalCompositeOperation="source-over";eg.restore();
+    ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalCompositeOperation="lighter";ctx.drawImage(ec,BB.x,BB.y,BB.w,BB.h,BB.x,BB.y,BB.w,BB.h);ctx.restore();
     /* sample points for the rising sparks */
     F.vpts.length=0;for(var vi=0;vi<net.length;vi++){var sg=net[vi];if(sg.d0>reach)continue;var uu=Math.random();F.vpts.push({x:sg.x0+(sg.x1-sg.x0)*uu,y:sg.y0+(sg.y1-sg.y0)*uu});}
   }
@@ -1131,14 +1140,16 @@ drawEventsOver=function(){if(_hellOver&&!HELL.active)_hellOver();hellDrawOver();
 var _hellAtmo=null;
 function hellAtmosphere(){
   var h=game.hell,t=game.time||0,i,e;
-  if(!_hellAtmo||_hellAtmo.w!==SW||_hellAtmo.h!==SH){
-    var c=document.createElement("canvas");c.width=Math.max(1,SW|0);c.height=Math.max(1,SH|0);var g=c.getContext("2d");
+  /* v20.5.1 perf: baked at device resolution and blitted 1:1 (was a CSS-size layer upscaled over the whole screen every frame) */
+  var M=ctx.getTransform(),dev=M.b===0&&M.c===0&&M.e===0&&M.f===0;
+  if(!_hellAtmo||_hellAtmo.w!==SW||_hellAtmo.h!==SH||_hellAtmo.k!==(dev?M.a:1)||(dev&&_hellAtmo.cw!==canvas.width)){
+    var k=dev?M.a:1,c=document.createElement("canvas");c.width=dev?canvas.width:Math.max(1,SW|0);c.height=dev?canvas.height:Math.max(1,SH|0);var g=c.getContext("2d");g.setTransform(k,0,0,dev?M.d:1,0,0);
     var gr=g.createLinearGradient(0,0,0,SH);gr.addColorStop(0,"rgba(255,70,20,0.22)");gr.addColorStop(0.35,"rgba(120,20,60,0.08)");gr.addColorStop(1,"rgba(60,0,60,0.16)");
     g.fillStyle=gr;g.fillRect(0,0,SW,SH);
     var rg=g.createRadialGradient(SW/2,SH/2,Math.min(SW,SH)*0.3,SW/2,SH/2,Math.max(SW,SH)*0.75);rg.addColorStop(0,"rgba(0,0,0,0)");rg.addColorStop(1,"rgba(40,0,20,0.4)");
-    g.fillStyle=rg;g.fillRect(0,0,SW,SH);_hellAtmo={c:c,w:SW,h:SH};
+    g.fillStyle=rg;g.fillRect(0,0,SW,SH);_hellAtmo={c:c,w:SW,h:SH,k:k,cw:canvas.width,dev:dev};
   }
-  ctx.drawImage(_hellAtmo.c,0,0);
+  if(_hellAtmo.dev){ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(_hellAtmo.c,0,0);ctx.setTransform(M);}else ctx.drawImage(_hellAtmo.c,0,0);
   ctx.save();ctx.globalCompositeOperation="lighter";
   for(i=0;i<h.embers.length;i++){e=h.embers[i];e.y-=e.v*0.016;if(e.y<-0.05){e.y=1.05;e.x=Math.random();}
     var x=e.x*SW+Math.sin(t*1.5+e.ph)*14,y=e.y*SH;ctx.globalAlpha=0.55+0.35*Math.sin(t*5+e.ph);ctx.fillStyle=i%3?"#ff8a3d":"#ffd27a";ctx.fillRect(x,y,e.s,e.s);}

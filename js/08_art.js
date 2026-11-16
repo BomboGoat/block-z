@@ -40,9 +40,9 @@ function artLoad(done){
       im.src=(ART.meta[k]&&ART.meta[k].file)||("assets/spr/"+k+".webp");
     })(keys[i]);
   };
-  mj.onerror=tick;mj.open("GET","assets/spr/meta.json?v=20.5");mj.send();
-  var mw=new Image();mw.onload=function(){ART.menuWide=mw;tick();};mw.onerror=tick;mw.src="assets/ui/menu-wide.webp?v=20.5";
-  var ar=new Image();ar.onload=function(){ART.arena=ar;if(map){map.chunks={};map.dirty=1;}tick();};ar.onerror=tick;ar.src="assets/env/arena.webp?v=20.5";
+  mj.onerror=tick;mj.open("GET","assets/spr/meta.json?v=20.5.1");mj.send();
+  var mw=new Image();mw.onload=function(){ART.menuWide=mw;tick();};mw.onerror=tick;mw.src="assets/ui/menu-wide.webp?v=20.5.1";
+  var ar=new Image();ar.onload=function(){ART.arena=ar;if(map){map.chunks={};map.dirty=1;}tick();};ar.onerror=tick;ar.src="assets/env/arena.webp?v=20.5.1";
 }
 function artEntry(look,dir,pose){
   if(!ART.ready||!ART.meta)return null;
@@ -244,8 +244,10 @@ function rigParts(name,img){
       bg.putImageData(bdF,0,0);})();
     for(si=0;si<2;si++){var a2=sides[si][0],cpx=a2.p[0]*iw,cpy=(a2.p[1]-0.025)*ih,rc=ih*(R.capR||0.095);
       var tc=cv(),tg=tc.getContext("2d");tg.drawImage(sides[si][1],0,0);tg.globalCompositeOperation="destination-in";
-      var rg=tg.createRadialGradient(cpx,cpy,0,cpx,cpy,rc);rg.addColorStop(0,"rgba(0,0,0,1)");rg.addColorStop(0.55,"rgba(0,0,0,1)");rg.addColorStop(1,"rgba(0,0,0,0)");
+      var rg=tg.createRadialGradient(cpx,cpy,0,cpx,cpy,rc);rg.addColorStop(0,"rgba(0,0,0,1)");rg.addColorStop(0.72,"rgba(0,0,0,1)");rg.addColorStop(1,"rgba(0,0,0,0)");
       tg.fillStyle=rg;tg.fillRect(0,0,iw,ih);
+      /* v20.5.1: the cap is the round top of the sleeve only; it fades out just below the pivot, so a raised arm never drags a blurry fringe out of the body */
+      var lg2=tg.createLinearGradient(0,cpy+ih*0.005,0,cpy+ih*0.055);lg2.addColorStop(0,"rgba(0,0,0,1)");lg2.addColorStop(1,"rgba(0,0,0,0)");tg.fillStyle=lg2;tg.fillRect(0,0,iw,ih);
       bg.drawImage(tc,0,0);var bx0=Math.max(0,Math.floor(cpx-rc)),by0=Math.max(0,Math.floor(cpy-rc)),bx1=Math.min(iw,Math.ceil(cpx+rc)),by1=Math.min(ih,Math.ceil(cpy+rc));tc._bb=[bx0,by0,Math.max(1,bx1-bx0),Math.max(1,by1-by0)];caps[si]=tc;}
     var ly0=Math.floor(ih*(R.waist-0.08)),bd4=bg.getImageData(0,0,iw,ih),b4=bd4.data,mid2=iw*0.5,c0=Math.floor(mid2-iw*0.16),c1=Math.ceil(mid2+iw*0.16),y,x,sp=new Float32Array(ih),gapY=ih,run2=0;
     for(y=ly0;y<ih;y++){var bestA=1e9,bc=-1;for(x=c0+1;x<c1-1;x++){var al=b4[(y*iw+x-1)*4+3]+b4[(y*iw+x)*4+3]*2+b4[(y*iw+x+1)*4+3];if(al<bestA||(al===bestA&&Math.abs(x-mid2)<Math.abs(bc-mid2))){bestA=al;bc=x;}}
@@ -324,7 +326,7 @@ function drawHeroRig(e,name,look,anim,pose,H,W,fx,fy,opts){
   function drawArm(side,rot){
     var a=side<0?R.L:R.R,c=side<0?P.L:P.R,px=dX(a.p[0]),py=dY(a.p[1]);
     var cap=side<0?P.capL:P.capR; /* v20.3.4: deltoid follows at half the angle, so a big raise keeps a rounded, filled shoulder */
-    if(cap&&Math.abs(rot)>0.12){var bb=cap._bb;ctx.save();ctx.translate(px,py);ctx.rotate(rot*0.5);ctx.drawImage(cap,bb[0],bb[1],bb[2],bb[3],dX(bb[0]/iw)-px,dY(bb[1]/ih)-py,W*bb[2]/iw,H*bb[3]/ih);ctx.restore();}
+    if(cap){var bb=cap._bb;ctx.save();ctx.translate(px,py);ctx.rotate(rot*0.5);ctx.drawImage(cap,bb[0],bb[1],bb[2],bb[3],dX(bb[0]/iw)-px,dY(bb[1]/ih)-py,W*bb[2]/iw,H*bb[3]/ih);ctx.restore();}
     var ab=c._bb;ctx.save();ctx.translate(px,py);ctx.rotate(rot);if(ab)ctx.drawImage(c,ab[0],ab[1],ab[2],ab[3],dX(ab[0]/iw)-px,dY(ab[1]/ih)-py,W*ab[2]/iw,H*ab[3]/ih);else ctx.drawImage(c,-px-W*fx,-py-H*fy,W,H);ctx.restore();
   }
   /* body bob, breathing and lean are applied by the caller; head adds lag */
