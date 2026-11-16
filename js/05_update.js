@@ -387,6 +387,7 @@ function updateCam(dt){
       tx+=clamp((b.x-p.x)*0.2,-vw*0.08,vw*0.08);
     }
   }
+  if(game.megaZoom){want=base*game.megaZoom.w;tx=p.x;ty=p.y-game.megaZoom.dy;k=1-Math.exp(-8*dt);} /* v20.3.3: mega-power transformation close-up */
   if(layout.viewW!==want){
     layout.viewW=want;
     layout.scale=layout.gameDrawW/layout.viewW;

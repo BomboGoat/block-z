@@ -552,7 +552,9 @@ function buildMap(seed){
   var i,p,list;
   map.zones=(D.zones||[]).slice();
   map.bushes=[];
-  (D.bushes||[]).forEach(function(b){map.bushes.push({x:b.x,y:b.y,w:b.w,d:b.d||b.h,h:b.h||14,k:"wheat",bush:1});});
+  (D.bushes||[]).forEach(function(b,bi){var o={x:b.x,y:b.y,w:b.w,d:b.d||b.h,h:b.h||14,k:"wheat",bush:1},m=typeof WHEAT_MASK!=="undefined"&&WHEAT_MASK[bi];
+    if(m){o.x=m.x;o.y=m.y;o.w=m.c*m.cs;o.d=m.r*m.cs;o.mask=m;} /* v20.3.3: field box = traced wheat bounds */
+    map.bushes.push(o);});
   function addAll(arr){
     if(!arr)return;
     for(i=0;i<arr.length;i++){p=arr[i];addSolid({k:p.k,x:p.x,y:p.y,w:p.w,d:p.d,h:p.h,canopy:p.canopy,treeKind:p.treeKind,shape:p.shape,cr:p.cr,top:p.top,side:p.side});}
@@ -854,8 +856,10 @@ function pickBossSpawn(p){
 }
 function zoneAt(x,y){
   var i,z,best=null,ba=1e15,a,t,n=10;
+  if(typeof inWheat==="function"&&inWheat(x,y)){var wz=null,wd=1e15;for(i=0;i<(map.zones||[]).length;i++){z=map.zones[i];if(z.k!=="wheat")continue;a=Math.abs(x-(z.x+z.w/2))+Math.abs(y-(z.y+(z.h||z.d||0)/2));if(a<wd){wd=a;wz=z;}}if(wz)return wz;}
   for(i=0;i<(map.zones||[]).length;i++){
     z=map.zones[i];
+    if((z.name==="Trigal"||z.k==="wheat")&&typeof inWheat==="function"&&!inWheat(x,y))continue; /* v20.3.3: only on the wheat itself */
     if(x>=z.x&&x<=z.x+z.w&&y>=z.y&&y<=z.y+(z.h||z.d||0)){
       a=z.w*(z.h||z.d||1);
       if(a<ba){ba=a;best=z;}
@@ -869,10 +873,20 @@ function zoneAt(x,y){
     return {k:"forest",name:"Bosque"};
   return {k:"path",name:"Camino"};
 }
+/* v20.3.3: the wheat zone is the painted wheat itself, not its bounding rectangle. Masks were traced from
+   arena.webp (2 world px cells, 1 cell eroded, top edge lowered by the stalk height) and are tested at the
+   feet point (entity x,y), so walking past the field no longer triggers the slow-down / stalks overlay. */
+var WHEAT_MASK=[{"x":179,"y":153,"c":89,"r":86,"cs":2,"b":"AAAAAAAAAAAgAAAAAAAAAAAAADgAAAAAAAAAAAADf7AAAAAAAAAAAAH/+AAAAAAAAAAAA//8AAAAAAAAAAAB//8AAAAAAAAAAAH///AAAAAAAAADD///+AAAAAAAAAfn///+AAAAAAAAT/P////QAAAAAAA///////4AAAAAAP///////4AAAAAAf///////4AAAAAA////////4AAAAAD////////wAAAAAH////////wAAAAAP////////gAAAAA/////////AAAAPH////////+AAAAff////////8AAAA//////////4AAAD/////////PgAAAP////////8MAAAT/////////4QAAB//////////wAAAH//////////AAAAP/////////8AAAAf////////fIAAAAf///////8YAAAAB////////4AAAAAH///////9wAAAAAH///////xAAAAAcf///////gAAAAM9////////AAAAA7////////+AAAAA/////////oAAAAB////////+AAAAAD////////wAAAAAH////////AAAAAAH///////+AAAAAAP///////4AAAAAAf///////wAAAAAZ///////+AAAAABz///////4AAAAAD3///////gAAAAAH///////+AAAAAAP///////8AAAAAAf///////4AAAAAA////////4AAAAAB////////wAAAAAD////////gAAAAAH////////gAAAAAP////////gAAAAAf////////gAAAAA/////////AAAAAB////////+AAAAAD/////////gAAAAH/////////gAAAAP/////////AAAAAf/////////AAAAA/////////+AAAAB/////////8AAAAD/////////4AAAAH/////////4AAAAP/////////gAAAAf/////////gAAAAf////////+AAAAA/////////4AAAAA/////////gAAAAA///////3gAAAAAB///////CAAAAAAD/////P8AAAAAAAD////8PIAAAAAAAH////4MAAAAAAAAP///34QAAAAAAAAP///HwAAAAAAAAAH//+HAAAAAAAAAAH//4eAAAAAAAAAAP//wcAAAAAAAAAAH//gQAAAAAAAAAAH/+AAAAAAAAAAAAf/4AAAAAAAAAAAA/54AAAAAAAAAAAA/hgAAAAAAAAAAAA/DAAAAAAAAAAAAAMAAAAAAAAAAAA"},{"x":769,"y":353,"c":55,"r":45,"cs":2,"b":"AAAAACAAAAAAAABAAAAAAAAB6AAAAAAAH/gAAAAAAX/wAAAAAAP/4gAAAAAH//4AAAAAn//9AAAAA////gAAAC////gAAAB////4AAGR////+AAH4////+AAD+/////gAB//////+AA///////AAf//////4AP//////8AP//////+AH///////wL///////4H///////8X///////+//////////////////f///////9v///////8X///////8D////////A////////Af///////AP//////3wD//////xwA3/////wgAB/////8AAA/////+AAAP/////AAAH///84AAAA3//8IAAAAB//+AAAAAAH//AAAAAABf/AAAAAAAGegAAAAAAAGAAAAAAAACAAAAAA=="}];
+(function(){for(var i=0;i<WHEAT_MASK.length;i++){var m=WHEAT_MASK[i],s=atob(m.b),u=new Uint8Array(s.length),j;for(j=0;j<s.length;j++)u[j]=s.charCodeAt(j);m.bits=u;}})();
+function wheatMaskAt(m,x,y){
+  var c=Math.floor((x-m.x)/m.cs),r=Math.floor((y-m.y)/m.cs);if(c<0||r<0||c>=m.c||r>=m.r)return 0;
+  var n=r*m.c+c;return (m.bits[n>>3]>>(7-(n&7)))&1;
+}
 function inWheat(x,y){
   var i,b=map.bushes;
   if(!b)return 0;
-  for(i=0;i<b.length;i++)if(b[i].k==="wheat"&&x>=b[i].x&&x<=b[i].x+b[i].w&&y>=b[i].y&&y<=b[i].y+b[i].d)return b[i];
+  for(i=0;i<b.length;i++){var f=b[i];if(f.k!=="wheat"||x<f.x||x>f.x+f.w||y<f.y||y>f.y+f.d)continue;
+    if(!f.mask||wheatMaskAt(f.mask,x,y))return f;}
   return 0;
 }
 function terrainSpeedMul(x,y){
