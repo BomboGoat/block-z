@@ -39,9 +39,9 @@ function artLoad(done){
       im.src=(ART.meta[k]&&ART.meta[k].file)||("assets/spr/"+k+".webp");
     })(keys[i]);
   };
-  mj.onerror=tick;mj.open("GET","assets/spr/meta.json?v=20.3.3");mj.send();
-  var mw=new Image();mw.onload=function(){ART.menuWide=mw;tick();};mw.onerror=tick;mw.src="assets/ui/menu-wide.webp?v=20.3.3";
-  var ar=new Image();ar.onload=function(){ART.arena=ar;if(map){map.chunks={};map.dirty=1;}tick();};ar.onerror=tick;ar.src="assets/env/arena.webp?v=20.3.3";
+  mj.onerror=tick;mj.open("GET","assets/spr/meta.json?v=20.3.4");mj.send();
+  var mw=new Image();mw.onload=function(){ART.menuWide=mw;tick();};mw.onerror=tick;mw.src="assets/ui/menu-wide.webp?v=20.3.4";
+  var ar=new Image();ar.onload=function(){ART.arena=ar;if(map){map.chunks={};map.dirty=1;}tick();};ar.onerror=tick;ar.src="assets/env/arena.webp?v=20.3.4";
 }
 function artEntry(look,dir,pose){
   if(!ART.ready||!ART.meta)return null;
@@ -149,7 +149,7 @@ var HERO_RIG={
   mr_f:{neck:0.33,waist:0.55,cut:0.64,black:1,L:{p:[0.17,0.38],poly:[[0.07,0.33],[0.25,0.32],[0.27,0.6],[0.27,0.77],[0,0.77],[0,0.45]]},
              R:{p:[0.80,0.39],poly:[[0.71,0.33],[0.86,0.35],[1,0.55],[1,0.70],[0.79,0.70],[0.78,0.55],[0.74,0.45]]}},
   gompa_f:{neck:0.30,waist:0.54,cut:0.5,grey:1,L:{p:[0.20,0.35],poly:[[0.06,0.28],[0.30,0.28],[0.31,0.5],[0.31,0.79],[0,0.79],[0,0.4]]},
-             R:{p:[0.80,0.33],poly:[[0.66,0.24],[0.86,0.29],[1,0.5],[1,0.68],[0.81,0.68],[0.76,0.5],[0.72,0.35]]}}
+             R:{p:[0.80,0.33],poly:[[0.71,0.27],[0.745,0.19],[0.89,0.23],[1,0.5],[1,0.68],[0.81,0.68],[0.76,0.5],[0.72,0.35]]}}
 };
 function rigParts(name,img){
   var key="_rig_"+name;if(img[key])return img[key];
@@ -204,7 +204,62 @@ function rigParts(name,img){
       var tp=tgt[3].data;if(tp[o2+3]<bp2[o2+3]){tp[o2]=bp2[o2];tp[o2+1]=bp2[o2+1];tp[o2+2]=bp2[o2+2];tp[o2+3]=bp2[o2+3];}bp2[o2+3]=0;}
     A[0][2].putImageData(A[0][3],0,0);A[1][2].putImageData(A[1][3],0,0);bg.putImageData(bd2,0,0);
   }catch(e){}
-  img[key]={body:body,L:L,R:Rr,iw:iw,ih:ih,rig:R};
+  /* v20.3.4: joints that never open. (1) Shoulder caps: the top of each arm, feathered, is baked into the body so a
+     swinging arm always rotates over its own shoulder instead of uncovering a hole in the torso. (2) Legs are split
+     along the real gap between them (no shared overlap strip below the crotch, which used to drag dark slivers of the
+     other leg along) and keep a soft shared overlap only above the crotch, where the pants are one piece. */
+  var legs=null,caps=[null,null];
+  try{
+    var sides=[[R.L,L],[R.R,Rr]],si;
+    /* (0a) thin contour slivers of an arm left in the body (they floated next to the torso when the arm swung) go to
+       that arm. (0b) the torso side the arm hid is rebuilt by mirroring the torso's own cloth outward (shaded), so a
+       swinging arm reveals body, not a hole or a streak. */
+    (function(){var oc=cv(),og=oc.getContext("2d");og.drawImage(img,0,0);var op=og.getImageData(0,0,iw,ih).data;
+      var bdF=bg.getImageData(0,0,iw,ih),bF=bdF.data,mk2=cv(),mg2=mk2.getContext("2d"),y,x,k,ai2,mid3=iw*0.5;
+      var fm=new Uint8Array(iw*ih);
+      for(ai2=0;ai2<2;ai2++){var A2=ai2?R.R:R.L,dir=ai2?-1:1,AC=(ai2?Rr:L).getContext("2d"),AD=AC.getImageData(0,0,iw,ih),AP=AD.data;
+        mg2.clearRect(0,0,iw,ih);mg2.strokeStyle="#fff";mg2.lineWidth=Math.max(4,iw*0.05);mg2.lineJoin="round";mg2.fillStyle="#fff";path(mg2,A2.poly);mg2.fill();mg2.stroke();var mp=mg2.getImageData(0,0,iw,ih).data;
+        var thin=Math.max(3,Math.round(iw*0.03)),yA=Math.floor(ih*(A2.p[1]-0.08)),yB=Math.min(ih-1,Math.ceil(ih*(R.waist+0.02)));
+        for(y=Math.max(0,yA);y<=yB;y++){var rs=-1;for(x=0;x<=iw;x++){var on=x<iw&&bF[(y*iw+x)*4+3]>24;
+          if(on&&rs<0)rs=x;else if(!on&&rs>=0){var len=x-rs,cxr=(rs+x)/2;if(len<=thin&&Math.abs(cxr-mid3)>iw*0.16&&mp[(y*iw+Math.round(cxr))*4+3]){
+              for(k=rs;k<x;k++){var o8=(y*iw+k)*4;if(AP[o8+3]<bF[o8+3]){AP[o8]=bF[o8];AP[o8+1]=bF[o8+1];AP[o8+2]=bF[o8+2];AP[o8+3]=bF[o8+3];}bF[o8+3]=0;}}rs=-1;}}}
+        AC.putImageData(AD,0,0);
+        var y0=Math.floor(ih*(A2.p[1]+0.05)),y1=Math.floor(ih*R.waist),maxD=Math.round(iw*0.06);
+        for(y=y0;y<=y1;y++){
+          var edge=-1;for(x=Math.round(mid3);ai2?x<iw:x>=0;x-=dir){if(bF[(y*iw+x)*4+3]<200){edge=x;break;}}
+          if(edge<0)continue;
+          var prof=Math.sin(Math.PI*Math.min(1,(y-y0+2)/(y1-y0+4))),mD=Math.max(2,Math.round(maxD*(0.25+0.75*prof)));
+          for(k=0;k<mD;k++){x=edge-dir*k;var xs=edge+dir*(k+2);if(x<0||x>=iw||xs<0||xs>=iw)break;var o7=(y*iw+x)*4,os=(y*iw+xs)*4;
+            if(op[o7+3]<40||bF[os+3]<200)break;if(bF[o7+3]>=230)continue;
+            var sh=0.8-0.2*(k/mD),fa=Math.min(1,(mD-k)/(mD*0.45))*Math.min(1,0.35+prof);bF[o7]=bF[os]*sh;bF[o7+1]=bF[os+1]*sh;bF[o7+2]=bF[os+2]*sh;bF[o7+3]=Math.max(bF[o7+3],255*fa);fm[y*iw+x]=1;}}}
+      /* soften the rebuilt cloth (2 box passes over the filled pixels only) so it reads as shaded fabric, not streaks */
+      var rad=Math.max(1,Math.round(iw*0.012));for(var pass=0;pass<2;pass++){var cp=new Uint8ClampedArray(bF);
+        for(y=0;y<ih;y++)for(x=0;x<iw;x++){if(!fm[y*iw+x])continue;var sr=0,sg=0,sb=0,sn=0,yy,xx;
+          for(yy=Math.max(0,y-rad);yy<=Math.min(ih-1,y+rad);yy++)for(xx=Math.max(0,x-rad);xx<=Math.min(iw-1,x+rad);xx++){var q2=(yy*iw+xx)*4;if(cp[q2+3]<200)continue;sr+=cp[q2];sg+=cp[q2+1];sb+=cp[q2+2];sn++;}
+          if(sn){var q3=(y*iw+x)*4;bF[q3]=sr/sn;bF[q3+1]=sg/sn;bF[q3+2]=sb/sn;}}}
+      bg.putImageData(bdF,0,0);})();
+    for(si=0;si<2;si++){var a2=sides[si][0],cpx=a2.p[0]*iw,cpy=(a2.p[1]-0.025)*ih,rc=ih*(R.capR||0.095);
+      var tc=cv(),tg=tc.getContext("2d");tg.drawImage(sides[si][1],0,0);tg.globalCompositeOperation="destination-in";
+      var rg=tg.createRadialGradient(cpx,cpy,0,cpx,cpy,rc);rg.addColorStop(0,"rgba(0,0,0,1)");rg.addColorStop(0.55,"rgba(0,0,0,1)");rg.addColorStop(1,"rgba(0,0,0,0)");
+      tg.fillStyle=rg;tg.fillRect(0,0,iw,ih);
+      bg.drawImage(tc,0,0);var bx0=Math.max(0,Math.floor(cpx-rc)),by0=Math.max(0,Math.floor(cpy-rc)),bx1=Math.min(iw,Math.ceil(cpx+rc)),by1=Math.min(ih,Math.ceil(cpy+rc));tc._bb=[bx0,by0,Math.max(1,bx1-bx0),Math.max(1,by1-by0)];caps[si]=tc;}
+    var ly0=Math.floor(ih*(R.waist-0.08)),bd4=bg.getImageData(0,0,iw,ih),b4=bd4.data,mid2=iw*0.5,c0=Math.floor(mid2-iw*0.16),c1=Math.ceil(mid2+iw*0.16),y,x,sp=new Float32Array(ih),gapY=ih,run2=0;
+    for(y=ly0;y<ih;y++){var bestA=1e9,bc=-1;for(x=c0+1;x<c1-1;x++){var al=b4[(y*iw+x-1)*4+3]+b4[(y*iw+x)*4+3]*2+b4[(y*iw+x+1)*4+3];if(al<bestA||(al===bestA&&Math.abs(x-mid2)<Math.abs(bc-mid2))){bestA=al;bc=x;}}
+      if(bestA<160){sp[y]=bc;run2++;if(run2===3&&gapY===ih)gapY=y-2;}else{sp[y]=-1;run2=0;}}
+    var last=mid2;for(y=ly0;y<ih;y++){if(sp[y]<0||y<gapY)sp[y]=(y<gapY?mid2:last);last=sp[y];}
+    var pad2=iw*0.07,LLc=cv(),LRc=cv(),gl2=LLc.getContext("2d"),gr2=LRc.getContext("2d"),dL=gl2.createImageData(iw,ih),dR=gr2.createImageData(iw,ih),pL=dL.data,pR=dR.data;
+    var wyc=ih*R.waist;for(y=ly0;y<ih;y++)for(x=0;x<iw;x++){var o4=(y*iw+x)*4,A4=b4[o4+3];if(!A4)continue;if(y<wyc&&Math.abs(x-mid2)>iw*0.2)continue;var wl,wr;
+      if(y<gapY){wl=clamp((mid2+pad2*1.6-x)/(pad2*0.8),0,1);wr=clamp((x-(mid2-pad2*1.6))/(pad2*0.8),0,1);}else{wl=x<sp[y]?1:0;wr=1-wl;}
+      if(wl>0){pL[o4]=b4[o4];pL[o4+1]=b4[o4+1];pL[o4+2]=b4[o4+2];pL[o4+3]=A4*wl;}
+      if(wr>0){pR[o4]=b4[o4];pR[o4+1]=b4[o4+1];pR[o4+2]=b4[o4+2];pR[o4+3]=A4*wr;}}
+    gl2.putImageData(dL,0,0);gr2.putImageData(dR,0,0);legs={L:LLc,R:LRc,y0:ly0,cy:gapY};
+  }catch(e){legs=null;}
+  /* v20.3.4: draw only each limb's bounding box (less raster work per frame than full-sprite canvases) */
+  function pbb(poly){var x0=1,y0=1,x1=0,y1=0;for(var i=0;i<poly.length;i++){x0=Math.min(x0,poly[i][0]);x1=Math.max(x1,poly[i][0]);y0=Math.min(y0,poly[i][1]);y1=Math.max(y1,poly[i][1]);}
+    var m=0.04,a=Math.max(0,Math.floor((x0-m)*iw)),b=Math.max(0,Math.floor((y0-m)*ih)),c=Math.min(iw,Math.ceil((x1+m)*iw)),d=Math.min(ih,Math.ceil((y1+m)*ih));return [a,b,Math.max(1,c-a),Math.max(1,d-b)];}
+  L._bb=pbb(R.L.poly);Rr._bb=pbb(R.R.poly);
+  if(legs){var lm=Math.floor(iw*0.5+iw*0.07*1.6+2);legs.L._bb=[0,legs.y0,Math.min(iw,lm),ih-legs.y0];var rm=Math.max(0,Math.floor(iw*0.5-iw*0.07*1.6-2));legs.R._bb=[rm,legs.y0,iw-rm,ih-legs.y0];}
+  img[key]={body:body,L:L,R:Rr,iw:iw,ih:ih,rig:R,legs:legs,capL:caps[0],capR:caps[1]};
   return img[key];
 }
 /* v20.3.1: split one not-yet-cached hero sprite per call (menu frames), so the first run/turn in-game never hitches */
@@ -225,7 +280,8 @@ function drawHeroRig(e,name,look,anim,pose,H,W,fx,fy,opts){
     var lf=run?Math.max(0,side<0?-c1:c1):0,hx=dX((mid+side*iw*0.11)/iw),hy=dY(waist),lift=lf*H*0.04;
     var bend=1-0.08*lf;
     ctx.save();ctx.translate(hx,hy-lift);ctx.rotate(ang);ctx.scale(1,bend);
-    ctx.drawImage(P.body,sx0,srcY,sw,srcH,dX(sx0/iw)-hx,dY(srcY/ih)-hy,W*(sw/iw),H*(srcH/ih));
+    if(P.legs){var lc=side<0?P.legs.L:P.legs.R,lb=lc._bb;ctx.drawImage(lc,lb[0],lb[1],lb[2],lb[3],dX(lb[0]/iw)-hx,dY(lb[1]/ih)-hy,W*lb[2]/iw,H*lb[3]/ih);}
+    else ctx.drawImage(P.body,sx0,srcY,sw,srcH,dX(sx0/iw)-hx,dY(srcY/ih)-hy,W*(sw/iw),H*(srcH/ih));
     ctx.restore();
   }
   /* arms: hanging angle 0; positive rotates the hand toward -x (back) in sprite space */
@@ -255,12 +311,16 @@ function drawHeroRig(e,name,look,anim,pose,H,W,fx,fy,opts){
   opts._armL=armL;opts._armR=armR; /* v20.3.3: mega overlays (repulsor palms) */
   function drawArm(side,rot){
     var a=side<0?R.L:R.R,c=side<0?P.L:P.R,px=dX(a.p[0]),py=dY(a.p[1]);
-    ctx.save();ctx.translate(px,py);ctx.rotate(rot);ctx.drawImage(c,-px-W*fx,-py-H*fy,W,H);ctx.restore();
+    var cap=side<0?P.capL:P.capR; /* v20.3.4: deltoid follows at half the angle, so a big raise keeps a rounded, filled shoulder */
+    if(cap&&Math.abs(rot)>0.12){var bb=cap._bb;ctx.save();ctx.translate(px,py);ctx.rotate(rot*0.5);ctx.drawImage(cap,bb[0],bb[1],bb[2],bb[3],dX(bb[0]/iw)-px,dY(bb[1]/ih)-py,W*bb[2]/iw,H*bb[3]/ih);ctx.restore();}
+    var ab=c._bb;ctx.save();ctx.translate(px,py);ctx.rotate(rot);if(ab)ctx.drawImage(c,ab[0],ab[1],ab[2],ab[3],dX(ab[0]/iw)-px,dY(ab[1]/ih)-py,W*ab[2]/iw,H*ab[3]/ih);else ctx.drawImage(c,-px-W*fx,-py-H*fy,W,H);ctx.restore();
   }
   /* body bob, breathing and lean are applied by the caller; head adds lag */
   var headY=run?Math.sin(ph*2-0.9)*H*0.012:Math.sin(t*2.2-0.6)*H*0.006,headR=run?-s1*0.03:Math.sin(t*1.1)*0.015;
   if(opts.headR)headR+=opts.headR;
   drawArm(1,armR);
+  if(P.legs&&run&&Math.abs(s1)>0.25){var cw0=Math.floor(iw*0.4),cx0=Math.floor(iw*0.3),cy0=Math.floor(ih*waist),ch0=Math.max(1,Math.min(ih,P.legs.cy+Math.ceil(ih*0.015))-cy0); /* static crotch under the swinging legs */
+    ctx.drawImage(P.body,cx0,cy0,cw0,ch0,dX(cx0/iw),dY(cy0/ih),W*(cw0/iw),H*(ch0/ih));}
   if(run&&s1>=0){leg(-1,aR);leg(1,aL);}else{leg(1,aL);leg(-1,aR);}
   var neckY=Math.floor(ih*R.neck),torsoBot=Math.min(ih,Math.ceil(ih*(waist+0.07)));
   var br=run?1:1+Math.sin(t*2.2)*0.014;
