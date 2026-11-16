@@ -176,11 +176,11 @@ function rngPick(rng,arr){return arr[(rng()*arr.length)|0];}
 function rngRange(rng,a,b){return a+rng()*(b-a);}
 var selectedHero="classic";
 var HEROES=[
-{id:"classic",name:"Eric",desc:"Equilibrado. Super Cañonazo: un abanico masivo con su arma.",hp:130,spd:100,dmg:100,wpn:"Pistola",col:"#1565c0"},
+{id:"classic",name:"Eric",desc:"Equilibrado. Super Cañonazo: abanico masivo de balas.",hp:130,spd:100,dmg:100,wpn:"Pistola",col:"#1565c0"},
 {id:"trueno",name:"Tro",desc:"Rayos en cadena y un láser dirigido.",hp:120,spd:105,dmg:115,wpn:"Rayos",col:"#ffd54f"},
 {id:"mr",name:"Mr.",desc:"Cuchillo ágil. Super: abanico de cuchillos en llamas.",hp:150,spd:115,dmg:100,wpn:"Cuchillo",col:"#37474f"},
 {id:"gompa",name:"Gompa",desc:"Culturista. Super Gigante: crece, salta y aplasta.",hp:175,spd:88,dmg:100,wpn:"Pesas",col:"#6d4c41"},
-{id:"neizan",name:"Neizan",desc:"Medio hombre, medio máquina. Escopeta de doble cañón: lenta pero devastadora. Super Minigun: 10 s de lluvia de balas.",hp:185,spd:92,dmg:120,wpn:"Escopeta doble",col:"#b71c1c"}
+{id:"neizan",name:"Neizan",desc:"Medio hombre, medio máquina. Super: Minigun 10 s.",hp:185,spd:92,dmg:120,wpn:"Escopeta doble",col:"#b71c1c"}
 ];
 function makePlayerLook(){return{kind:"player",hero:"classic",skin:"#d2a679",skinShadow:"#a67c52",skinLight:"#e8c4a0",hair:"#2c1810",brow:"#1a1008",eye:"#2e4a3e",eyeWhite:"#e8e4d9",hoodie:"#1565c0",hoodieDark:"#0d47a1",hoodieLight:"#42a5f5",pants:"#1a237e",pantsDark:"#0d1540",shoe:"#1a1a1a",cap:"#8b1a1a",capBrim:"#5c1010",stubble:1};}
 function makeHeroLook(id){
