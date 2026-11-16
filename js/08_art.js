@@ -177,8 +177,40 @@ function rigParts(name,img){
     for(j=3;j<bp.length;j+=4)if(md[j]>0&&bp[j]<235)bp[j]=0;
     bg.putImageData(bd,0,0);
   }catch(e){}
+  /* v20.3.1: islands. Pixels the polygon cut strands (cuff outlines, strap or shoulder slivers) used to float
+     next to the hip/shoulder once the arm swung away. Each arm keeps only its main piece (strays go back to the
+     body), then any body piece not connected to the main body moves to the arm whose polygon holds it. */
+  try{
+    var A=[[L,R.L],[Rr,R.R]],q=new Int32Array(iw*ih);
+    function comp(dat,seedFn){ /* label 8-connected opaque pixels; return Uint8Array keep-mask of the chosen component */
+      var lab=new Int32Array(iw*ih),n=0,best=0,bestN=0,sizes=[0],i0,qh,qt,k,x0,y0,dx,dy,nx,ny,ni;
+      for(i0=0;i0<iw*ih;i0++){if(lab[i0]||dat[i0*4+3]<24)continue;n++;lab[i0]=n;qh=0;qt=0;q[qt++]=i0;var cnt=0;
+        while(qh<qt){k=q[qh++];cnt++;x0=k%iw;y0=(k/iw)|0;
+          for(dy=-1;dy<=1;dy++)for(dx=-1;dx<=1;dx++){nx=x0+dx;ny=y0+dy;if(nx<0||ny<0||nx>=iw||ny>=ih)continue;ni=ny*iw+nx;if(!lab[ni]&&dat[ni*4+3]>=24){lab[ni]=n;q[qt++]=ni;}}}
+        sizes.push(cnt);}
+      var pick=seedFn?seedFn(lab):0;if(!pick){for(k=1;k<=n;k++)if(sizes[k]>bestN){bestN=sizes[k];best=k;}pick=best;}
+      var keep=new Uint8Array(iw*ih);for(k=0;k<iw*ih;k++)keep[k]=lab[k]===pick?1:(lab[k]?2:0);return keep;
+    }
+    var bd2=bg.getImageData(0,0,iw,ih),bp2=bd2.data,ai,ad,ap,keep,j2;
+    for(ai=0;ai<2;ai++){var ac=A[ai][0].getContext("2d");ad=ac.getImageData(0,0,iw,ih);ap=ad.data;keep=comp(ap);
+      for(j2=0;j2<iw*ih;j2++)if(keep[j2]===2){var o=j2*4,sa=ap[o+3]/255,da=bp2[o+3]/255,oa=sa+da*(1-sa);
+        if(oa>0){bp2[o]=(ap[o]*sa+bp2[o]*da*(1-sa))/oa;bp2[o+1]=(ap[o+1]*sa+bp2[o+1]*da*(1-sa))/oa;bp2[o+2]=(ap[o+2]*sa+bp2[o+2]*da*(1-sa))/oa;bp2[o+3]=oa*255;}
+        ap[o+3]=0;}
+      ac.putImageData(ad,0,0);A[ai].push(ac,ad);}
+    keep=comp(bp2,function(lab){var sx=[0.5,0.5,0.45,0.55],sy=[0.45,0.3,0.5,0.5],m;for(m=0;m<4;m++){var v=lab[Math.floor(sy[m]*ih)*iw+Math.floor(sx[m]*iw)];if(v)return v;}return 0;});
+    var mL=document.createElement("canvas");mL.width=iw;mL.height=ih;var gL=mL.getContext("2d");gL.fillStyle="#fff";path(gL,R.L.poly);gL.fill();var mLd=gL.getImageData(0,0,iw,ih).data;
+    gL.clearRect(0,0,iw,ih);path(gL,R.R.poly);gL.fill();var mRd=gL.getImageData(0,0,iw,ih).data;
+    for(j2=0;j2<iw*ih;j2++)if(keep[j2]===2){var o2=j2*4,tgt=mLd[o2+3]?A[0]:mRd[o2+3]?A[1]:null;if(!tgt)continue;
+      var tp=tgt[3].data;if(tp[o2+3]<bp2[o2+3]){tp[o2]=bp2[o2];tp[o2+1]=bp2[o2+1];tp[o2+2]=bp2[o2+2];tp[o2+3]=bp2[o2+3];}bp2[o2+3]=0;}
+    A[0][2].putImageData(A[0][3],0,0);A[1][2].putImageData(A[1][3],0,0);bg.putImageData(bd2,0,0);
+  }catch(e){}
   img[key]={body:body,L:L,R:Rr,iw:iw,ih:ih,rig:R};
   return img[key];
+}
+/* v20.3.1: split one not-yet-cached hero sprite per call (menu frames), so the first run/turn in-game never hitches */
+function rigWarm(hero){
+  if(typeof makeHeroLook!=="function")return;var look=makeHeroLook(hero),d,ps=["idle","walk","atk"],k,e;
+  for(d=0;d<8;d++)for(k=0;k<3;k++){e=artEntry(look,d,ps[k]);if(e&&e.img&&HERO_RIG[e.name]&&(e.img.naturalWidth||e.img.width)&&!e.img["_rig_"+e.name]){rigParts(e.name,e.img);return;}}
 }
 function drawHeroRig(e,name,look,anim,pose,H,W,fx,fy,opts){
   var P=rigParts(name,e.img),R=P.rig,iw=P.iw,ih=P.ih,t=(game&&game.time)||0;
@@ -204,15 +236,20 @@ function drawHeroRig(e,name,look,anim,pose,H,W,fx,fy,opts){
   var la=flip<0?Math.PI-sa:sa;la=Math.atan2(Math.sin(la),Math.cos(la));
   var aimRot=clamp(la-Math.PI/2,-2.6,0.5);   /* rotation that points the hanging arm at the target */
   var gun=opts.wpn&&opts.wpn!=="bell"&&opts.wpn!=="bolt"&&opts.wpn!=="knife"&&opts.wpn!=="fist"&&opts.wpn!=="machete";
-  if(gun){armR=aimRot+(opts.muzzle>0?0.18*Math.max(0,1-atk*2.5):0)+(run?s1*0.05:0);if(opts.twoHand)armL=aimRot*0.8+0.15;}
+  if(gun){armR=aimRot+(opts.muzzle>0?0.18*Math.max(0,1-atk*2.5):0)+(run?s1*0.05:0);
+    /* v20.3.1: the off-hand used to swing ~60 deg across the chest toward the gun (it can't reach it from the near
+       shoulder), leaving a fist floating on the belly. Now it stays attached and relaxed: a small brace toward the
+       aim, a twitch with the recoil, and a reduced counter-swing while running. */
+    var brace=clamp(aimRot*0.16,-0.26,0.08)-(opts.muzzle>0?0.06*Math.max(0,1-atk*2.5):0);
+    armL=run?armL*0.55+brace*0.5:brace+Math.sin(t*2.2)*0.035;}
   else if(hero==="mr"&&opts.wpn){ /* knife: held low and ready, wind back then whip the throw */
     var rest=-0.35+(run?armR*0.6:0);
     armR=atk>0?(atk<0.3?rest+0.9*(atk/0.3):rest+0.9+(aimRot-rest-0.9)*Math.min(1,(atk-0.3)/0.25)):rest;
   }else if(hero==="gompa"){ /* dumbbells: heavy swing, both arms smash toward the target on attack */
     armL*=0.8;armR*=0.8;
-    if(atk>0){var k=atk<0.35?-(atk/0.35)*0.7:-0.7+((atk-0.35)/0.65)*1.7*Math.max(0,1-(atk-0.6)*1.4);armR=aimRot*Math.min(1,atk*2.2)+k*0.4;armL=aimRot*0.7*Math.min(1,atk*2.2);}
+    if(atk>0){var k=atk<0.35?-(atk/0.35)*0.7:-0.7+((atk-0.35)/0.65)*1.7*Math.max(0,1-(atk-0.6)*1.4);armR=aimRot*Math.min(1,atk*2.2)+k*0.4;armL=clamp(aimRot*0.3,-0.5,0.15)*Math.min(1,atk*2.2)+armL*(1-Math.min(1,atk*2.2));} /* v20.3.1: off-arm pumps forward instead of crossing the chest */
   }else if(hero==="trueno"){ /* lightning hands: arms thrust to the target while casting */
-    if(atk>0||opts.laser){var u=opts.laser?1:Math.min(1,atk*3);armR=armR+(aimRot-armR)*u;armL=armL+(aimRot*0.85-armL)*u;}
+    if(atk>0||opts.laser){var u=opts.laser?1:Math.min(1,atk*3);armR=armR+(aimRot-armR)*u;armL=armL+(clamp(aimRot*0.3,-0.48,0.12)-armL)*u;} /* v20.3.1: off-hand braces, no chest cross */
   }
   if(opts.armR!=null)armR=opts.armR;if(opts.armL!=null)armL=opts.armL; /* v20.3: posed by the ending cinematic */
   function drawArm(side,rot){

@@ -128,6 +128,7 @@ var _menuPrevState=null,_trailT=0;
 function menuGameTick(dt){
   if(!game)return;
   var st=game.state;
+  if(MENU_ST[st]&&typeof rigWarm==="function"&&typeof selectedHero!=="undefined")rigWarm(selectedHero);
   if(st!==_menuPrevState){
     if(st==="playing"&&(_menuPrevState==="select"||_menuPrevState==="countdown"&&!MENU.runLive)){}
     if(st==="dead")profRunEnd("dead");
