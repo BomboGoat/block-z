@@ -1,8 +1,8 @@
 /* v20 temporary round events */
+/* v20.3.3: the bridge flood ("riada") event was removed */
 var EVENT_DEFS={
   tormenta:{name:"Tormenta",banner:"¡Tormenta!",icon:"⚡",mild:0,dur:[16,24],col:"#90caf9"},
   fuego:{name:"Fuego en el trigal",banner:"¡El trigal arde!",icon:"🔥",mild:0,dur:[16,24],col:"#ff8a50"},
-  riada:{name:"Riada",banner:"¡Riada en el puente!",icon:"🌊",mild:0,dur:[14,20],col:"#4fc3f7"},
   caja:{name:"Caja de suministros",banner:"¡Caja de suministros!",icon:"📦",mild:1,dur:[20,28],col:"#ffd54f"},
   luna:{name:"Luna de sangre",banner:"¡Luna de sangre!",icon:"🔴",mild:0,dur:[18,26],col:"#e53935"},
   tesoro:{name:"Tesoro",banner:"¡Tesoro en las ruinas!",icon:"💎",mild:1,dur:[20,28],col:"#ffe082"}
@@ -106,14 +106,12 @@ function blockStoneBridge(){
 function activateEvent(ev){
   ev.alive=1;ev.t=ev.dur;
   game.eventBanner=ev.banner;game.eventIcon=ev.icon||(ev.def&&ev.def.icon)||"";game.eventBannerT=2.4;
-  if(ev.id==="riada"){blockStoneBridge();if(typeof sfx==="function")sfx("splash");}
   if(ev.id==="tormenta"||ev.id==="luna"){if(typeof sfx==="function")sfx("storm");}
   if(ev.id==="fuego"&&ev.field){ev.field.burned=1;game._burnedWheat=ev.field;if(typeof fireStart==="function")fireStart(ev);else if(typeof sfx==="function")sfx("explode");}
   if(ev.id==="caja"||ev.id==="tesoro"){if(typeof sfx==="function")sfx("sting");}
 }
 function endEvent(ev){
   ev.alive=0;
-  if(ev.id==="riada")restoreBridges();
   if(ev.id==="fuego"&&ev.field){/* stays burned until next round begins */if(typeof stopFireLoop==="function")stopFireLoop();}
 }
 function strikeLightning(x,y){
@@ -155,12 +153,12 @@ function updateEvents(dt){
       }
     }
     if(ev.id==="fuego"&&ev.field&&p){
-      if(p.x>ev.field.x&&p.x<ev.field.x+ev.field.w&&p.y>ev.field.y&&p.y<ev.field.y+ev.field.d){
+      if(inWheat(p.x,p.y)===ev.field){
         ev._ph=(ev._ph||0)+dt;if(ev._ph>0.35){ev._ph=0;if(typeof hurtPlayer==="function")hurtPlayer(7);}
       }
       if(game.zombies)for(j=0;j<game.zombies.length;j++){
         z=game.zombies[j];if(z.dead||z.dying)continue;
-        if(z.x>ev.field.x&&z.x<ev.field.x+ev.field.w&&z.y>ev.field.y&&z.y<ev.field.y+ev.field.d){
+        if(inWheat(z.x,z.y)===ev.field){
           z._fh=(z._fh||0)+dt;if(z._fh>0.3){z._fh=0;if(typeof hurtZombie==="function")hurtZombie(z,14,z.x);}
         }
       }
@@ -213,12 +211,6 @@ function drawEventsUnder(){
       ctx.globalAlpha=0.28+0.1*Math.sin((game.time||0)*8);
       ctx.fillStyle="#ff5722";ctx.fillRect(s.x,s.y,w,h);
       ctx.globalAlpha=0.18;ctx.fillStyle="#ffeb3b";ctx.fillRect(s.x+4,s.y+4,w-8,h-8);ctx.globalAlpha=1;
-    }
-    if(ev.id==="riada"&&game._floodBridge){
-      p=game._floodBridge;s=toScreen(p.x-8,p.y-8);
-      ctx.globalAlpha=0.4+0.12*Math.sin((game.time||0)*3);
-      ctx.fillStyle="#29b6f6";fillEllipse(ctx,s.x+(p.w*sc)/2,s.y+(p.h*ys*sc)/2,(p.w+24)*sc*0.5,(p.h+20)*ys*sc*0.5);
-      ctx.globalAlpha=1;
     }
     if((ev.id==="caja"||ev.id==="tesoro")&&!ev.picked){
       s=toScreen(ev.x,ev.y);
