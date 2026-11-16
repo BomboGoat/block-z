@@ -832,6 +832,7 @@ function drawWeapon34(c,hx,hy,ang,wpn,sc,muzzle,skin,two){
     c.restore();
     body(-2*sc,-1.6*sc,8*sc,3.2*sc,1.4,"#1565c0","#0d47a1");
   }else if(wpn==="fist"){
+    lw=Math.max(1,lw*0.42); /* v20.4: the outline was thicker than the fingers, so the fist read as a black blob */
     palm(0,0,5.2*sc,5.6*sc);
     var i;for(i=0;i<4;i++)fing(3.4*sc,(i-1.5)*2.1*sc,2.4*sc,1.5*sc);
     fing(-3.2*sc,-1.6*sc,1.8*sc,2.4*sc);

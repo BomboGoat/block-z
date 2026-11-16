@@ -310,6 +310,18 @@ Ruin wall cut-out (assets/env/ruin_occ.webp): an alpha mask cut in-house from th
 Menu, hero rig animation, unlocks and achievements are drawn in code from the existing
   Block Z sprites; menu sounds reuse the existing licensed SFX above.
 
+v20.4 additions
+---------------
+Neizan minigun (assets/sfx/minigun_loop.mp3, minigun_stop.mp3): "M61A2 Minigun" by Seidhepriest,
+  freesound.org #611449, CC0. Loop cut from the real recording with a crossfade; the stop is its tail.
+Neizan minigun spin-up (assets/sfx/minigun_spin.mp3): "Minigun Motor Loop" by Bratish, freesound.org
+  #500198, CC0, pitch-ramped as a spin-up.
+Neizan double-barrel shot (assets/sfx/neizan_shot.mp3): "shotgun close" by CeebFrack, freesound.org
+  #108794, CC0, layered with the existing shotgun recording and bass-boosted.
+Neizan final line (assets/sfx/final_voice_neizan.mp3): Microsoft Edge neural TTS (es-ES-AlvaroNeural),
+  slowed, pitched down, with a light flanger and echo for the half-machine voice.
+Neizan sprite (assets/spr/neizan_f.webp, neizan_f_hd.webp): generated for Block Z and cut out in-house.
+
 CC0: https://creativecommons.org/publicdomain/zero/1.0/
 CC-BY 3.0: https://creativecommons.org/licenses/by/3.0/
 CC-BY 4.0: https://creativecommons.org/licenses/by/4.0/

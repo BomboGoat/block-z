@@ -6,6 +6,7 @@ function applyHero(p,id){
   id=id||"classic";p.hero=id;p.look=makeHeroLook(id);
   if(id==="trueno"){p.weapon="bolt";p.fireCooldown=0.42;p.maxHp=120;p.hp=120;p.speedMul=1.05;p.damageMul=1.1;}
   else if(id==="mr"){p.weapon="knife";p.hasMelee=1;p.meleeRange=88;p.meleeDmg=14;p.fireCooldown=0.42;p.maxHp=150;p.hp=150;p.speedMul=1.15;p.armorMul=0.92;}
+  else if(id==="neizan"){p.weapon="dbshot";p.fireCooldown=1.05;p.maxHp=185;p.hp=185;p.speedMul=0.92;p.armorMul=0.88;p.damageMul=1;p.twoHand=1;}
   else if(id==="gompa"){p.weapon="fist";p.meleeRange=86;p.meleeDmg=16;p.fireCooldown=0.5;p.maxHp=175;p.hp=175;p.speedMul=0.88;p.damageMul=1;}
   else {p.weapon="pistol";p.maxHp=130;p.hp=130;p.fireCooldown=CFG.FIRE_COOLDOWN;if(typeof applyEricWeapon==="function")applyEricWeapon(p,"pistol");}
 }
@@ -69,7 +70,7 @@ function truenoLaserLen(p){var vw=(typeof layout!=="undefined"&&layout.viewW)||4
 function explodeAt(x,y,r,dmg,opts){
   opts=opts||{};
   var i,z,p=game.player;
-  for(i=0;i<game.zombies.length;i++){z=game.zombies[i];if(z.dead||z.dying)continue;if(dist(x,y,z.x,z.y)<r+z.r)hurtZombie(z,dmg,x,0,{});}
+  for(i=0;i<game.zombies.length;i++){z=game.zombies[i];if(z.dead||z.dying)continue;if(dist(x,y,z.x,z.y)<r+z.r){hurtZombie(z,dmg,x,0,{});if(opts.knock&&typeof zKnock==="function")zKnock(z,{vx:z.x-x,vy:z.y-y,knock:opts.knock});}}
   if(!opts.friendly&&p&&dist(x,y,p.x,p.y)<r+p.r)hurtPlayer(p,dmg*0.5);
   sfx("explode");
   if(typeof gfxBoom==="function")gfxBoom(x,y,r);else for(i=0;i<10;i++)addParticle(x,y,"#ff9800",0.4,rand(-140,140),rand(-140,140),5,2);
@@ -89,6 +90,7 @@ function findNearestZombie(p,range,fast){
 }
 function heroRange(p){
   if(p.weapon==="knife"||(p.hasMelee&&p.hero==="mr"))return (p.meleeRange||88)*(p.rangeMul||1)*(p.wideSlash?1.25:1)*1.2;
+  if(p.weapon==="dbshot")return 232*(p.rangeMul||1); /* v20.4: Neizan only opens fire inside shotgun range */
   return CFG.AUTO_RANGE*(p.rangeMul||1)*(typeof eventAutoRangeMul==='function'?eventAutoRangeMul():1);
 }
 function zigPts(ax,ay,bx,by,n){
@@ -111,6 +113,7 @@ function heroHandLiftPx(p){
     if(p.hero==="trueno")name=(p.laserT>0)?"trueno_laser_f":"trueno_f";
     else if(p.hero==="mr")name="mr_f";
     else if(p.hero==="gompa")name="gompa_f";
+    else if(p.hero==="neizan")name="neizan_f";
   }
   if(typeof ART!=="undefined"&&ART.meta&&ART.meta[name]){
     var m=ART.meta[name];
@@ -119,6 +122,12 @@ function heroHandLiftPx(p){
   }
   return Math.max(12,(fy-hy)*H);
 }
+/* v20.4: the super's real cost (Super rápido makes it 25% cheaper; it used to cap the bar below the cost, so the super never fired) */
+/* v20.4: pooled bullets come back clean (stale knife/pierce flags leaked into later shots) */
+function newBullet(){var b=bulletPool.pop(),k;if(!b)return{};for(k in b)b[k]=undefined;return b;}
+function superCost(p){return CFG.SUPER_COST*((p&&p.superCD)?0.75:1);}
+/* v20.4: Berserker and Sed de sangre apply to every hero's attack (they only worked for Eric and Tro) */
+function atkMul(p){var m=1;if(p.berserk&&p.hp/p.maxHp<0.4)m*=1.5;if(p.bloodlust)m*=(1+0.04*(p.bloodStacks||0));return m;}
 function markAttack(p,kind,t){
   t=t||0.2;p.atkT=t;p.atkMax=t;p.atkKind=kind||"atk";
 }
@@ -158,13 +167,16 @@ function fireLightning(p,first){
 }
 function fireGompa(p,n){
   p.aimAng=Math.atan2(n.y-p.y,n.x-p.x);p.recoil=0.5;p.meleeSwing=0.22;markAttack(p,"throw",0.22);
-  var spd=400,b=bulletPool.pop()||{},ho=heroHandWorld(p,p.aimAng);
-  b.x=ho.x;b.y=ho.y;b.lift=heroHandLiftPx(p);
-  b.vx=Math.cos(p.aimAng)*spd;b.vy=Math.sin(p.aimAng)*spd;b.r=7;
-  b.damage=(16+(p.heavyBell?5:0))*p.damageMul;b.life=1.15*(p.rangeMul||1);
-  b.pierce=0;b.bounce=0;b.bell=1;b.spinA=Math.random()*6;b.spinV=16;b.hit=new Set();
-  if(p.fireAmmo)b.fire=1;if(p.iceAmmo)b.ice=1;if(p.poisonAmmo)b.poison=1;
-  game.bullets.push(b);sfx("grunt");
+  /* v20.4: Doble pesa (extra dumbbells in a small fan), Berserker/Sed de sangre, Onda rítmica every 4th throw */
+  var spd=400,ho=heroHandWorld(p,p.aimAng),k=1+(p.extraShots|0),i,lift=heroHandLiftPx(p),dmg=(16+(p.heavyBell?5:0))*p.damageMul*atkMul(p);
+  for(i=0;i<k;i++){var a=p.aimAng+(k===1?0:(i/(k-1)-0.5)*0.22*(k-1)),b=newBullet();
+    b.x=ho.x;b.y=ho.y;b.lift=lift;b.vx=Math.cos(a)*spd;b.vy=Math.sin(a)*spd;b.r=7;
+    b.damage=dmg;b.life=1.15*(p.rangeMul||1);
+    b.pierce=0;b.bounce=0;b.bell=1;b.spinA=Math.random()*6;b.spinV=13+Math.random()*4;b.hit=new Set();b.heavy=p.heavyBell?1:0;
+        if(p.fireAmmo)b.fire=1;if(p.iceAmmo)b.ice=1;if(p.poisonAmmo)b.poison=1;
+    game.bullets.push(b);}
+  sfx("grunt");
+  if(typeof maybeShockN==="function")maybeShockN(p);
 }
 function fireMeleeHero(p,n){
   var range=(p.meleeRange||100)*(p.rangeMul||1)*(p.wideSlash?1.3:1);
@@ -175,6 +187,7 @@ function fireMeleeHero(p,n){
   var ho=heroHandWorld(p,p.aimAng);
   game.slashes.push({x:ho.x,y:ho.y,ang:p.aimAng,r:range*0.7,life:0.18,maxLife:0.18,lift:heroHandLiftPx(p)});
   sfx("whoosh");sfx("slash");
+  if(typeof maybeKnifeFan==="function")maybeKnifeFan(p); /* v20.4: Abanico now actually fires */
 }
 var ERIC_WPN={
   pistol:{cd:0.38,dmg:12,spd:624,r:2.2,kind:"pistol"},
@@ -188,7 +201,7 @@ function applyEricWeapon(p,id){
   var w=ERIC_WPN[id];if(!w)return;
   p.weapon=id;p.wpnLv=p.wpnLv||{};if(!p.wpnLv[id])p.wpnLv[id]=1;
   var lv=p.wpnLv[id],mul=Math.pow(1.14,lv-1);
-  p.fireCooldown=Math.max(0.08,w.cd*Math.pow(0.96,lv-1));
+  p.fireCooldown=Math.max(0.08,w.cd*Math.pow(0.96,lv-1)*(p.cdMul||1)); /* v20.4: Cadencia/heavy/tanky cards survive weapon swaps */
   p.wpnBaseDmg=w.dmg*mul;p.wpnSpd=w.spd;p.wpnR=w.r;p.wpnSpread=w.spread||0;
   p.pellets=(w.pellets||0)?(w.pellets+Math.max(0,lv-1)):0;
   p.wpnSplash=w.splash?w.splash*mul:0;p.wpnRad=w.rad||0;
@@ -205,8 +218,8 @@ function fireWeapon(p){
   if(p.weapon==="bolt"){if(!nearest)return;fireLightning(p,nearest);return;}
   if(p.weapon==="fist"){if(!nearest)return;fireGompa(p,nearest);return;}
   if(p.weapon==="knife"||(p.hasMelee&&p.hero==="mr")){if(!nearest)return;fireMeleeHero(p,nearest);return;}
-  if(!nearest&&!p.hasMelee)return;
-  if(p.hasMelee&&(!nearest||dist(p.x,p.y,nearest.x,nearest.y)<p.meleeRange*0.9)){p.meleeSwing=0.28;p.aimAng=nearest?Math.atan2(nearest.y-p.y,nearest.x-p.x):p.aimAng;sfx("melee");return;}
+  if(!nearest)return;
+  if(p.hasMelee&&nearest&&dist(p.x,p.y,nearest.x,nearest.y)<p.meleeRange*0.9){p.meleeSwing=0.28;p.swingDone=0;markAttack(p,"slash",0.28);p.aimAng=nearest?Math.atan2(nearest.y-p.y,nearest.x-p.x):p.aimAng;sfx("melee");return;}
   if(!nearest)return;
   var dx=nearest.x-p.x,dy=nearest.y-p.y;p.aimAng=Math.atan2(dy,dx);p.recoil=1;p.muzzle=0.12;markAttack(p,"shoot",0.16);if(typeof ejectShell==="function")ejectShell(p);
   var ho=heroHandWorld(p,p.aimAng),originX=ho.x,originY=ho.y,handLift=heroHandLiftPx(p);
@@ -215,7 +228,7 @@ function fireWeapon(p){
   if(p.bloodlust)dmg*=(1+0.04*p.bloodStacks);
   if(p.weapon==="gl"){
     sfx("shot_gl");
-    var gb=bulletPool.pop()||{};
+    var gb=newBullet();
     gb.x=originX;gb.y=originY;gb.lift=handLift;gb.vx=Math.cos(p.aimAng)*spd;gb.vy=Math.sin(p.aimAng)*spd;gb.r=p.wpnR||6;
     gb.damage=dmg;gb.life=1.15*(p.rangeMul||1);gb.pierce=0;gb.bounce=0;
     gb.gl=1;gb.spinA=0;gb.spinV=8;gb.expl=1;gb.explR=p.wpnRad||72;gb.explDmg=p.wpnSplash||dmg*0.65;gb.hit=new Set();
@@ -230,7 +243,7 @@ function fireWeapon(p){
   if(p.fireAmmo)p.fireTimer+=0.04;
   for(var i=0;i<shots;i++){
     var t=shots===1?0:(i/(shots-1)-0.5),ang=p.aimAng+t*spread;
-    var b=bulletPool.pop()||{};
+    var b=newBullet();
     b.x=originX;b.y=originY;b.lift=handLift;b.vx=Math.cos(ang)*spd;b.vy=Math.sin(ang)*spd;b.r=p.wpnR||(p.weapon==="shotgun"?2.8:2.2);
     b.damage=dmg;b.life=CFG.BULLET_LIFE*(p.rangeMul||1);b.pierce=p.pierce;b.bounce=p.bounce?2:0;
     b.fire=p.fireAmmo;b.ice=p.iceAmmo;b.poison=p.poisonAmmo;b.expl=p.explosiveAmmo;b.hit=new Set();
@@ -263,10 +276,11 @@ function hurtZombie(z,dmg,fromX,noChain,opts){if(game&&game.player&&game.player.
     if(typeof addBlood==="function")addBlood(z.x,z.y,z.hp<=0?7:2);
   }
   if(z.isBoss&&typeof gfxHitStop==="function")gfxHitStop(0.05,"big");
-  p.super=Math.min(CFG.SUPER_COST*(p.superCD?0.75:1),(p.super||0)+Math.min(12,dmg*0.25)*(p.superCharge?1.35:1));
+  p.super=Math.min(superCost(p),(p.super||0)+Math.min(12,dmg*0.25)*(p.superCharge?1.35:1));
   if(p.lifesteal)p.hp=Math.min(p.maxHp,p.hp+dmg*p.lifesteal);
   if(p.sparkOnHit&&!noChain){for(var i=0;i<game.zombies.length;i++){var o=game.zombies[i];if(o!==z&&!o.dead&&!o.dying&&dist(z.x,z.y,o.x,o.y)<50)hurtZombie(o,dmg*0.2,z.x,1,{quiet:1,noCrit:1});}}
-  if(p.hasChain&&!noChain){var n=findNearestZombie({x:z.x,y:z.y},140,1);if(n&&n!==z)hurtZombie(n,dmg*0.5,z.x,1,{quiet:1,noCrit:1});}
+  if(p.hasChain&&!noChain){var n=null,nb=140,ci,co,cd;for(ci=0;ci<game.zombies.length;ci++){co=game.zombies[ci];if(co===z||co.dead||co.dying||co.ghost)continue;cd=dist(z.x,z.y,co.x,co.y);if(cd<nb){nb=cd;n=co;}} /* v20.4: it used to find the zombie itself, so it never chained */
+    if(n){hurtZombie(n,dmg*0.5,z.x,1,{quiet:1,noCrit:1});if(typeof pushBolt==="function"&&Math.random()<0.5)pushBolt({pts:zigPts(z.x,z.y,n.x,n.y,4),life:0.08,maxLife:0.08,lift:12});}}
   if(z.hp<=0)killZombie(z);
 }
 function killZombie(z){
@@ -293,6 +307,7 @@ function hurtPlayer(p,dmg){
   if(p.hasShield&&p.shieldReady){p.shieldReady=0;p.shieldCd=6;p.invuln=0.4;sfx("hurt");return;}
   dmg*=(p.armorMul||1);if(p.giantT>0)dmg*=0.6;p.hp-=dmg;p.flash=0.12;p.invuln=CFG.INVULN_MS/1000;shake(6);if(typeof onPlayerDamaged==="function")onPlayerDamaged(p,dmg);
   sfx(dmg>15?"hurt_big":"hurt");
+  if(p.stomp&&!(p.stompCd>0)&&p.hp>0){p.stompCd=3;explodeAt(p.x,p.y,92,22*p.damageMul*atkMul(p),{friendly:1,knock:260});shake(8);} /* v20.4: Onda de choque fires when you are hit (it needed grenades no hero throws) */
   if(p.thorns){var n=findNearestZombie(p,70);if(n)hurtZombie(n,dmg*0.4,p.x,1);}
   if(p.hp<=0){
     if(p.hasRevive&&!p.revived){p.revived=1;p.hp=p.maxHp*0.5;p.invuln=2;floatText(p.x,p.y,"REVIVE","#ff80ab");if(p.abilities.some(function(a){return a.id==="phoenix";}))p.fireAura=1;return;}
@@ -333,6 +348,7 @@ function superKind(p){
   if(p.hero==="trueno")return "laser";
   if(p.hero==="mr")return "knives";
   if(p.hero==="gompa")return "giant";
+  if(p.hero==="neizan")return "minigun";
   return "cannon";
 }
 function superPreview(p,ang){
@@ -340,6 +356,7 @@ function superPreview(p,ang){
   if(kind==="laser")return{kind:kind,ang:ang,len:truenoLaserLen(p),w:15};
   if(kind==="knives")return{kind:kind,ang:ang,len:210,n:6,spread:48*Math.PI/180};
   if(kind==="giant")return{kind:kind,ang:ang,len:155,r:p.bigFlex?94:78};
+  if(kind==="minigun")return{kind:"cannon",ang:ang,len:270,n:14,spread:0.2};
   wpn=p&&p.weapon;
   if(wpn==="gl")return{kind:"cannon",ang:ang,len:230,n:10,spread:0.46,gl:1};
   if(wpn==="shotgun")return{kind:"cannon",ang:ang,len:200,n:26,spread:0.55};
@@ -349,7 +366,7 @@ function superPreview(p,ang){
   return{kind:"cannon",ang:ang,len:250,n:24,spread:0.44};
 }
 function fireSuper(p,ang){
-  if(!p||p.grabbed||(p.laserT>0)||(p.giantLeapT>0)||(p.super||0)<CFG.SUPER_COST)return;
+  if(!p||p.grabbed||(p.laserT>0)||(p.giantLeapT>0)||(p.super||0)<superCost(p))return;
   if(typeof game!=="undefined"&&game&&game.state!=="playing")return;
   if(ang==null||!isFinite(ang))ang=autoSuperAng(p);
   p.super=0;p.facing=ang;p.aimAng=ang;if(p.faceAng!=null)p.faceAng=ang;
@@ -378,7 +395,7 @@ function fireCanonazo(p,ang){
   p.recoil=1;p.muzzle=0.22;markAttack(p,"shoot",0.22);p.knockT=0.2;p.knockVx=-Math.cos(ang)*kick;p.knockVy=-Math.sin(ang)*kick;
   if(typeof ejectShell==="function")ejectShell(p);
   for(i=0;i<n;i++){
-    var t=n===1?0:(i/(n-1)-0.5),a=ang+t*spread+(Math.random()-0.5)*0.03,b=bulletPool.pop()||{};
+    var t=n===1?0:(i/(n-1)-0.5),a=ang+t*spread+(Math.random()-0.5)*0.03,b=newBullet();
     b.x=originX;b.y=originY;b.lift=handLift;b.vx=Math.cos(a)*spd;b.vy=Math.sin(a)*spd;
     b.r=p.wpnR||(wpn==="shotgun"?2.8:2.2);b.damage=dmg;b.life=(CFG.BULLET_LIFE||1.05)*(p.rangeMul||1);
     b.pierce=0;b.bounce=0;b.hit=new Set();b.cannon=1;
@@ -415,7 +432,7 @@ function fireFlameKnives(p,ang){
   var px=-Math.sin(sang),py=Math.cos(sang);
   p.meleeSwing=0.22;p.slashAng=ang;markAttack(p,"throw",0.22);
   for(i=0;i<n;i++){
-    var t=n===1?0:(i/(n-1)-0.5),slot=i-(n-1)/2,sa=sang+t*spread,b=bulletPool.pop()||{};
+    var t=n===1?0:(i/(n-1)-0.5),slot=i-(n-1)/2,sa=sang+t*spread,b=newBullet();
     var vx=Math.cos(sa),vy=Math.sin(sa)/ys,vl=Math.sqrt(vx*vx+vy*vy)||1;
     b.x=originX+px*slot*12;b.y=originY+(py*slot*12)/ys;b.lift=handLift;
     b.vx=vx/vl*spd;b.vy=vy/vl*spd;b.r=6.2;
@@ -688,7 +705,7 @@ function buildUpgradeCard(def,ri){
   else if(def.custom==="ninja")card.desc="Más agilidad y críticos, menos vida";
   else if(def.custom==="vamp")card.desc="Robavida y agilidad";
   else if(def.custom==="glass")card.desc="Daño extremo, de cristal";
-  else if(def.custom==="shadow")card.desc="Evasión y dash, menos daño";
+  else if(def.custom==="shadow")card.desc="Esquivas 1 de cada 5 golpes, a cambio de algo de daño";
   else if(def.custom==="phoenix")card.desc="Revives con un aura de fuego";
   else if(def.flag==="overcharge")card.desc="Cadencia extrema, con un riesgo";
   else if(def.flag==="sparkOnHit")card.desc="El impacto chisporrotea a otros";
@@ -702,6 +719,7 @@ function buildUpgradeCard(def,ri){
   else if(def.desc)card.desc=def.desc;
   else card.desc=def.name;
   if(def.desc)card.desc=def.desc;
+  var hh=(typeof game!=="undefined"&&game&&game.player&&game.player.hero)||"classic";if(def.descH&&def.descH[hh])card.desc=def.descH[hh];if(def.nameH&&def.nameH[hh])card.name=def.nameH[hh];
   card.apply=function(pl){applyUpgrade(pl,def,ri);};
   return card;
 }
@@ -709,7 +727,7 @@ function applyUpgrade(p,def,ri){
   var R=RARITIES[ri],tv=def.tiers?def.tiers[ri]:0;
   p.abilities.push({id:def.id,name:def.name,rarity:ri});
   if(def.kind==="mul")p[def.stat]=(p[def.stat]||1)*(1+tv);
-  else if(def.kind==="cd")p.fireCooldown=Math.max(0.08,p.fireCooldown*(1-tv));
+  else if(def.kind==="cd"){p.cdMul=(p.cdMul||1)*(1-tv);p.fireCooldown=Math.max(0.08,p.fireCooldown*(1-tv));}
   else if(def.kind==="hp"){p.maxHp+=tv;p.hp=Math.min(p.maxHp,p.hp+tv);}
   else if(def.kind==="heal")p.hp=Math.min(p.maxHp,p.hp+tv);
   else if(def.kind==="add")p[def.stat]=(p[def.stat]||0)+tv;
@@ -728,29 +746,36 @@ function applyUpgrade(p,def,ri){
   if(def.custom==="dwarf"){p.scale=0.78;p.r=CFG.PLAYER_R*0.8;p.damageMul*=0.9;p.speedMul*=1.2;p.evasion=Math.max(p.evasion||0,0.12);}
   if(def.custom==="berserk")p.berserk=1;
   if(def.custom==="crystal"){p.damageMul*=1.6;p.maxHp=Math.max(40,p.maxHp-35);p.hp=Math.min(p.hp,p.maxHp);}
-  if(def.custom==="tanky"){p.maxHp+=70;p.hp+=70;p.armorMul=0.75;p.speedMul*=0.85;p.fireCooldown*=1.1;}
+  if(def.custom==="tanky"){p.maxHp+=70;p.hp+=70;p.armorMul=(p.armorMul||1)*0.75;p.speedMul*=0.85;p.fireCooldown*=1.1;p.cdMul=(p.cdMul||1)*1.1;}
   if(def.custom==="ninja"){p.speedMul*=1.25;p.critChance=Math.max(p.critChance,0.18);p.maxHp=Math.max(40,p.maxHp-25);p.hp=Math.min(p.hp,p.maxHp);}
   if(def.custom==="vamp"){p.lifesteal=Math.max(p.lifesteal,0.1);p.speedMul*=1.12;p.maxHp=Math.max(40,p.maxHp-20);p.hp=Math.min(p.hp,p.maxHp);}
   if(def.custom==="glass"){p.damageMul*=1.8;p.maxHp=Math.max(30,p.maxHp*0.6);p.hp=Math.min(p.hp,p.maxHp);p.armorMul=1.15;}
-  if(def.custom==="shadow"){p.evasion=Math.max(p.evasion||0,0.2);p.hasDash=1;p.damageMul*=0.9;}
+  if(def.custom==="shadow"){p.evasion=Math.max(p.evasion||0,0.2);p.damageMul*=0.9;}
   if(def.custom==="phoenix"){p.hasRevive=1;p.fireAura=1;}
-  if(def.extra){if(def.extra.fireCooldown)p.fireCooldown*=def.extra.fireCooldown;if(def.extra.speedMul)p.speedMul*=def.extra.speedMul;if(def.extra.maxHp){p.maxHp+=def.extra.maxHp;p.hp=Math.min(p.hp,p.maxHp);}}
+  if(def.extra){if(def.extra.fireCooldown){p.fireCooldown*=def.extra.fireCooldown;p.cdMul=(p.cdMul||1)*def.extra.fireCooldown;}if(def.extra.speedMul)p.speedMul*=def.extra.speedMul;if(def.extra.maxHp){p.maxHp+=def.extra.maxHp;p.hp=Math.min(p.hp,p.maxHp);}}
   if(def.flag==="fireAura")p.maxHp=Math.max(40,p.maxHp-15);
   if(def.flag==="wideSlash")p.meleeRange=(p.meleeRange||100)*1.3;
   if(def.flag==="heavyBell")p.heavyBell=1;
+  if(def.flag==="overcharge"){p.cdMul=(p.cdMul||1)*0.65;p.fireCooldown=Math.max(0.08,p.fireCooldown*0.65);} /* v20.4: it only hurt you before */
+  if(typeof applyHeroUpgrade==="function")applyHeroUpgrade(p,def,ri);
 }
 
+/* v20.4: cards that only make sense on top of another one */
+function upgReqOk(d){var p=typeof game!=="undefined"&&game&&game.player;if(!p||!d.req)return 1;return !!p[d.req];}
 function takenFlags(p){var t={},i;for(i=0;i<p.abilities.length;i++)t[p.abilities[i].id]=1;return t;}
 /* v20.3: each hero has its own coherent upgrade pool + a few shared generic ones */
-var UPG_SHARED={dmg:1,firerate:1,hp:1,heal:1,speed:1,luck:1,regen:1,crit:1,critDmg:1,vampKill:1,secondWind:1,superCharge:1,superCD:1,xpBoost:1,hunter:1,dash:1,jump:1,triple:1,turboDash:1,shield:1,magnet:1,lastStand:1,luckyCharm:1,revive:1,swift:1};
+/* v20.4: the dash cards are gone (the game has no dash button, so they did nothing) */
+var UPG_SHARED={dmg:1,firerate:1,hp:1,heal:1,speed:1,luck:1,regen:1,crit:1,critDmg:1,vampKill:1,secondWind:1,superCharge:1,superCD:1,xpBoost:1,hunter:1,shield:1,magnet:1,lastStand:1,luckyCharm:1,revive:1,swift:1};
 var UPG_HERO={
-  classic:{multishot:1,bulletStorm:1,pierce:1,bounce:1,fire:1,ice:1,poison:1,explosive:1,heavy:1,range:1,melee:1,drone:1,dog:1,clone:1,frenzy:1,bloodlust:1},
+  classic:{multishot:1,bulletStorm:1,pierce:1,bounce:1,fire:1,ice:1,poison:1,explosive:1,heavy:1,melee:1,drone:1,dog:1,clone:1,frenzy:1,bloodlust:1},
   trueno:{multishot:1,chain:1,critBolt:1,spark:1,overcharge:1,meteors:1,blackHole:1,range:1,frenzy:1,phoenix:0},
-  mr:{orbit:1,ninja:1,shadow:1,bloodlust:1,dashFire:1,lifesteal:1,vampBat:1,frenzy:1,phoenix:1},
-  gompa:{giant:1,stomp:1,tanky:1,fortress:1,berserk:1,thorns:1,chainBoom:1,shieldRegen:1,fireAura:1}
+  mr:{orbit:1,ninja:1,shadow:1,bloodlust:1,lifesteal:1,vampBat:1,frenzy:1,phoenix:1},
+  neizan:{multishot:1,fire:1,heavy:1,tanky:1,fortress:1,drone:1,frenzy:1,bloodlust:1,thorns:1},
+  gompa:{multishot:1,giant:1,stomp:1,tanky:1,fortress:1,berserk:1,thorns:1,chainBoom:1,shieldRegen:1,fireAura:1}
 };
 function upgAllowed(d,hero){
   hero=hero||"classic";
+  if(!upgReqOk(d))return 0;
   if(d.hero)return d.hero===hero;
   if(UPG_SHARED[d.id])return 1;
   return !!(UPG_HERO[hero]&&UPG_HERO[hero][d.id]);

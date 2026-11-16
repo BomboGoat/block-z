@@ -51,7 +51,7 @@ var UPGRADE_DEFS=[
 {id:"hp",name:"Vitalidad",icon:"❤️",kind:"hp",tiers:[20,30,45,65,90],plus:["Vida"],minus:[]},
 {id:"heal",name:"Botiquín",icon:"🩹",kind:"heal",tiers:[35,50,70,100,140],plus:["Curación"],minus:[]},
 {id:"speed",name:"Agilidad",icon:"💨",kind:"mul",stat:"speedMul",tiers:[0.12,0.18,0.26,0.36,0.50],plus:["Movilidad"],minus:[]},
-{id:"multishot",name:"Ráfaga",icon:"✨",kind:"add",stat:"extraShots",tiers:[1,1,2,2,3],plus:["Proyectiles"],minus:["Precisión"]},
+{id:"multishot",name:"Ráfaga",icon:"✨",kind:"add",stat:"extraShots",tiers:[1,1,2,2,3],plus:["Proyectiles"],minus:["Precisión"],nameH:{gompa:"Doble pesa",trueno:"Rayo múltiple",neizan:"Más perdigones"},descH:{trueno:"Tus rayos alcanzan a más zombis",gompa:"Lanzas pesas extra en abanico",neizan:"Más perdigones por disparo"}},
 {id:"luck",name:"Suerte",icon:"🍀",kind:"add",stat:"luck",tiers:[3,5,8,12,18],plus:["Rareza"],minus:[]},
 {id:"jump",name:"Doble dash",icon:"💨",once:1,minR:1,flag:"doubleJump",plus:["Dash"],minus:[]},
 {id:"triple",name:"Triple dash",icon:"🌀",once:1,minR:2,flag:"tripleJump",plus:["Dash"],minus:[]},
@@ -83,9 +83,9 @@ var UPGRADE_DEFS=[
 {id:"dash",name:"Dash",icon:"💨",once:1,minR:1,flag:"hasDash",plus:["Dash"],minus:[]},
 {id:"regen",name:"Regeneración",icon:"💚",kind:"set",stat:"regen",tiers:[1.5,2.5,4,6,9],minR:1,plus:["Regen"],minus:[]},
 {id:"crit",name:"Críticos",icon:"🎯",kind:"set",stat:"critChance",tiers:[0.08,0.12,0.18,0.25,0.35],plus:["Crítico"],minus:[]},
-{id:"critDmg",name:"Golpe letal",icon:"💀",kind:"set",stat:"critMul",tiers:[1.5,1.8,2.2,2.7,3.5],minR:1,plus:["Daño crítico"],minus:[]},
+{id:"critDmg",name:"Golpe letal",icon:"💀",req:"critChance",kind:"set",stat:"critMul",tiers:[1.5,1.8,2.2,2.7,3.5],minR:1,plus:["Daño crítico"],minus:[]},
 {id:"bounce",name:"Rebote",icon:"🏀",once:1,minR:2,flag:"bounce",plus:["Rebote"],minus:[]},
-{id:"range",name:"Francotirador",icon:"🔭",kind:"mul",stat:"rangeMul",tiers:[0.15,0.25,0.4,0.6,0.9],plus:["Alcance"],minus:["Cadencia"]},
+{id:"range",name:"Francotirador",icon:"🔭",kind:"mul",stat:"rangeMul",tiers:[0.15,0.25,0.4,0.6,0.9],plus:["Alcance"],minus:[],descH:{trueno:"Tus rayos saltan más lejos entre zombis"}},
 {id:"magnet",name:"Imán XP",icon:"🧲",once:1,minR:1,flag:"xpMagnet",plus:["XP"],minus:[]},
 {id:"drone",name:"Dron aliado",icon:"🤖",once:1,minR:3,flag:"hasDrone",plus:["Aliado"],minus:[]},
 {id:"dog",name:"Perro zombi",icon:"🐕",once:1,minR:3,flag:"hasDog",plus:["Mascota"],minus:[]},
@@ -94,7 +94,7 @@ var UPGRADE_DEFS=[
 {id:"crystal",name:"Cristal",icon:"💎",once:1,minR:3,custom:"crystal",plus:["Daño enorme"],minus:["Vida"]},
 {id:"tanky",name:"Tanque",icon:"🛡️",once:1,minR:1,custom:"tanky",plus:["Vida","Armadura"],minus:["Movilidad","Cadencia"]},
 {id:"ninja",name:"Ninja",icon:"🥷",once:1,minR:2,custom:"ninja",plus:["Agilidad","Crítico"],minus:["Vida"]},
-{id:"stomp",name:"Onda de choque",icon:"💥",once:1,minR:2,flag:"stomp",plus:["Onda"],minus:[]},
+{id:"stomp",name:"Onda de choque",icon:"💥",once:1,minR:2,flag:"stomp",desc:"Al recibir un golpe sueltas una onda que daña y empuja (cada 3 s)",plus:["Onda"],minus:[]},
 {id:"vampBat",name:"Murciélago",icon:"🦇",once:1,minR:3,custom:"vamp",plus:["Vampirismo","Agilidad"],minus:["Vida máx"]},
 {id:"heavy",name:"Balas pesadas",icon:"🪨",kind:"mul",stat:"damageMul",tiers:[0.2,0.3,0.45,0.6,0.85],extra:{fireCooldown:1.15},plus:["Daño"],minus:["Cadencia"]},
 {id:"glass",name:"Cañón de cristal",icon:"🔫",once:1,minR:3,custom:"glass",plus:["Daño extremo"],minus:["Vida","Defensa"]},
@@ -103,8 +103,8 @@ var UPGRADE_DEFS=[
 {id:"spark",name:"Chispa",icon:"✨",once:1,minR:2,flag:"sparkOnHit",plus:["Chispas"],minus:[]},
 {id:"bloodlust",name:"Sed de sangre",icon:"😈",once:1,minR:3,flag:"bloodlust",plus:["Daño por baja"],minus:[]},
 {id:"phoenix",name:"Fénix",icon:"🔥",once:1,minR:4,flag:"hasRevive",exclusive:1,custom:"phoenix",plus:["Revivir","Aura fuego"],minus:[]},
-{id:"shadow",name:"Sombra",icon:"🌑",once:1,minR:3,custom:"shadow",plus:["Evasión","Dash"],minus:["Daño"]},
-{id:"overcharge",name:"Sobrecarga",icon:"⚡",once:1,minR:4,exclusive:1,flag:"overcharge",plus:["Cadencia extrema"],minus:["Autodaño"]},
+{id:"shadow",name:"Sombra",icon:"🌑",once:1,minR:3,custom:"shadow",plus:["Evasión"],minus:["Daño"]},
+{id:"overcharge",name:"Sobrecarga",icon:"⚡",once:1,minR:4,exclusive:1,flag:"overcharge",desc:"Disparas un 35% más rápido, pero a veces te quemas",plus:["Cadencia extrema"],minus:["Autodaño"]},
 {id:"hero_chain",name:"Más saltos",icon:"⚡",once:1,minR:1,hero:"trueno",flag:"chainJumps",plus:["Cadenas"],minus:[]},
 {id:"hero_storm",name:"Tormenta",icon:"🌩️",once:1,minR:2,hero:"trueno",flag:"bigStorm",plus:["Super rayo"],minus:[]},
 {id:"hero_slash",name:"Arcazo",icon:"🗡️",once:1,minR:1,hero:"mr",flag:"wideSlash",plus:["Alcance cuchillo"],minus:[]},
@@ -122,7 +122,7 @@ var UPGRADE_DEFS=[
 {id:"blackHole",name:"Agujero negro",icon:"🌀",once:1,minR:3,exclusive:1,flag:"blackHole",desc:"Un mini agujero negro atrae y daña a los zombis",plus:["Control","Daño"],minus:[]},
 {id:"clone",name:"Clon",icon:"👥",once:1,minR:4,exclusive:1,flag:"hasClone",desc:"Un clon te sigue y dispara",plus:["Aliado"],minus:[]},
 {id:"poisonCloud",name:"Nube tóxica",icon:"☁️",once:1,minR:2,flag:"poisonCloud",desc:"Una nube de veneno te rodea",plus:["Veneno","Aura"],minus:[]},
-{id:"shieldRegen",name:"Escudo vivo",icon:"💠",once:1,minR:2,flag:"shieldRegen",desc:"El escudo se regenera más rápido",plus:["Defensa"],minus:[]},
+{id:"shieldRegen",name:"Escudo vivo",icon:"💠",req:"hasShield",once:1,minR:2,flag:"shieldRegen",desc:"El escudo se regenera más rápido",plus:["Defensa"],minus:[]},
 {id:"freezeAura",name:"Aura gélida",icon:"🧊",once:1,minR:2,flag:"freezeAura",desc:"Los zombis cercanos se ralentizan",plus:["Hielo","Control"],minus:[]},
 {id:"xpBoost",name:"Sabiduría",icon:"📘",kind:"mul",stat:"xpMul",tiers:[0.15,0.22,0.32,0.45,0.6],desc:"Ganas más XP al terminar las rondas",plus:["XP"],minus:[]},
 {id:"hunter",name:"Cazajefes",icon:"🎯",once:1,minR:2,flag:"hunter",desc:"+18% de daño a jefes",plus:["Jefes"],minus:[]},
@@ -134,7 +134,13 @@ var UPGRADE_DEFS=[
 {id:"hero_dual",name:"Doble pistola",icon:"🔫",once:1,minR:1,hero:"classic",flag:"dualPistols",desc:"Eric dispara con dos pistolas",plus:["Proyectiles"],minus:[]},
 {id:"hero_cloud",name:"Nube tormenta",icon:"🌩️",once:1,minR:2,hero:"trueno",flag:"stormCloud",desc:"Una nube te sigue y lanza rayos",plus:["Electricidad"],minus:[]},
 {id:"hero_fan",name:"Abanico",icon:"🗡️",once:1,minR:2,hero:"mr",flag:"knifeFan",desc:"Cada pocos cortes lanzas un abanico de cuchillos",plus:["Área"],minus:[]},
-{id:"hero_shockN",name:"Onda rítmica",icon:"💥",once:1,minR:1,hero:"gompa",flag:"shockN",desc:"Cada 4.º puñetazo suelta una onda de choque",plus:["Onda"],minus:[]}
+{id:"hero_shockN",name:"Onda rítmica",icon:"💥",once:1,minR:1,hero:"gompa",flag:"shockN",desc:"Cada 4.ª pesa suelta una onda de choque",plus:["Onda"],minus:[]},
+{id:"hero_nzWide",name:"Cañón recortado",icon:"💥",once:1,minR:1,hero:"neizan",desc:"+3 perdigones y abanico más ancho",plus:["Área"],minus:[]},
+{id:"hero_nzSlug",name:"Bala slug",icon:"🔩",once:1,minR:2,hero:"neizan",desc:"Cada disparo suma una bala pesada que atraviesa",plus:["Perforación"],minus:[]},
+{id:"hero_nzKnock",name:"Retroceso brutal",icon:"🦾",once:1,minR:1,hero:"neizan",desc:"Los perdigones empujan mucho más lejos",plus:["Empuje"],minus:[]},
+{id:"hero_nzDouble",name:"Ambos cañones",icon:"🔥",once:1,minR:3,hero:"neizan",desc:"Tras cada disparo suelta el segundo cañón",plus:["Ráfaga doble"],minus:[]},
+{id:"hero_nzMini",name:"Munición extra",icon:"🔫",once:1,minR:2,hero:"neizan",desc:"La minigun dura 3 s más y dispara un 20% más rápido",plus:["Super"],minus:[]},
+{id:"hero_nzArmor",name:"Chasis blindado",icon:"🛡️",once:1,minR:1,hero:"neizan",desc:"+30 de vida máxima y un 15% menos de daño recibido",plus:["Defensa"],minus:[]}
 ];
 var bootErrorEl=document.getElementById("bootError");
 function showBootError(err){try{var msg=(err&&err.stack)?String(err.stack):String(err);if(bootErrorEl){bootErrorEl.style.display="block";bootErrorEl.textContent="Error del juego:\n"+msg;}if(console&&console.error)console.error(err);}catch(e2){}}
@@ -170,15 +176,17 @@ function rngPick(rng,arr){return arr[(rng()*arr.length)|0];}
 function rngRange(rng,a,b){return a+rng()*(b-a);}
 var selectedHero="classic";
 var HEROES=[
-{id:"classic",name:"Eric",desc:"Equilibrado. Super Cañonazo: un abanico masivo con su arma.",hp:130,spd:100,dmg:100,wpn:"Pistola",col:"#1565c0"},
+{id:"classic",name:"Eric",desc:"Equilibrado. Super Cañonazo: abanico masivo de balas.",hp:130,spd:100,dmg:100,wpn:"Pistola",col:"#1565c0"},
 {id:"trueno",name:"Tro",desc:"Rayos en cadena y un láser dirigido.",hp:120,spd:105,dmg:115,wpn:"Rayos",col:"#ffd54f"},
 {id:"mr",name:"Mr.",desc:"Cuchillo ágil. Super: abanico de cuchillos en llamas.",hp:150,spd:115,dmg:100,wpn:"Cuchillo",col:"#37474f"},
-{id:"gompa",name:"Gompa",desc:"Culturista. Super Gigante: crece, salta y aplasta.",hp:175,spd:88,dmg:100,wpn:"Pesas",col:"#6d4c41"}
+{id:"gompa",name:"Gompa",desc:"Culturista. Super Gigante: crece, salta y aplasta.",hp:175,spd:88,dmg:100,wpn:"Pesas",col:"#6d4c41"},
+{id:"neizan",name:"Neizan",desc:"Medio hombre, medio máquina. Super: Minigun 10 s.",hp:185,spd:92,dmg:120,wpn:"Escopeta doble",col:"#b71c1c"}
 ];
 function makePlayerLook(){return{kind:"player",hero:"classic",skin:"#d2a679",skinShadow:"#a67c52",skinLight:"#e8c4a0",hair:"#2c1810",brow:"#1a1008",eye:"#2e4a3e",eyeWhite:"#e8e4d9",hoodie:"#1565c0",hoodieDark:"#0d47a1",hoodieLight:"#42a5f5",pants:"#1a237e",pantsDark:"#0d1540",shoe:"#1a1a1a",cap:"#8b1a1a",capBrim:"#5c1010",stubble:1};}
 function makeHeroLook(id){
   if(id==="trueno")return{kind:"player",hero:"trueno",skin:"#e8c4a0",skinShadow:"#a67c52",skinLight:"#f3d7b8",hair:"#1a120c",beardCol:"#1a120c",brow:"#1a120c",eye:"#1565c0",eyeWhite:"#fff",eyeGlow:"#448aff",hoodie:"#1565c0",hoodieDark:"#0d47a1",hoodieLight:"#ffeb3b",pants:"#0d47a1",pantsDark:"#0a2370",shoe:"#212121",curl:1,beard:1,glowEye:1};
   if(id==="mr")return{kind:"player",hero:"mr",skin:"#d2a679",skinShadow:"#a67c52",skinLight:"#e8c4a0",hair:"#2a2a2a",brow:"#111",eye:"#1a1a1a",eyeWhite:"#f5f5f5",hoodie:"#212121",hoodieDark:"#111",hoodieLight:"#616161",pants:"#111111",pantsDark:"#000",shoe:"#111",shirt:"#fafafa",quiff:1,goatee:1,shades:1};
+  if(id==="neizan")return{kind:"player",hero:"neizan",skin:"#d9a98a",skinShadow:"#a87656",skinLight:"#eac3a8",hair:"#1b1410",brow:"#1b1410",eye:"#3e2723",eyeWhite:"#f5f0e8",eyeGlow:"#ff1744",hoodie:"#212121",hoodieDark:"#111",hoodieLight:"#5d5d5d",pants:"#263238",pantsDark:"#111",shoe:"#111",quiff:1};
   if(id==="gompa")return{kind:"player",hero:"gompa",skin:"#d2a679",skinShadow:"#a67c52",skinLight:"#e8c4a0",hair:"#2a1c14",brow:"#2a1c14",eye:"#3e2723",eyeWhite:"#f5f0e8",hoodie:"#eceff1",hoodieDark:"#b0bec5",hoodieLight:"#fff",pants:"#37474f",pantsDark:"#212121",shoe:"#212121",bald:1,beard:1,bulk:1};
   return makePlayerLook();
 }

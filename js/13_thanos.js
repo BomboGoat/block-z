@@ -3,7 +3,7 @@
    own painted ground, minimap and walk grid (HELL_DATA). Thanos arrives with a cinematic, the hero
    picks ONE mega-power from 3 pedestals, and the fight is Thanos alone (no zombies). */
 var HELL={img:null,island:null,islandImg:null,building:0,active:0};
-(function(){try{var im=new Image();im.onload=function(){HELL.img=im;if(HELL.active&&typeof ART!=="undefined"){ART.arena=im;if(map){map.chunks={};}}};im.src="assets/env/hell.webp?v=20.3.5";}catch(e){}})();
+(function(){try{var im=new Image();im.onload=function(){HELL.img=im;if(HELL.active&&typeof ART!=="undefined"){ART.arena=im;if(map){map.chunks={};}}};im.src="assets/env/hell.webp?v=20.4";}catch(e){}})();
 var GEMS={
   power:{c:"#c77dff",n:"PODER"},space:{c:"#4d8dff",n:"ESPACIO"},reality:{c:"#ff2d4a",n:"REALIDAD"},
   soul:{c:"#ff9a1f",n:"ALMA"},time:{c:"#2fe37a",n:"TIEMPO"},mind:{c:"#ffe14a",n:"MENTE"}
@@ -85,7 +85,7 @@ killZombie=function(z){if(z&&z.isThanos){thanosDie(z);return;}return _hellKillZo
 var _hellFireSuper=fireSuper;
 fireSuper=function(p,ang){
   if(p&&p.mega){
-    if(p.grabbed||(p.super||0)<CFG.SUPER_COST||!game||game.state!=="playing"||p.leap)return;
+    if(p.grabbed||(p.super||0)<superCost(p)||!game||game.state!=="playing"||p.leap)return;
     if(ang==null||!isFinite(ang))ang=autoSuperAng(p);
     p.super=0;p.facing=ang;p.aimAng=ang;if(p.faceAng!=null)p.faceAng=ang;
     if(typeof gfxHitStop==="function")gfxHitStop(0.06,"big");
@@ -518,7 +518,7 @@ function megaTick(p,dt){
   if(p.beamT>0){p.beamT-=dt;var bz=megaTarget();if(bz)p.beamA+=Math.atan2(Math.sin(Math.atan2(bz.y-p.y,bz.x-p.x)-p.beamA),Math.cos(Math.atan2(bz.y-p.y,bz.x-p.x)-p.beamA))*Math.min(1,4*dt);
     if(bz&&distSeg(bz.x,bz.y,p.x,p.y,p.x+Math.cos(p.beamA)*380,p.y+Math.sin(p.beamA)*380)<bz.r+14){bz.hp-=150*dm*dt;bz.hitFlash=0.06;if(!bz._bt||game.time-bz._bt>0.2){floatText(bz.x,bz.y-30,""+Math.round(30*dm),"#80deea");bz._bt=game.time;}
       if(!bz.snapDone&&bz.hp<=bz.maxHp*0.16){bz.hp=Math.max(bz.hp,bz.maxHp*0.12);thanosStartSnap(bz);}else if(bz.hp<=0)thanosDie(bz);
-      p.super=Math.min(CFG.SUPER_COST,(p.super||0));}
+      p.super=Math.min(superCost(p),(p.super||0));}
     if(Math.random()<0.6)hellPart(p.x+Math.cos(p.beamA)*rand(20,300),p.y+Math.sin(p.beamA)*rand(20,300),"#e0f7fa",0.25,rand(-20,20),rand(-20,20),3,3);
   }
   /* repulsor shots */
@@ -613,7 +613,7 @@ function hellOpenExit(x,y){hellDropGlove(x,y);} /* legacy name */
 var FIN={rise0:0.6,rise1:2.0,aim0:1.7,aim1:2.4,slide0:2.45,lock:3.25,gem0:3.75,gemDt:0.42,burst:6.4,voice:6.9,raise0:10.15,raise1:10.9,insert:11.05,snap:12.45,white:13.0,done:13.7};
 FIN.soy=FIN.voice+1.48;FIN.name=FIN.voice+2.88;
 var SNAPIMG={pre:null,post:null};
-(function(){try{["pre","post"].forEach(function(k){var im=new Image();im.onload=function(){SNAPIMG[k]=im;};im.src="assets/spr/snap_"+k+".webp?v=20.3.5";});}catch(e){}})();
+(function(){try{["pre","post"].forEach(function(k){var im=new Image();im.onload=function(){SNAPIMG[k]=im;};im.src="assets/spr/snap_"+k+".webp?v=20.4";});}catch(e){}})();
 function heroName(p){return (HEROES.filter(function(x){return x.id===p.hero;})[0]||{}).name||"Héroe";}
 function hellPlayBuf(name,gain){
   try{
@@ -655,7 +655,7 @@ function finPower(T){
 /* v20.3.4: the ending close-up uses 2x super-resolved hero art (cut into its own rig) so the hero stays crisp at
    cinematic zoom; falls back to the game sprite until it has loaded */
 var FIN_HD={};
-function finHDLoad(name){if(FIN_HD[name]!==undefined)return;FIN_HD[name]=null;try{var im=new Image();im.onload=function(){FIN_HD[name]=im;};im.src="assets/spr/"+name+"_hd.webp?v=20.3.5";}catch(e){}}
+function finHDLoad(name){if(FIN_HD[name]!==undefined)return;FIN_HD[name]=null;try{var im=new Image();im.onload=function(){FIN_HD[name]=im;};im.src="assets/spr/"+name+"_hd.webp?v=20.4";}catch(e){}}
 var FIN_HDT={};
 function finHDImg(name,tint){var hd=FIN_HD[name];if(!hd)return null;if(!tint)return hd;
   var k=name+"|"+tint;if(FIN_HDT[k])return FIN_HDT[k];

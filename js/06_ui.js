@@ -74,7 +74,11 @@ function drawHero(){
   var two=wpn==="shotgun"||wpn==="smg"||wpn==="rifle"||wpn==="gl"||wpn==="pistol"||p.twoHand;
   if(p.fireAura){var s=toScreen(p.x,p.y);ctx.fillStyle="rgba(255,87,34,0.18)";fillEllipse(ctx,s.x,s.y,50*layout.scale,36*layout.scale);}
   if(p.hasOrbit){for(var i=0;i<3;i++){var a=p.orbitAngle+i*2.094,ox=p.x+Math.cos(a)*36,oy=p.y+Math.sin(a)*36,os=toScreen(ox,oy);ctx.fillStyle="#eceff1";ctx.beginPath();ctx.arc(os.x,os.y,4*layout.scale,0,7);ctx.fill();}}
-  var heroOpts={h:40,r:p.r,scale:p.scale||1,moving:Math.abs(p.vx)+Math.abs(p.vy)>20,wpn:wpn,aim:p.aimAng,twoHand:two,muzzle:p.muzzle,flash:p.flash>0,lift:(p.grabbed?26:0)+(p.airH||0),cacheHand:1};
+  if(p.hero==="neizan"&&(p.miniT>0||p.miniSpin>0||p.miniPut>0))wpn="minigun";
+  var aimA=p.aimAng;
+  /* v20.4: with nothing to shoot for a moment Neizan carries the long guns low and forward instead of aiming at the last target */
+  if(p.hero==="neizan"&&!(p.miniT>0)&&!(p.miniSpin>0)&&(game.time-(p.nzLast||-9))>0.9){var fa=p.faceAng!=null?p.faceAng:(p.facing||0);aimA=Math.cos(fa)>=0?0.35:Math.PI-0.35;}
+  var heroOpts={h:40,r:p.r,scale:p.scale||1,moving:Math.abs(p.vx)+Math.abs(p.vy)>20,wpn:wpn,aim:aimA,twoHand:two,muzzle:p.muzzle,flash:p.flash>0,lift:(p.grabbed?26:0)+(p.airH||0),cacheHand:1,nzKick:p.nzKick||0,heavy:(p.miniT>0||p.miniSpin>0)?1:0};
   if(game.state==="hell_final"){heroOpts.wpn=null;heroOpts.moving=0;}
   else if(p.laserT>0){heroOpts.pose="laser";heroOpts.wpn=null;heroOpts.moving=0;}
   else if(p.atkT>0||p.meleeSwing>0||p.muzzle>0){heroOpts.pose="atk";heroOpts.atk=1;heroOpts.atkT=p.atkT||p.meleeSwing||p.muzzle;heroOpts.atkMax=p.atkMax||0.2;heroOpts.atkKind=p.atkKind;heroOpts.meleeSwing=p.meleeSwing||0;}
@@ -209,7 +213,7 @@ function drawJoystick(){
   ctx.restore();
 }
 function drawSuperBtn(){
-  var b=getSuperBtn(),p=game.player,ch=clamp((p.super||0)/CFG.SUPER_COST,0,1),cx=b.x+b.w/2,cy=b.y+b.h/2,R=b.w/2;
+  var b=getSuperBtn(),p=game.player,ch=clamp((p.super||0)/superCost(p),0,1),cx=b.x+b.w/2,cy=b.y+b.h/2,R=b.w/2;
   var laserOn=p&&p.laserT>0,stick=ch>=1||laserOn,aiming=!!(input.super&&stick),cancel=aiming&&input.superCancel;
   var icon="💣",kind=typeof superKind==="function"?superKind(p):"";
   if(kind==="laser")icon="⚡";else if(kind==="knives")icon="🔥";else if(kind==="giant")icon="🦍";else if(kind==="cannon")icon="💥";else if(kind==="dash")icon="💨";else if(kind==="flex")icon="💪";
@@ -242,7 +246,7 @@ function drawSuperBtn(){
 function drawSuperAim(){
   var p=game&&game.player;if(!p||!input.super||input.superCancel)return;
   if(p.laserT>0)return;
-  if((p.super||0)<CFG.SUPER_COST)return;
+  if((p.super||0)<superCost(p))return;
   var ang=input.superDragged?Math.atan2(input.sjy,input.sjx):autoSuperAng(p);
   var pr=typeof superPreview==="function"?superPreview(p,ang):null;if(!pr)return;
   var a=toScreen(p.x,p.y),sc=layout.scale,ys=CFG.YSCALE,i,s,e,x2,y2;
@@ -351,7 +355,7 @@ function drawLogo(cx,y,scale){
   ctx.restore();
 }
 function drawWpnBadge(label,cx,y,k,heroId){
-  var pal={classic:{bg:"#ff8f00",fg:"#1a0a00"},trueno:{bg:"#00e5ff",fg:"#00363d"},mr:{bg:"#ff1744",fg:"#fff"},gompa:{bg:"#c6ff00",fg:"#142000"}};
+  var pal={classic:{bg:"#ff8f00",fg:"#1a0a00"},trueno:{bg:"#00e5ff",fg:"#00363d"},mr:{bg:"#ff1744",fg:"#fff"},gompa:{bg:"#c6ff00",fg:"#142000"},neizan:{bg:"#ff3d00",fg:"#fff"}};
   var st=pal[heroId]||{bg:"#ff8f00",fg:"#1a0a00"};
   ctx.save();ctx.font="bold "+Math.round(10*k)+"px system-ui";
   var tw=ctx.measureText(label).width,pw=tw+Math.round(16*k),ph=Math.round(15*k),x=cx-pw/2,yy=y-ph+Math.round(4*k);
@@ -686,8 +690,8 @@ function drawHUD(){
   ctx.fillText("Nv "+(p.runLevel||1)+"  ·  "+(game.kills||0)+" bajas",x+10,y+52);
   /* weapon / rarity pill — right of the card, still in the left cluster */
   wpn=p.weapon||"pistol";hero=p.hero||"classic";
-  lab=wpn==="bolt"?"Rayos":wpn==="knife"?"Cuchillo":wpn==="fist"||wpn==="bell"?"Pesas":wpn==="smg"?"Subfusil":wpn==="shotgun"?"Escopeta":wpn==="revolver"?"Revólver":wpn==="rifle"?"Rifle":wpn==="gl"?"Lanzagranadas":"Pistola";
-  pal={classic:{bg:"#ff8f00",fg:"#1a0a00"},trueno:{bg:"#00e5ff",fg:"#00363d"},mr:{bg:"#ff1744",fg:"#fff"},gompa:{bg:"#c6ff00",fg:"#142000"}};
+  lab=wpn==="bolt"?"Rayos":wpn==="knife"?"Cuchillo":wpn==="fist"||wpn==="bell"?"Pesas":wpn==="smg"?"Subfusil":wpn==="shotgun"?"Escopeta":wpn==="revolver"?"Revólver":wpn==="rifle"?"Rifle":wpn==="gl"?"Lanzagranadas":wpn==="dbshot"?"Escopeta doble":"Pistola";if(p.miniT>0||p.miniSpin>0)lab="Minigun";
+  pal={classic:{bg:"#ff8f00",fg:"#1a0a00"},trueno:{bg:"#00e5ff",fg:"#00363d"},mr:{bg:"#ff1744",fg:"#fff"},gompa:{bg:"#c6ff00",fg:"#142000"},neizan:{bg:"#ff3d00",fg:"#fff"}};
   var col=pal[hero]||pal.classic;
   if(p.mega&&typeof MEGA!=="undefined"&&MEGA[p.mega]){lab=p.mega==="hammer"?"Martillo":p.mega==="armor"?"Armadura":"Furia verde";col={bg:MEGA[p.mega].c,fg:p.mega==="armor"?"#fff":"#0a0a12"};}
   hudFont("bold",9);var tw=ctx.measureText(lab).width+14,px=x+w-tw-8,py=y+38;
