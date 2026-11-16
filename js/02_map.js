@@ -329,7 +329,8 @@ function resolveCircle(ent){
 }
 function hasLOS(ax,ay,bx,by){
   var d=dist(ax,ay,bx,by),n=Math.max(2,(d/14)|0),i;
-  for(i=1;i<n;i++){var t=i/n;if(circleHitSolid(ax+(bx-ax)*t,ay+(by-ay)*t,2))return 0;}
+  /* v20.4: same rule as bullets — shots fly over water and low climbable cover, so a boss hovering over the pond is targetable */
+  for(i=1;i<n;i++){var t=i/n,h=circleHitSolid(ax+(bx-ax)*t,ay+(by-ay)*t,2,"proj");if(h&&!h.climbable)return 0;}
   return 1;
 }
 function hiddenInBush(x,y,other){
