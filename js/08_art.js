@@ -397,12 +397,14 @@ function zLegParts(img,waist){
       if(bestA<160){sp[y]=bc;run2++;if(run2===3&&gapY===ih)gapY=y-2;}else{sp[y]=-1;run2=0;}}
     var last=mid;for(y=y0;y<ih;y++){if(sp[y]<0||y<gapY)sp[y]=(y<gapY?mid:last);last=sp[y];}
     var Lc=document.createElement("canvas"),Rc=document.createElement("canvas"),Tc=document.createElement("canvas");Lc.width=Rc.width=Tc.width=iw;Lc.height=Rc.height=Tc.height=ih;
-    var gl=Lc.getContext("2d"),gr=Rc.getContext("2d"),dL=gl.createImageData(iw,ih),dR=gr.createImageData(iw,ih),pL=dL.data,pR=dR.data,pad=iw*0.07;
+    var gl=Lc.getContext("2d"),gr=Rc.getContext("2d"),dL=gl.createImageData(iw,ih),dR=gr.createImageData(iw,ih),pL=dL.data,pR=dR.data,pad=iw*0.07,hb=Math.max(2,ih*0.1);
     for(y=y0;y<ih;y++)for(x=0;x<iw;x++){if(!leg[y*iw+x])continue;o=(y*iw+x)*4;var A=px[o+3],wl,wr;
       if(y<gapY){wl=clamp((mid+pad*1.6-x)/(pad*0.8),0,1);wr=clamp((x-(mid-pad*1.6))/(pad*0.8),0,1);}else{wl=x<sp[y]?1:0;wr=1-wl;}
       if(wl>0){pL[o]=px[o];pL[o+1]=px[o+1];pL[o+2]=px[o+2];pL[o+3]=A*wl;}
       if(wr>0){pR[o]=px[o];pR[o+1]=px[o+1];pR[o+2]=px[o+2];pR[o+3]=A*wr;}
-      if(y>=tb)px[o+3]=0;}
+      /* v20.4: the static body fades out over a short hip band instead of a hard cut, so gaps between the
+         swinging legs and the rags/hands that stay on the body never show the ground through the hips */
+      if(y>=tb){var fb=(y-tb)/hb;px[o+3]=fb>=1?0:A*(1-fb*fb*fb);}}
     gl.putImageData(dL,0,0);gr.putImageData(dR,0,0);Tc.getContext("2d").putImageData(d,0,0);
     var lm=Math.floor(mid+pad*1.6+2),rm=Math.max(0,Math.floor(mid-pad*1.6-2));
     Lc._bb=[0,y0,Math.min(iw,lm),ih-y0];Rc._bb=[rm,y0,iw-rm,ih-y0];
