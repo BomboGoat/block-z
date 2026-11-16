@@ -189,8 +189,17 @@ var MENU_FLIES=null;
    Layers: far painting + foreground foliage (sways, stronger parallax), animated god rays, fire glow, embers,
    fireflies and drifting leaves. Only drawn on menu screens, so it costs nothing in-game. */
 var LOBBY={bg:null,fg:null,leaves:null,embers:null};
-(function(){try{var a=new Image();a.onload=function(){LOBBY.bg=a;};a.src="assets/ui/lobby_bg.webp?v=20.3.4";
-  var b=new Image();b.onload=function(){LOBBY.fg=b;};b.src="assets/ui/lobby_fg.webp?v=20.3.4";}catch(e){}})();
+/* v20.3.5: the lobby art keeps a stable URL (it hasn't changed since v20.3.1, so phones reuse the cached copy instead of
+   re-downloading ~460 KB on every release over a weak mobile connection) and retries with backoff if a load fails. */
+(function(){
+  function load(k,src,tries){try{var im=new Image();try{im.fetchPriority="high";}catch(e){}im.onload=function(){if(im.width){LOBBY[k]=im;LOBBY_CACHE.length=0;}};
+    im.onerror=function(){setTimeout(function(){load(k,src,tries+1);},Math.min(30000,1500*Math.pow(2,tries)));};
+    im.src=src+(tries?("&r="+tries):"");}catch(e){}}
+  /* 4 KB blurred preview of the forest painting, embedded so the menu shows the forest instantly, even before the
+     real painting arrives on a slow connection */
+  try{var lq=new Image();lq.onload=function(){LOBBY.lq=lq;};lq.src="data:image/webp;base64,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";}catch(e){}
+  load("bg","assets/ui/lobby_bg.webp?v=20.3.1",0);load("fg","assets/ui/lobby_fg.webp?v=20.3.1",0);
+})();
 /* v20.3.2: perf. The static layers (painting, sun rays, warm grade, vignette, dim) are baked once per screen size
    and dim level into a cached canvas at the canvas' own resolution, and the foliage into two pre-scaled cached pieces, so a
    menu frame is a handful of 1:1 integer-offset blits (no resampling) plus a few cheap particles (was 7 full-screen gradient rays, 16 foliage strips,
@@ -248,8 +257,12 @@ function menuBg(dim){
   var t=MENU.t,i;
   if(game&&game.state==="settings"&&prevSettings==="pause"){drawWorld();ctx.fillStyle="rgba(6,6,14,0.66)";ctx.fillRect(0,0,SW,SH);return;}
   var bg=LOBBY.bg;
+  if((!bg||!bg.width)&&LOBBY.lq&&LOBBY.lq.width){lobbyDirect(LOBBY.lq,dim);return;}
   if(!bg||!bg.width){var g0=ctx.createLinearGradient(0,0,0,SH);g0.addColorStop(0,"#f2a65a");g0.addColorStop(0.55,"#3d5a2a");g0.addColorStop(1,"#1c2a12");ctx.fillStyle=g0;ctx.fillRect(0,0,SW,SH);return;}
-  dim=dim||0;var C=lobbyLayer(dim),M=C.M;
+  dim=dim||0;var C=null;
+  try{C=lobbyLayer(dim);if(C&&!lobbyAlive(C)){LOBBY_CACHE.length=0;C=lobbyLayer(dim);if(!lobbyAlive(C))C=null;}}catch(err){LOBBY_CACHE.length=0;C=null;}
+  if(!C){lobbyDirect(bg,dim);return;}
+  var M=C.M;
   var px=(MENU.parX||0),py=(MENU.parY||0);
   var dx=clamp(Math.sin(t*0.05)*SW*0.012+px*6,-M,M),dy=clamp(Math.sin(t*0.07+1.1)*SH*0.006+py*3,-M,M);
   var K=dpr||1;function blit(c,x,y,sx,sy,sw,sh){ctx.drawImage(c,sx||0,sy||0,sw||c.width,sh||c.height,Math.round(x*K),Math.round(y*K),sw||c.width,sh||c.height);}
@@ -300,6 +313,38 @@ function menuBg(dim){
     ctx.globalAlpha=0.85*(dim?1-dim*0.6:1);ctx.fillStyle=lf.c;ctx.beginPath();ctx.ellipse(0,0,ls,ls*0.5,0,0,7);ctx.fill();ctx.restore();}
   ctx.globalAlpha=1;
 }
+/* v20.3.5: iOS Safari can silently drop the pixels of off-screen canvases (memory pressure, the app going to the
+   background, a network/settings switch), which left the cached forest layer blank: an empty menu with only the
+   fireflies and embers flickering over it. The cache is now validated (1-pixel read of its fully opaque painting, every
+   2 s and right after the app comes back) and rebuilt when it was wiped; if it can't be built at all,
+   the painting is drawn directly so the menu is never empty. */
+var LOBBY_CHK={t:-1,force:1};
+function lobbyAlive(C){
+  if(!C||!C.bg||!C.bg.width||!C.bg.height)return false;
+  var now=(typeof performance!=="undefined"?performance.now():Date.now());
+  if(!LOBBY_CHK.force&&C._okT&&now-C._okT<2000)return true;
+  try{var g=C.bg.getContext("2d");if(!g)return false;if(g.isContextLost&&g.isContextLost())return false;
+    /* copy one pixel into a tiny CPU canvas and read that, so the big cached layer is never read back itself */
+    if(!LOBBY_CHK.p){LOBBY_CHK.p=document.createElement("canvas");LOBBY_CHK.p.width=LOBBY_CHK.p.height=1;LOBBY_CHK.g=LOBBY_CHK.p.getContext("2d",{willReadFrequently:true});}
+    var pg=LOBBY_CHK.g;if(!pg)return true;
+    var x=Math.floor(C.bg.width*0.5),y=Math.floor(C.bg.height*0.4);pg.clearRect(0,0,1,1);pg.drawImage(C.bg,x,y,1,1,0,0,1,1);var d=pg.getImageData(0,0,1,1).data;
+    if(d[3]<250)return false;
+    if(C.fgB&&C.bB&&C.bB.y1>C.bB.y0){var gb=C.fgB.getContext("2d");if(!gb||(gb.isContextLost&&gb.isContextLost()))return false;}
+  }catch(e){return true;} /* reads not allowed: trust it */
+  C._okT=now;LOBBY_CHK.force=0;return true;
+}
+function lobbyDirect(bg,dim){ /* uncached fallback: painting + grade straight to the screen */
+  var sc=Math.max(SW/bg.width,SH/bg.height)*1.07,iw=bg.width*sc,ih=bg.height*sc;
+  ctx.drawImage(bg,(SW-iw)/2,(SH-ih)*0.78,iw,ih);
+  var v=ctx.createRadialGradient(SW*0.42,SH*0.55,Math.min(SW,SH)*0.3,SW*0.5,SH*0.5,Math.max(SW,SH)*0.78);v.addColorStop(0,"rgba(0,0,0,0)");v.addColorStop(1,"rgba(14,6,2,0.55)");
+  ctx.fillStyle=v;ctx.fillRect(0,0,SW,SH);if(dim){ctx.fillStyle="rgba(10,6,4,"+dim+")";ctx.fillRect(0,0,SW,SH);}
+}
+(function(){
+  function back(){LOBBY_CHK.force=1;LOBBY_CACHE.length=0;try{if(typeof map!=="undefined"&&map&&map.chunks){map.chunks={};map.dirty=1;}}catch(e){}}
+  document.addEventListener("visibilitychange",function(){if(!document.hidden)back();});
+  window.addEventListener("pageshow",back);window.addEventListener("focus",back);
+  try{var cv0=document.getElementById("gameCanvas");if(cv0){cv0.addEventListener("contextrestored",back);cv0.addEventListener("contextlost",function(ev){try{ev.preventDefault();}catch(e){}});}}catch(e){}
+})();
 drawMenuArt=function(){menuBg(0.35);return 1;};
 
 /* ---------- UI helpers ---------- */
@@ -473,7 +518,7 @@ function menuGo(st){
   if(st!=="title"&&game.state==="title")MENU.parentOk=1;
   game.state=st;MENU.enterT=MENU.t;MENU.scroll=0;MENU.press=null;
   if(st==="heroes"){MENU.heroIdx=Math.max(0,HEROES.findIndex(function(h){return h.id===selectedHero;}));}
-  if(st==="credits"&&!MENU.credits){MENU.credits=["Cargando…"];try{var x=new XMLHttpRequest();x.onload=function(){MENU.credits=String(x.responseText||"").split(/\r?\n/);};x.open("GET","CREDITS.txt?v=20.3.4");x.send();}catch(e){}}
+  if(st==="credits"&&!MENU.credits){MENU.credits=["Cargando…"];try{var x=new XMLHttpRequest();x.onload=function(){MENU.credits=String(x.responseText||"").split(/\r?\n/);};x.open("GET","CREDITS.txt?v=20.3.5");x.send();}catch(e){}}
   if(typeof layoutMenuButtons==="function")layoutMenuButtons();
 }
 function drawMenuTitle(){
