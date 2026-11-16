@@ -220,7 +220,7 @@ function update(dt){
   if(typeof updateTruenoLaser==="function")updateTruenoLaser(p,dt);
   /* fire */
   var n=(p.grabbed||p.laserT>0)?null:findNearestZombie(p,heroRange(p));
-  if(n)p.aimAng=Math.atan2(n.y-p.y,n.x-p.x);
+  if(n){p.aimAng=Math.atan2(n.y-p.y,n.x-p.x);p.aimLockT=0.75;}
   p.fireTimer-=dt;
   if(!p.mega&&!p.grabbed&&!(p.laserT>0)&&!(p.giantLeapT>0)&&p.fireTimer<=0&&n){fireWeapon(p);var cd=p.weapon==="smg"?Math.min(p.fireCooldown,0.16):p.fireCooldown;if(p.lastStand&&p.hp<p.maxHp*0.35)cd*=0.8;if(typeof extraFireCooldown==="function")cd=extraFireCooldown(p,cd);p.fireTimer=cd;}
   if((p.hasMelee||p.weapon==="knife"||p.weapon==="fist")&&p.meleeSwing>0){
@@ -348,6 +348,18 @@ function updatePlayerMove(p,dt,safe){
   var ad=want-p.faceAng;
   while(ad>Math.PI)ad-=Math.PI*2;while(ad<-Math.PI)ad+=Math.PI*2;
   p.faceAng+=ad*Math.min(1,10*dt);
+  /* v20.5: twin-stick body. While a target is locked the body turns to the aim (never through the straight up/down
+     frames, so no flicker), and when the stick pushes away from the aim the legs backpedal: the stride runs in
+     reverse at a shorter cadence and the lean goes back instead of forward. legPh drives the gait smoothly. */
+  p.aimLockT=Math.max(0,(p.aimLockT||0)-dt);
+  var ba=p.faceAng,lock=p.aimLockT>0&&p.aimAng!=null&&!(p.laserT>0);
+  if(lock){var ca=Math.cos(p.aimAng),sa=Math.sin(p.aimAng),hs=Math.abs(ca)<0.4?(Math.cos(p.bodyAng!=null?p.bodyAng:p.faceAng)>=0?1:-1):(ca>=0?1:-1);
+    ba=Math.atan2(sa,hs*Math.max(Math.abs(ca),0.42));}
+  p.bodyAng=ba;
+  var mv=m>0.15,bk=0;
+  if(mv&&lock){var mvx=mx/(m||1),mvy=my/(m||1);bk=(mvx*Math.cos(ba)+mvy*Math.sin(ba))<-0.2?1:0;}
+  p.backT=clamp((p.backT||0)+(bk?dt:-dt)*8,0,1);
+  p.legPh=(p.legPh||0)+dt*(mv?10*(CFG.MOVE||1):4)*(mv?1-1.8*p.backT:1);
   if(p.knockT>0){
     p.knockT-=dt;p.knockVx*=Math.max(0,1-8*dt);p.knockVy*=Math.max(0,1-8*dt);
     if(typeof moveWithSlide==="function")moveWithSlide(p,p.knockVx*dt,p.knockVy*dt);

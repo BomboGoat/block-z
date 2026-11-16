@@ -271,6 +271,14 @@ function rigWarm(hero){
   if(typeof makeHeroLook!=="function")return;var look=makeHeroLook(hero),d,ps=["idle","walk","atk"],k,e;
   for(d=0;d<8;d++)for(k=0;k<3;k++){e=artEntry(look,d,ps[k]);if(e&&e.img&&HERO_RIG[e.name]&&(e.img.naturalWidth||e.img.width)&&!e.img["_rig_"+e.name]){rigParts(e.name,e.img);return;}}
 }
+/* v20.5: on-screen aim angle for arms and guns. The 3/4 camera squashes depth, and a hero aiming straight up or down
+   used to raise the arm overhead or hang the gun at the hip. The visual angle keeps a forward component on the side
+   the body faces (max ~50 deg up, ~58 deg down) so the grip reads naturally through 360 deg; bullets still fly true. */
+function aimVis(aim,side){
+  var c=Math.cos(aim),s=Math.sin(aim)*((typeof CFG!=="undefined"&&CFG.YSCALE)||0.7),hs=side||(c>=0?1:-1);
+  var cc=hs*Math.max(Math.max(c*hs,0),0.5),ss=s*(s<0?0.85:0.95);
+  return Math.atan2(ss,cc);
+}
 function drawHeroRig(e,name,look,anim,pose,H,W,fx,fy,opts){
   var P=rigParts(name,e.img),R=P.rig,iw=P.iw,ih=P.ih,t=(game&&game.time)||0;
   function dX(sx){return -W*fx+sx*W;} function dY(sy){return -H*fy+sy*H;}
@@ -292,7 +300,7 @@ function drawHeroRig(e,name,look,anim,pose,H,W,fx,fy,opts){
   var swing=run?0.62:0.05,armL=-aL/amp*swing||0,armR=-aR/amp*swing||0;
   if(!run){armL=Math.sin(t*2.2)*0.05;armR=-Math.sin(t*2.2+0.4)*0.05;}
   var atk=0;if(opts.atkT>0||opts.meleeSwing>0||opts.muzzle>0){var mx=opts.atkMax||0.2,tl=opts.atkT||opts.meleeSwing||opts.muzzle||0;atk=1-clamp(tl/Math.max(0.06,mx),0,1);}
-  var aim=opts.aim!=null?opts.aim:0,sa=Math.atan2(Math.sin(aim)*CFG.YSCALE,Math.cos(aim));
+  var aim=opts.aim!=null?opts.aim:0,sa=aimVis(aim,flip);
   var la=flip<0?Math.PI-sa:sa;la=Math.atan2(Math.sin(la),Math.cos(la));
   var aimRot=clamp(la-Math.PI/2,-2.6,0.5);   /* rotation that points the hanging arm at the target */
   var gun=opts.wpn&&opts.wpn!=="bell"&&opts.wpn!=="bolt"&&opts.wpn!=="knife"&&opts.wpn!=="fist"&&opts.wpn!=="machete"&&opts.wpn!=="mega_hulk";
@@ -473,7 +481,7 @@ function tryDrawArt(wx,wy,look,ang,anim,opts){
   var bob=0,tilt=0,sx=1,sy=1,lungeX=0,lungeY=0,atkFwd=0;
   var rigOn=look&&look.kind==="player"&&HERO_RIG[e.name]&&!opts.dying&&opts.spawnP==null&&!opts.noRig&&(pose==="walk"||pose==="idle"||pose==="atk"||pose==="hurt");
   if(opts.air||(look&&look.kind==="home")){bob=-((look.kind==="home")?16:10)*sc;if(look.kind==="home")bob-=Math.sin((game.time||0)*3.5)*4*sc;}
-  else if(pose==="walk"&&rigOn){var rph=(anim||0)*2.25;bob=-Math.abs(Math.cos(rph))*artTargetH(look,sc)*0.035;tilt=(e.flip?-1:1)*0.075+Math.sin(rph*2)*0.012;}
+  else if(pose==="walk"&&rigOn){var rph=(anim||0)*2.25,bkw=opts.back||0;bob=-Math.abs(Math.cos(rph))*artTargetH(look,sc)*(0.035-0.012*bkw);tilt=(e.flip?-1:1)*(0.075-0.115*bkw)+Math.sin(rph*2)*0.012;} /* v20.5: backpedal leans back */
   else if(pose==="walk"&&look&&look.kind==="zombie"){var zph=(anim||0)*3.3;bob=-Math.abs(Math.sin(zph))*1.8*sc;tilt=Math.sin(zph)*0.07+(e.flip?-1:1)*0.05;sx=1+Math.sin(zph*2)*0.02;sy=1-Math.sin(zph*2)*0.02;}
   else if(pose==="walk"){bob=-Math.abs(Math.sin(ph))*2.2*sc;tilt=Math.sin(ph)*0.035;sx=1+Math.sin(ph*2)*0.015;sy=1-Math.sin(ph*2)*0.015;}
   else if(pose==="idle"){bob=rigOn?0:Math.sin((game.time||anim||0)*2)*1.4*sc;sy=rigOn?1:1+Math.sin((game.time||0)*2)*0.015;}
@@ -519,13 +527,13 @@ function tryDrawArt(wx,wy,look,ang,anim,opts){
   hx=0.5+(hx-0.5)*0.86; /* pull hand slightly inward to the palm */
   var ax=(hx-fx)*W;if(e.flip)ax=-ax;
   var ay=(hy-fy)*H+bob-(opts.lift||0)*sc;
-  opts._hand={x:s.x+ax+lungeX,y:s.y+ay+lungeY};
+  opts._hand={x:s.x+ax+lungeX,y:s.y+ay+lungeY};opts._side=e.flip?-1:1;
   if(rigHand&&M0){var rq=rigHand.matrixTransform(M0.inverse());opts._hand={x:rq.x,y:rq.y};}
   if(opts.cacheHand&&game&&game.player){
     game.player._handSx=opts._hand.x;game.player._handSy=opts._hand.y;
     game.player._handLift=s.y-opts._hand.y;
   }
-  if(opts.muzzle>0&&look&&look.kind==="player"&&opts._hand&&opts.wpn&&opts.wpn!=="dbshot"&&opts.wpn!=="minigun"&&opts.wpn!=="knife"&&opts.wpn!=="fist"&&opts.wpn!=="bell"&&opts.wpn!=="bolt"&&opts.wpn!=="machete"){
+  if(opts.muzzle>0&&look&&look.kind==="player"&&opts._hand&&opts.wpn&&typeof plMuzzle!=="function"&&opts.wpn!=="dbshot"&&opts.wpn!=="minigun"&&opts.wpn!=="knife"&&opts.wpn!=="fist"&&opts.wpn!=="bell"&&opts.wpn!=="bolt"&&opts.wpn!=="machete"){
     if(typeof ensureMuzzleSpr==="function"){
       var ms=ensureMuzzleSpr(),ma=Math.min(1,opts.muzzle*16),mz=16*sc*(opts.scale||1);
       var max=opts._hand.x+Math.cos(opts.aim||ang||0)*10*sc,may=opts._hand.y+Math.sin(opts.aim||ang||0)*10*sc*((typeof CFG!=="undefined"&&CFG.YSCALE)||0.7);

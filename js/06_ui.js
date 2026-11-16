@@ -47,8 +47,8 @@ function drawWorld(){
   }
   /* bullets / fx above */
   if(game.bullets)for(i=0;i<game.bullets.length;i++)if(onScreen(game.bullets[i].x,game.bullets[i].y,20))drawBullet(game.bullets[i]);
-  if(game.projectiles)for(i=0;i<game.projectiles.length;i++){var q=game.projectiles[i],s=toScreen(q.x,q.y);ctx.fillStyle=q.col||"#8bc34a";fillEllipse(ctx,s.x,s.y,5,4);}
-  if(game.grenades)for(i=0;i<game.grenades.length;i++){var g=game.grenades[i];drawMarker(g.tx,g.ty,28,"#ffeb3b",game.time);var t=clamp(g.t/g.life,0,1),gs=toScreen(g.cx,g.cy);ctx.fillStyle="#37474f";fillEllipse(ctx,gs.x,gs.y-Math.sin(t*Math.PI)*30,5,5);}
+  if(game.projectiles)for(i=0;i<game.projectiles.length;i++){if(typeof plDrawEnemyProj==="function")plDrawEnemyProj(game.projectiles[i]);else{var q=game.projectiles[i],s=toScreen(q.x,q.y);ctx.fillStyle=q.col||"#8bc34a";fillEllipse(ctx,s.x,s.y,5,4);}}
+  if(game.grenades)for(i=0;i<game.grenades.length;i++){if(typeof plDrawGrenade==="function"){plDrawGrenade(game.grenades[i]);continue;}var g=game.grenades[i];drawMarker(g.tx,g.ty,28,"#ffeb3b",game.time);var t=clamp(g.t/g.life,0,1),gs=toScreen(g.cx,g.cy);ctx.fillStyle="#37474f";fillEllipse(ctx,gs.x,gs.y-Math.sin(t*Math.PI)*30,5,5);}
   if(game.particles)for(i=0;i<game.particles.length;i++){var pt=game.particles[i],ps=toScreen(pt.x,pt.y);if(pt.lift)ps.y-=pt.lift;var pa=clamp(pt.life/(pt.maxLife||0.4),0,1);ctx.globalAlpha=pa;ctx.fillStyle=pt.color;if(pt.kind===4){fillEllipse(ctx,ps.x,ps.y,pt.size*layout.scale,pt.size*0.55*layout.scale);}else if(pt.kind===7){ctx.save();ctx.translate(ps.x,ps.y);ctx.rotate(pt.rot||0);ctx.fillRect(-2,-1,4,2);ctx.restore();}else if(pt.kind===8){ctx.globalAlpha=pa*0.45;fillEllipse(ctx,ps.x,ps.y,pt.size*layout.scale*(1.4-pa),pt.size*0.7*layout.scale);}else if(pt.kind===9){ctx.save();ctx.translate(ps.x,ps.y);ctx.rotate(pt.rot||0);ctx.fillRect(-pt.size,0,pt.size*2,1.2);ctx.restore();}else fillEllipse(ctx,ps.x,ps.y,pt.size,pt.size*0.7);ctx.globalAlpha=1;}
   if(typeof drawFireOver==="function")drawFireOver();
   if(game.bolts)for(i=0;i<game.bolts.length;i++)drawBolt(game.bolts[i]);
@@ -75,6 +75,8 @@ function drawHero(){
   if(p.fireAura){var s=toScreen(p.x,p.y);ctx.fillStyle="rgba(255,87,34,0.18)";fillEllipse(ctx,s.x,s.y,50*layout.scale,36*layout.scale);}
   if(p.hasOrbit){for(var i=0;i<3;i++){var a=p.orbitAngle+i*2.094,ox=p.x+Math.cos(a)*36,oy=p.y+Math.sin(a)*36,os=toScreen(ox,oy);ctx.fillStyle="#eceff1";ctx.beginPath();ctx.arc(os.x,os.y,4*layout.scale,0,7);ctx.fill();}}
   if(p.hero==="neizan"&&(p.miniT>0||p.miniSpin>0||p.miniPut>0))wpn="minigun";
+  /* v20.5: Gompa carries the next dumbbell in his fist (it leaves the hand on the throw and a new one is ready after) */
+  if(p.hero==="gompa"&&wpn==="fist"&&!(p.giantT>0))wpn=(p.atkT>0&&p.atkKind==="throw"&&p.atkT<(p.atkMax||0.22)*0.7)?null:"bell";
   var aimA=p.aimAng;
   /* v20.4: with nothing to shoot for a moment Neizan carries the long guns low and forward instead of aiming at the last target */
   if(p.hero==="neizan"&&!(p.miniT>0)&&!(p.miniSpin>0)&&(game.time-(p.nzLast||-9))>0.9){var fa=p.faceAng!=null?p.faceAng:(p.facing||0);aimA=Math.cos(fa)>=0?0.35:Math.PI-0.35;}
@@ -82,7 +84,8 @@ function drawHero(){
   if(game.state==="hell_final"){heroOpts.wpn=null;heroOpts.moving=0;}
   else if(p.laserT>0){heroOpts.pose="laser";heroOpts.wpn=null;heroOpts.moving=0;}
   else if(p.atkT>0||p.meleeSwing>0||p.muzzle>0){heroOpts.pose="atk";heroOpts.atk=1;heroOpts.atkT=p.atkT||p.meleeSwing||p.muzzle;heroOpts.atkMax=p.atkMax||0.2;heroOpts.atkKind=p.atkKind;heroOpts.meleeSwing=p.meleeSwing||0;}
-  drawChar34(p.x,p.y,p.look,p.faceAng!=null?p.faceAng:(p.facing||p.aimAng),p.anim,heroOpts);
+  heroOpts.back=p.backT||0;
+  drawChar34(p.x,p.y,p.look,p.bodyAng!=null?p.bodyAng:(p.faceAng!=null?p.faceAng:(p.facing||p.aimAng)),p.legPh!=null?p.legPh:p.anim,heroOpts);
   if(p.hasShield&&p.shieldReady){var s2=toScreen(p.x,p.y);ctx.strokeStyle="rgba(33,150,243,0.7)";ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(s2.x,s2.y,22*layout.scale,16*layout.scale,0,0,7);ctx.stroke();}
   ctx.globalAlpha=1;
 }

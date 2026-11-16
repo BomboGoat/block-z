@@ -729,7 +729,7 @@ function drawChar34(wx,wy,look,ang,anim,opts){
   opts.pose=pose;opts.face=opts.face||(opts.flash?"hurt":opts.atk?"atk":"idle");
   if(typeof tryDrawArt==="function"&&tryDrawArt(wx,wy,look,ang,anim,opts)){
     if(opts.wpn&&opts._hand){
-      var aim=opts.aim!=null?opts.aim:ang,sa=Math.atan2(Math.sin(aim)*CFG.YSCALE,Math.cos(aim));
+      var aim=opts.aim!=null?opts.aim:ang,sa=(look.kind==="player"&&typeof aimVis==="function")?aimVis(aim,opts._side):Math.atan2(Math.sin(aim)*CFG.YSCALE,Math.cos(aim));
       var sc=layout.scale,bs=artTargetH(look,sc)/110;
       drawWeapon34(ctx,opts._hand.x,opts._hand.y,sa,opts.wpn,bs*1.25,opts.muzzle||0,look.skin||"#e8c4a0",opts.twoHand);
     }
@@ -812,7 +812,7 @@ function ensureBulletSprs(){
 function drawWeapon34(c,hx,hy,ang,wpn,sc,muzzle,skin,two){
   skin=skin||"#e8c4a0";
   var skL=shadeHex(skin,28),skD=shadeHex(skin,-28),o="#1a140c",lw=Math.max(1.5,1.9*sc);
-  c.save();c.translate(hx,hy);c.rotate(ang);
+  c.save();c.translate(hx,hy);c.rotate(ang);if(Math.cos(ang)<0)c.scale(1,-1); /* v20.5: guns stay upright (grip and mag down) when aimed to the left */
   function body(x,y,w,h,r,col,col2){c.fillStyle=lg(c,x,y,x,y+h,col,col2||shadeHex(col,-30));roundRect(c,x,y,w,h,r);c.fill();c.strokeStyle=o;c.lineWidth=lw;roundRect(c,x,y,w,h,r);c.stroke();}
   function palm(x,y,rx,ry){ellP(c,x,y,rx,ry);fs(c,lg(c,x-rx,y-ry,x+rx,y+ry,skL,skD),o,lw);}
   function fing(x,y,rx,ry){c.save();c.translate(x,y);ellP(c,0,0,rx,ry);fs(c,lg(c,-rx,-ry,rx,ry,skL,skD),o,lw*0.85);c.restore();}
@@ -889,8 +889,11 @@ function drawWeapon34(c,hx,hy,ang,wpn,sc,muzzle,skin,two){
   }
   if(muzzle>0&&wpn!=="machete"&&wpn!=="knife"&&wpn!=="fist"&&wpn!=="bell"&&wpn!=="bolt"){
     var mx=(wpn==="shotgun"?21:wpn==="rifle"?24:wpn==="gl"?18:wpn==="revolver"?20:wpn==="smg"?14:14)*sc,a=Math.min(1,muzzle*16);
-    var ms=ensureMuzzleSpr(),sz=(12*sc+a*8);
-    c.globalAlpha=0.35+0.65*a;c.drawImage(ms,mx-sz, -sz, sz*2, sz*2);c.globalAlpha=1;
+    if(typeof plMuzzle==="function"){ /* v20.5: additive cone flash with a random flicker size per shot */
+      var mz=plMuzzle(),big=(wpn==="shotgun"||wpn==="revolver"||wpn==="gl")?1.35:wpn==="smg"?0.8:1,ml=(16+10*a)*sc*big*(0.85+0.3*(((muzzle*997)|0)%7)/7);
+      c.save();c.globalCompositeOperation="lighter";c.globalAlpha=Math.min(1,0.25+a);c.drawImage(mz,mx-ml*0.18,-ml*0.25,ml,ml*0.5);c.restore();
+    }else{var ms=ensureMuzzleSpr(),sz=(12*sc+a*8);
+    c.globalAlpha=0.35+0.65*a;c.drawImage(ms,mx-sz, -sz, sz*2, sz*2);c.globalAlpha=1;}
   }
   c.restore();
 }
