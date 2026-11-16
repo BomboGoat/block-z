@@ -111,7 +111,9 @@ var SFX_FILES={
   fire_loop:"assets/sfx/fire_loop.mp3",fire_ignite:"assets/sfx/fire_ignite.mp3",
   thanos_voice:"assets/sfx/thanos_voice.mp3",thanos_boom:"assets/sfx/thanos_boom.mp3",
   final_snap:"assets/sfx/final_snap.mp3",final_voice_classic:"assets/sfx/final_voice_classic.mp3",final_voice_trueno:"assets/sfx/final_voice_trueno.mp3",
-  final_voice_mr:"assets/sfx/final_voice_mr.mp3",final_voice_gompa:"assets/sfx/final_voice_gompa.mp3"
+  final_voice_mr:"assets/sfx/final_voice_mr.mp3",final_voice_gompa:"assets/sfx/final_voice_gompa.mp3",
+  final_voice_neizan:"assets/sfx/final_voice_neizan.mp3",neizan_shot:"assets/sfx/neizan_shot.mp3",
+  minigun_spin:"assets/sfx/minigun_spin.mp3",minigun_loop:"assets/sfx/minigun_loop.mp3",minigun_stop:"assets/sfx/minigun_stop.mp3"
 };
 function combatLive(){return typeof game!=="undefined"&&game&&game.state==="playing";}
 function sfxAllowed(name){
@@ -123,7 +125,22 @@ function sfxAllowed(name){
   if(game.state==="boss_intro"&&SFX_BOSS[name])return 1;
   return 0;
 }
-function stopCombatLoops(){stopLaserHum();stopFireLoop();}
+function stopCombatLoops(){stopLaserHum();stopFireLoop();stopMiniLoop();}
+/* v20.4: Neizan's minigun (real recorded M61 loop, CC0) */
+function startMiniLoop(){
+  if(!ensureAudio()||audio.mutedSfx||!audio.sfxG||!combatLive())return;
+  if(!audio._baked)bakeSfxSync();
+  if(audio.miniLoop&&audio.miniLoop.alive)return;
+  var ctx=audio.ctx,t=ctx.currentTime,buf=audio.sfxBuf&&audio.sfxBuf.minigun_loop;if(!buf)return;
+  var g=ctx.createGain();g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(0.5,t+0.05);g.connect(audio.sfxG);
+  var src=ctx.createBufferSource();src.buffer=buf;src.loop=true;src.connect(g);
+  try{src.start(t);}catch(e){return;}
+  audio.miniLoop={g:g,src:src,alive:1};
+}
+function stopMiniLoop(){
+  var h=audio.miniLoop,t;if(!h)return;audio.miniLoop=null;h.alive=0;
+  try{t=audio.ctx.currentTime;h.g.gain.cancelScheduledValues(t);h.g.gain.setValueAtTime(Math.max(0.0001,h.g.gain.value||0.0001),t);h.g.gain.linearRampToValueAtTime(0.0001,t+0.08);h.src.stop(t+0.12);}catch(e){}
+}
 function noteGameState(){
   if(typeof game==="undefined"||!game)return;
   var st=game.state;

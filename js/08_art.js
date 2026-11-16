@@ -5,6 +5,7 @@ var ART_MAP={
   trueno:{f:"trueno_f",laser:"trueno_laser_f"},
   mr:{f:"mr_f"},
   gompa:{f:"gompa_f"},
+  neizan:{f:"neizan_f"},
   colossus:{f:"colossus_f"},
   home:{f:"home_f"},
   final:{f:"final_f"},
@@ -129,6 +130,7 @@ function artWaist(look){
   if(look.kind==="final")return 0.58;
   if(look.kind==="zombie")return (look.type==="tank"||look.type==="armored")?0.56:0.57;
   if(look.hero==="gompa")return 0.54;
+  if(look.hero==="neizan")return 0.58;
   if(look.hero==="classic"||look.hero==="trueno")return 0.56;
   if(look.hero==="mr")return 0.55;
   return 0.57;
@@ -149,7 +151,9 @@ var HERO_RIG={
   mr_f:{neck:0.33,waist:0.55,cut:0.64,black:1,L:{p:[0.17,0.38],poly:[[0.07,0.33],[0.25,0.32],[0.27,0.6],[0.27,0.77],[0,0.77],[0,0.45]]},
              R:{p:[0.80,0.39],poly:[[0.71,0.33],[0.86,0.35],[1,0.55],[1,0.70],[0.79,0.70],[0.78,0.55],[0.74,0.45]]}},
   gompa_f:{neck:0.30,waist:0.54,cut:0.5,grey:1,L:{p:[0.20,0.35],poly:[[0.06,0.28],[0.30,0.28],[0.31,0.5],[0.31,0.79],[0,0.79],[0,0.4]]},
-             R:{p:[0.80,0.33],poly:[[0.71,0.27],[0.745,0.19],[0.89,0.23],[1,0.5],[1,0.68],[0.81,0.68],[0.76,0.5],[0.72,0.35]]}}
+             R:{p:[0.80,0.33],poly:[[0.71,0.27],[0.745,0.19],[0.89,0.23],[1,0.5],[1,0.68],[0.81,0.68],[0.76,0.5],[0.72,0.35]]}},
+  neizan_f:{neck:0.30,waist:0.58,cut:0.6,black:1,L:{p:[0.17,0.34],poly:[[0.10,0.30],[0.27,0.30],[0.25,0.45],[0.22,0.60],[0.24,0.73],[0,0.73],[0,0.40]]},
+             R:{p:[0.80,0.33],poly:[[0.72,0.29],[0.86,0.30],[1,0.48],[1,0.72],[0.82,0.72],[0.80,0.58],[0.79,0.45],[0.74,0.38]]}}
 };
 function rigParts(name,img){
   var key="_rig_"+name;if(img[key])return img[key];
@@ -292,7 +296,7 @@ function drawHeroRig(e,name,look,anim,pose,H,W,fx,fy,opts){
   var la=flip<0?Math.PI-sa:sa;la=Math.atan2(Math.sin(la),Math.cos(la));
   var aimRot=clamp(la-Math.PI/2,-2.6,0.5);   /* rotation that points the hanging arm at the target */
   var gun=opts.wpn&&opts.wpn!=="bell"&&opts.wpn!=="bolt"&&opts.wpn!=="knife"&&opts.wpn!=="fist"&&opts.wpn!=="machete"&&opts.wpn!=="mega_hulk";
-  if(gun){armR=aimRot+(opts.muzzle>0?0.18*Math.max(0,1-atk*2.5):0)+(run?s1*0.05:0);
+  if(gun){armR=aimRot+(opts.muzzle>0?0.18*Math.max(0,1-atk*2.5):0)+(run?s1*0.05:0)+(opts.nzKick||0)*0.42+(opts.heavy?Math.sin(t*40)*0.025:0);
     /* v20.3.1: the off-hand used to swing ~60 deg across the chest toward the gun (it can't reach it from the near
        shoulder), leaving a fist floating on the belly. Now it stays attached and relaxed: a small brace toward the
        aim, a twitch with the recoil, and a reduced counter-swing while running. */
@@ -577,7 +581,7 @@ function maybeKnifeFan(p){
   if(!p.knifeFan)return;
   p._fanN=(p._fanN||0)+1;if(p._fanN%4)return;
   var i,a0=p.aimAng||0,ho=typeof heroHandWorld==="function"?heroHandWorld(p,a0):{x:p.x,y:p.y},hl=typeof heroHandLiftPx==="function"?heroHandLiftPx(p):0;
-  for(i=-2;i<=2;i++){var a=a0+i*0.18,b=bulletPool.pop()||{};b.x=ho.x;b.y=ho.y;b.lift=hl;b.vx=Math.cos(a)*380;b.vy=Math.sin(a)*380;b.r=3;b.damage=8*p.damageMul;b.life=0.55;b.pierce=0;b.hit=new Set();b.knife=1;game.bullets.push(b);}
+  for(i=-2;i<=2;i++){var a=a0+i*0.18,b=newBullet();b.x=ho.x;b.y=ho.y;b.lift=hl;b.vx=Math.cos(a)*380;b.vy=Math.sin(a)*380;b.r=3;b.damage=8*p.damageMul;b.life=0.55;b.pierce=0;b.hit=new Set();b.knife=1;game.bullets.push(b);}
 }
 function maybeShockN(p){
   if(!p.shockN)return;

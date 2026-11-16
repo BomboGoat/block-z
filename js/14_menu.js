@@ -23,7 +23,8 @@ var SKINS={
   classic:[{id:"orig",name:"Original"},{id:"sombra",name:"Sombra",lv:3},{id:"dorado",name:"Dorado",cost:400}],
   trueno:[{id:"orig",name:"Original"},{id:"carmesi",name:"Carmesí",lv:5},{id:"hielo",name:"Hielo",cost:400}],
   mr:[{id:"orig",name:"Original"},{id:"fantasma",name:"Fantasma",lv:7},{id:"carmesi",name:"Carmesí",cost:400}],
-  gompa:[{id:"orig",name:"Original"},{id:"dorado",name:"Dorado",lv:10},{id:"toxico",name:"Tóxico",cost:400}]
+  gompa:[{id:"orig",name:"Original"},{id:"dorado",name:"Dorado",lv:10},{id:"toxico",name:"Tóxico",cost:400}],
+  neizan:[{id:"orig",name:"Original"},{id:"hielo",name:"Hielo",lv:8},{id:"dorado",name:"Dorado",cost:400}]
 };
 var TRAILS=[{id:"none",name:"Sin estela"},{id:"spark",name:"Chispas",lv:2,col:"#ffd54f"},{id:"fire",name:"Fuego",lv:6,col:"#ff7043"},
   {id:"ice",name:"Escarcha",lv:11,col:"#80deea"},{id:"toxic",name:"Ácido",cost:250,col:"#b2ff59"},{id:"rainbow",name:"Arcoíris",lv:14,col:"rainbow"}];
@@ -442,7 +443,7 @@ function drawTopBar(){
 }
 
 /* ---------- hero showcase (rigged idle, breathing) ---------- */
-var HERO_WPN={classic:"pistol",trueno:"bolt",mr:"knife",gompa:"bell"};
+var HERO_WPN={classic:"pistol",trueno:"bolt",mr:"knife",gompa:"bell",neizan:"dbshot"};
 /* v20.3.2: the rigged showcase hero is re-rendered into a cached canvas ~15 times a second (idle breathing is slow)
    and blitted 1:1 the rest of the time */
 var HSC=null,GLOW_SC={};
@@ -471,7 +472,7 @@ function drawHeroShowcaseRaw(hero,x,footY,H,skin,glow){
   if(HERO_RIG[e.name])hand=drawHeroRig(e,e.name,look,0,"idle",H,W,fx,fy,{aim:0.9,wpn:HERO_WPN[hero]});
   else ctx.drawImage(e.img,-W*fx,-H*fy,W,H);
   ctx.restore();
-  if(hand&&typeof drawWeapon34==="function"){var q=hand.matrixTransform(M0.inverse());drawWeapon34(ctx,q.x,q.y,0.6,HERO_WPN[hero],H/110*1.25*0.9,0,look.skin,hero==="classic");}
+  if(hand&&typeof drawWeapon34==="function"){var q=hand.matrixTransform(M0.inverse());drawWeapon34(ctx,q.x,q.y,0.6,HERO_WPN[hero],H/110*1.25*0.9,0,look.skin,hero==="classic"||hero==="neizan");}
 }
 
 /* ---------- animated logo ---------- */
@@ -605,7 +606,7 @@ function drawHeroes(){
   var px=cx+Math.min(120,SW*0.15),pw=SW-s.r-12-px,py=s.t+52,ph=SH-s.b-12-py;
   mPanel(px,py,pw,ph,14,0.9);
   mText(h.name,px+14,py+18,20,"#fff","left","900",4);
-  var pal={classic:"#ff8f00",trueno:"#00e5ff",mr:"#ff1744",gompa:"#c6ff00"};
+  var pal={classic:"#ff8f00",trueno:"#00e5ff",mr:"#ff1744",gompa:"#c6ff00",neizan:"#ff3d00"};
   ctx.fillStyle=pal[h.id]||"#ff8f00";roundRect(ctx,px+pw-110,py+9,96,18,9);ctx.fill();mText(h.wpn,px+pw-62,py+18,11,"#140a00","center","900",0);
   ctx.font="600 11px system-ui";ctx.fillStyle="#d8d0e8";ctx.textAlign="left";ctx.textBaseline="middle";
   var words=h.desc.split(" "),line="",ly=py+40;for(i=0;i<words.length;i++){var t2=line+words[i]+" ";if(ctx.measureText(t2).width>pw-28&&line){ctx.fillText(line,px+14,ly);ly+=14;line=words[i]+" ";}else line=t2;}if(line){ctx.fillText(line,px+14,ly);ly+=14;}

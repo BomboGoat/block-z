@@ -123,7 +123,7 @@ function onPointerDown(e){
 function beginSuperAim(e,pt){
   var b=getSuperBtn(),pl=game&&game.player;
   if(!pl)return;
-  if((pl.super||0)<CFG.SUPER_COST&&!(pl.laserT>0))return;
+  if((pl.super||0)<superCost(pl)&&!(pl.laserT>0))return;
   input.super=1;input.superId=e.pointerId!=null?e.pointerId:2;
   input.superX=b.x+b.w/2;input.superY=b.y+b.h/2;
   input.sjx=0;input.sjy=0;input.superDragged=0;input.superMaxMag=0;input.superCancel=0;
@@ -231,7 +231,7 @@ function update(dt){
         mz=game.zombies[mi];if(mz.dead||mz.dying)continue;
         md=dist(p.x,p.y,mz.x,mz.y);if(md>mr+mz.r)continue;
         if(p.weapon==="fist"){mang=Math.atan2(mz.y-p.y,mz.x-p.x);ma=Math.abs(Math.atan2(Math.sin(mang-p.aimAng),Math.cos(mang-p.aimAng)));if(ma>0.7)continue;}
-        hurtZombie(mz,p.meleeDmg*p.damageMul,p.x);if(p.bleedSlash)mz.poison=Math.max(mz.poison,1.4);
+        hurtZombie(mz,p.meleeDmg*p.damageMul*(typeof atkMul==="function"?atkMul(p):1),p.x);if(p.bleedSlash)mz.poison=Math.max(mz.poison,1.4);
       }
     }
   }
@@ -242,7 +242,11 @@ function update(dt){
   if(p.fireAura){for(var fi=0;fi<game.zombies.length;fi++){var fz=game.zombies[fi];if(!fz.dead&&!fz.dying&&dist(p.x,p.y,fz.x,fz.y)<54){fz.burn=Math.max(fz.burn,0.4);hurtZombie(fz,8*dt*p.damageMul,p.x,1);}}}
   if(p.hasOrbit){p.orbitAngle+=dt*4;for(var oi=0;oi<3;oi++){var oa=p.orbitAngle+oi*2.094,ox=p.x+Math.cos(oa)*36,oy=p.y+Math.sin(oa)*36;for(var oz=0;oz<game.zombies.length;oz++){var zz=game.zombies[oz];if(!zz.dead&&!zz.dying&&dist(ox,oy,zz.x,zz.y)<20)hurtZombie(zz,18*dt*p.damageMul,p.x,1);}}}
   if(p.hasDrone){p.droneAngle+=dt*2;p.droneX=p.x+Math.cos(p.droneAngle)*28;p.droneY=p.y+Math.sin(p.droneAngle)*28;p.droneT=(p.droneT||0)-dt;if(p.droneT<=0){var dn=findNearestZombie(p,320);if(dn){game.bullets.push({x:p.droneX,y:p.droneY,vx:(dn.x-p.droneX)*3,vy:(dn.y-p.droneY)*3,r:3,damage:8*p.damageMul,life:0.8,pierce:0,hit:new Set()});p.droneT=0.45;}}}
-  if(p.hasDog){var dog=p.dog;dog.anim+=dt*10;var tx=p.x-Math.cos(p.aimAng)*28,ty=p.y-Math.sin(p.aimAng)*28;dog.x+=(tx-dog.x)*Math.min(1,5*dt);dog.y+=(ty-dog.y)*Math.min(1,5*dt);for(var di=0;di<game.zombies.length;di++){var dz=game.zombies[di];if(!dz.dead&&!dz.dying&&dist(dog.x,dog.y,dz.x,dz.y)<28)hurtZombie(dz,10*p.damageMul*dt,dog.x,1);}}
+  if(p.hasDog){var dog=p.dog;dog.anim+=dt*10;dog.bite=Math.max(0,(dog.bite||0)-dt);
+    /* v20.4: the dog hunts the nearest zombie near you and bites it (it only hurt zombies it bumped into) */
+    var dtg=null,dbd=150,di,dz,dd;for(di=0;di<game.zombies.length;di++){dz=game.zombies[di];if(dz.dead||dz.dying||dz.ghost)continue;dd=dist(p.x,p.y,dz.x,dz.y);if(dd<dbd){dbd=dd;dtg=dz;}}
+    var tx=dtg?dtg.x:p.x-Math.cos(p.aimAng)*28,ty=dtg?dtg.y:p.y-Math.sin(p.aimAng)*28,dk=dtg?7:5;dog.x+=(tx-dog.x)*Math.min(1,dk*dt);dog.y+=(ty-dog.y)*Math.min(1,dk*dt);
+    if(dtg&&dist(dog.x,dog.y,dtg.x,dtg.y)<dtg.r+16&&dog.bite<=0){dog.bite=0.45;hurtZombie(dtg,9*p.damageMul,dog.x,1,{quiet:1});if(typeof addBlood==="function")addBlood(dtg.x,dtg.y,2);}}
 
   map.flowT+=dt;if(map.flowT>0.28)updateFlow(p.x,p.y);
   updateZombies(dt);
@@ -314,7 +318,7 @@ function updatePlayerMove(p,dt,safe){
     if(typeof moveWithSlide==="function")moveWithSlide(p,p.dashVx*dt,p.dashVy*dt);
     else{p.x+=p.dashVx*dt;p.y+=p.dashVy*dt;}
     p.trailT=(p.trailT||0)+dt;
-    if(p.trailT>0.025){p.trailT=0;addParticle(p.x,p.y,p.hero==="gompa"?"#bcaaa4":p.hero==="trueno"?"#82b1ff":"#90caf9",0.32,0,0,12,4);}
+    if(p.trailT>0.025){p.trailT=0;addParticle(p.x,p.y,p.hero==="gompa"?"#bcaaa4":p.hero==="neizan"?"#ff8a80":p.hero==="trueno"?"#82b1ff":"#90caf9",0.32,0,0,12,4);}
     if(p.dashSlash){var di,dz;for(di=0;di<game.zombies.length;di++){dz=game.zombies[di];if(!dz.dead&&!dz.dying&&!dz.dashHit&&dist(p.x,p.y,dz.x,dz.y)<30+dz.r){hurtZombie(dz,40*p.damageMul,p.x);dz.dashHit=1;if(p.bleedSlash)dz.poison=Math.max(dz.poison,1.2);}}}
   }else{
     p.vx=mx*spd;p.vy=my*spd;
@@ -738,7 +742,8 @@ function updateBullets(dt){
       if(dist(x0+sgx*tq,y0+sgy*tq,z.x,z.y)<z.r+b.r){
         if(b.hit)b.hit.add(z);
         hurtZombie(z,b.damage,b.x,0,b.cannon||b.knife||b.bell?{quiet:1}:undefined);
-        if(b.bell)sfx("thud");
+        if(b.bell){sfx("thud");if(typeof bellImpact==="function")bellImpact(b,z);}
+        if(b.knock&&typeof zKnock==="function")zKnock(z,b);
         if(b.knife&&typeof fireHitBurst==="function")fireHitBurst(z.x,z.y);
         if(b.fire)z.burn=Math.max(z.burn||0,b.knife?1.6:1.4);if(b.ice)z.slow=1.6;if(b.poison)z.poison=2;
         if(b.expl)explodeAt(b.x,b.y,b.explR||42,b.explDmg||b.damage*0.5,{friendly:1});

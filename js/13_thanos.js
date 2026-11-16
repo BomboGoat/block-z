@@ -85,7 +85,7 @@ killZombie=function(z){if(z&&z.isThanos){thanosDie(z);return;}return _hellKillZo
 var _hellFireSuper=fireSuper;
 fireSuper=function(p,ang){
   if(p&&p.mega){
-    if(p.grabbed||(p.super||0)<CFG.SUPER_COST||!game||game.state!=="playing"||p.leap)return;
+    if(p.grabbed||(p.super||0)<superCost(p)||!game||game.state!=="playing"||p.leap)return;
     if(ang==null||!isFinite(ang))ang=autoSuperAng(p);
     p.super=0;p.facing=ang;p.aimAng=ang;if(p.faceAng!=null)p.faceAng=ang;
     if(typeof gfxHitStop==="function")gfxHitStop(0.06,"big");
@@ -518,7 +518,7 @@ function megaTick(p,dt){
   if(p.beamT>0){p.beamT-=dt;var bz=megaTarget();if(bz)p.beamA+=Math.atan2(Math.sin(Math.atan2(bz.y-p.y,bz.x-p.x)-p.beamA),Math.cos(Math.atan2(bz.y-p.y,bz.x-p.x)-p.beamA))*Math.min(1,4*dt);
     if(bz&&distSeg(bz.x,bz.y,p.x,p.y,p.x+Math.cos(p.beamA)*380,p.y+Math.sin(p.beamA)*380)<bz.r+14){bz.hp-=150*dm*dt;bz.hitFlash=0.06;if(!bz._bt||game.time-bz._bt>0.2){floatText(bz.x,bz.y-30,""+Math.round(30*dm),"#80deea");bz._bt=game.time;}
       if(!bz.snapDone&&bz.hp<=bz.maxHp*0.16){bz.hp=Math.max(bz.hp,bz.maxHp*0.12);thanosStartSnap(bz);}else if(bz.hp<=0)thanosDie(bz);
-      p.super=Math.min(CFG.SUPER_COST,(p.super||0));}
+      p.super=Math.min(superCost(p),(p.super||0));}
     if(Math.random()<0.6)hellPart(p.x+Math.cos(p.beamA)*rand(20,300),p.y+Math.sin(p.beamA)*rand(20,300),"#e0f7fa",0.25,rand(-20,20),rand(-20,20),3,3);
   }
   /* repulsor shots */
