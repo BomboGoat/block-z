@@ -130,6 +130,7 @@ function menuGameTick(dt){
   if(!game)return;
   var st=game.state;
   if(st==="countdown"&&typeof rigWarm==="function"&&typeof selectedHero!=="undefined")rigWarm(selectedHero); /* v20.3.2: pre-cut the hero's sprites during the 3-2-1, one per frame, never in the menu */
+  if((st==="countdown"||st==="upgrade"||st==="boss_intro")&&typeof zLegWarm==="function")zLegWarm();
   if(st!==_menuPrevState){
     if(st==="playing"&&(_menuPrevState==="select"||_menuPrevState==="countdown"&&!MENU.runLive)){}
     if(st==="dead")profRunEnd("dead");

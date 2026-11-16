@@ -348,10 +348,10 @@ function drawHeroRig(e,name,look,anim,pose,H,W,fx,fy,opts){
    from the feet (connected pixels only, so a hand hanging beside the hip stays on the body), split along the real gap
    between them, and the static body keeps the arms, hands and a hip overlap that covers the joint. Cached per image. */
 var _zlegBudget=0,_zlegFrame=-1;
-function zLegParts(img,waist){
+function zLegParts(img,waist,force){
   var key="_zleg"+Math.round(waist*100);if(img[key]!==undefined)return img[key];
   var fr=(game&&game.time)||0;if(_zlegFrame!==fr){_zlegFrame=fr;_zlegBudget=2;}
-  if(_zlegBudget<=0)return null;_zlegBudget--;
+  if(!force){if(_zlegBudget<=0)return null;_zlegBudget--;}
   var iw=img.naturalWidth||img.width,ih=img.naturalHeight||img.height,res=null;
   try{
     var c=document.createElement("canvas");c.width=iw;c.height=ih;var g=c.getContext("2d");g.drawImage(img,0,0);
@@ -413,6 +413,17 @@ function zLegParts(img,waist){
     if(typeof createImageBitmap==="function"){var R0=res;["L","R","T"].forEach(function(k){try{createImageBitmap(R0[k]).then(function(bm){bm._bb=R0[k]._bb;R0[k]=bm;}).catch(function(){});}catch(e2){}});}
   }catch(err){res=null;}
   img[key]=res;return res;
+}
+/* v20.4: pre-cut the zombie legs in idle moments (3-2-1, upgrade cards, boss intro), one sprite per frame,
+   so the first time a zombie type walks on screen there is no cutting spike mid-fight */
+var _zlLooks={};
+function zLegWarmLook(look){var d,e,w,k;if(!look)return 0;w=artWaist(look);k="_zleg"+Math.round(w*100);
+  for(d=0;d<8;d++){e=artEntry(look,d,"walk");if(e&&e.img&&(e.img.naturalWidth||e.img.width)&&e.img[k]===undefined){zLegParts(e.img,w,1);return 1;}}return 0;}
+function zLegWarm(){
+  if(!game||!ART.ready)return;
+  if(game.state==="boss_intro"){if(game.boss)zLegWarmLook(game.boss.look);return;}
+  var wv=game.state==="upgrade"?(game.wave||0)+1:(game.wave||0),pool=typeof poolForWave==="function"?poolForWave(wv)||[]:[],i,t;
+  for(i=0;i<pool.length;i++){t=pool[i];if(!_zlLooks[t]&&typeof makeZombieLook==="function")_zlLooks[t]=makeZombieLook(t,1);if(zLegWarmLook(_zlLooks[t]))return;}
 }
 function drawSpriteWalk(e,look,anim,pose,H,W,fx,fy){
   var iw=e.img.naturalWidth||e.img.width, ih=e.img.naturalHeight||e.img.height;
