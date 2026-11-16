@@ -265,8 +265,8 @@ function menuBg(dim){
   try{C=lobbyLayer(dim);if(C&&!lobbyAlive(C)){LOBBY_CACHE.length=0;C=lobbyLayer(dim);if(!lobbyAlive(C))C=null;}}catch(err){LOBBY_CACHE.length=0;C=null;}
   if(!C){lobbyDirect(bg,dim);return;}
   var M=C.M;
-  var px=(MENU.parX||0),py=(MENU.parY||0);
-  var dx=clamp(Math.sin(t*0.05)*SW*0.012+px*6,-M,M),dy=clamp(Math.sin(t*0.07+1.1)*SH*0.006+py*3,-M,M);
+  /* only a slow ambient drift (no input-driven offset) */
+  var dx=clamp(Math.sin(t*0.05)*SW*0.012,-M,M),dy=clamp(Math.sin(t*0.07+1.1)*SH*0.006,-M,M);
   var K=dpr||1;function blit(c,x,y,sx,sy,sw,sh){ctx.drawImage(c,sx||0,sy||0,sw||c.width,sh||c.height,Math.round(x*K),Math.round(y*K),sw||c.width,sh||c.height);}
   ctx.save();ctx.setTransform(1,0,0,1,0,0);blit(C.bg,-M+dx,-M+dy);ctx.restore();
   var df=dim?1-dim:1;
@@ -521,7 +521,7 @@ function menuGo(st){
   if(st!=="title"&&game.state==="title")MENU.parentOk=1;
   game.state=st;MENU.enterT=MENU.t;MENU.scroll=0;MENU.press=null;
   if(st==="heroes"){MENU.heroIdx=Math.max(0,HEROES.findIndex(function(h){return h.id===selectedHero;}));}
-  if(st==="credits"&&!MENU.credits){MENU.credits=["Cargando…"];try{var x=new XMLHttpRequest();x.onload=function(){MENU.credits=String(x.responseText||"").split(/\r?\n/);};x.open("GET","CREDITS.txt?v=20.4");x.send();}catch(e){}}
+  if(st==="credits"&&!MENU.credits){MENU.credits=["Cargando…"];try{var x=new XMLHttpRequest();x.onload=function(){MENU.credits=String(x.responseText||"").split(/\r?\n/);};x.open("GET","CREDITS.txt?v=20.4.1");x.send();}catch(e){}}
   if(typeof layoutMenuButtons==="function")layoutMenuButtons();
 }
 function drawMenuTitle(){
@@ -727,13 +727,14 @@ function drawSettingsMenu(){
     }
   }
   mButton("howto",x+w-150,y+h-34,138,28,"Cómo jugar","❔","dark",{fs:12});
+  mText("Versión v"+(typeof BZ_VER!=="undefined"?BZ_VER:"?"),x+16,y+h-20,11,"#a49cb5","left","700",2);
 }
 function drawCredits(){
   menuBg(0.5);mBack();mTitle("Créditos");
   var s=layout.safe,w=Math.min(620,SW-s.l-s.r-24),x=(SW-w)/2,y=s.t+50,h=SH-s.b-10-y;
   mPanel(x,y,w,h,14,0.9);
   ctx.save();roundRect(ctx,x+4,y+4,w-8,h-8,12);ctx.clip();
-  var lines=["BLOCK Z","Idea, dirección y pruebas: Eric Montes","Hecho con mucho cariño (y muchos zombis)",""].concat(MENU.credits||[]),i,ly=y+20-MENU.scroll;
+  var lines=["BLOCK Z","Versión v"+(typeof BZ_VER!=="undefined"?BZ_VER:"?"),"Idea, dirección y pruebas: Eric Montes","Hecho con mucho cariño (y muchos zombis)",""].concat(MENU.credits||[]),i,ly=y+20-MENU.scroll;
   for(i=0;i<lines.length;i++){var L=lines[i];if(ly>y-20&&ly<y+h+20){if(i===0)mText(L,x+w/2,ly,20,"#ffe08a","center","900",4);else if(/^=+$|^-+$/.test(L)){}else mText(L,x+18,ly,/^[A-Z][^a-z]*$/.test(L)&&L.length>2?12:10.5,/^[A-Z][^a-z]*$/.test(L)&&L.length>2?"#ffd54f":"#e0d8f0","left",/^\s/.test(L)?"600":"700",2);}ly+=i===0?26:15;}
   MENU.creditsH=ly+MENU.scroll-y;
   ctx.restore();
@@ -776,7 +777,7 @@ function drawRunRewards(){
 /* ---------- input ---------- */
 function menuHitAt(x,y){for(var i=MENU.hits.length-1;i>=0;i--){var h=MENU.hits[i];if(x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h)return h;}return null;}
 function menuDown(p){if(typeof menuDirty!=="undefined")menuDirty=1;
-  MENU.parX=(p.x/SW-0.5)*2;MENU.parY=(p.y/SH-0.5)*2;
+  /* v20.4.1: no tap parallax — on a phone every tap made the forest jump towards the finger */
   var h=menuHitAt(p.x,p.y);
   if(h&&h.id.indexOf("sl_")===0){MENU.drag={kind:"slider",h:h};menuSlide(p.x);return;}
   if(h&&h.id==="creditsArea"){MENU.drag={kind:"scroll",y:p.y,s0:MENU.scroll};return;}
