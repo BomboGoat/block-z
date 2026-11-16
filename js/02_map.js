@@ -856,8 +856,10 @@ function pickBossSpawn(p){
 }
 function zoneAt(x,y){
   var i,z,best=null,ba=1e15,a,t,n=10;
+  if(typeof inWheat==="function"&&inWheat(x,y)){var wz=null,wd=1e15;for(i=0;i<(map.zones||[]).length;i++){z=map.zones[i];if(z.k!=="wheat")continue;a=Math.abs(x-(z.x+z.w/2))+Math.abs(y-(z.y+(z.h||z.d||0)/2));if(a<wd){wd=a;wz=z;}}if(wz)return wz;}
   for(i=0;i<(map.zones||[]).length;i++){
     z=map.zones[i];
+    if((z.name==="Trigal"||z.k==="wheat")&&typeof inWheat==="function"&&!inWheat(x,y))continue; /* v20.3.3: only on the wheat itself */
     if(x>=z.x&&x<=z.x+z.w&&y>=z.y&&y<=z.y+(z.h||z.d||0)){
       a=z.w*(z.h||z.d||1);
       if(a<ba){ba=a;best=z;}
