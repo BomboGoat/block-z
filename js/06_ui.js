@@ -341,12 +341,28 @@ function drawTruenoLaser(){
   ctx.strokeStyle="rgba(66,165,245,0.7)";ctx.lineWidth=w*0.62;ctx.stroke();
   ctx.strokeStyle="rgba(227,242,253,0.95)";ctx.lineWidth=Math.max(1.6,w*0.22);ctx.stroke();
   ctx.strokeStyle="rgba(255,255,255,0.9)";ctx.lineWidth=Math.max(1,w*0.1);ctx.stroke();
+  /* v20.5.2: two electric filaments spiral around the beam, energy pulses race to the tip, a lock-on bloom and
+     chain arcs to nearby zombies. All maths inline (no per-frame arrays), additive strokes + the shared glow sprite. */
+  var t=game.time||0,dx=e.x-s.x,dy=e.y-s.y,L=Math.sqrt(dx*dx+dy*dy)||1,ux=dx/L,uy=dy/L,nx=-uy,ny=ux,k,j,u,amp,ph;
+  ctx.lineWidth=Math.max(1.2,w*0.12);
+  for(k=0;k<2;k++){ctx.strokeStyle=k?"rgba(178,235,255,0.85)":"rgba(130,177,255,0.8)";ctx.beginPath();ph=t*26+k*Math.PI;
+    for(j=0;j<=18;j++){u=j/18;amp=w*0.62*Math.sin(u*Math.PI)*(0.75+0.25*Math.sin(t*31+j*1.7+k));var o=Math.sin(u*L/(9*sc)+ph)*amp;
+      var qx=s.x+dx*u+nx*o,qy=s.y+dy*u+ny*o;if(j)ctx.lineTo(qx,qy);else ctx.moveTo(qx,qy);}ctx.stroke();}
   if(spr){
-    var tip=14*sc;
+    for(k=0;k<3;k++){u=((t*2.6+k/3)%1);var pz=(7+5*Math.sin(u*Math.PI))*sc;ctx.globalAlpha=0.75*Math.sin(u*Math.PI);ctx.drawImage(spr,s.x+dx*u-pz,s.y+dy*u-pz,pz*2,pz*2);}
+    var lk=p.laserLock||0,tip=(14+8*lk+3*Math.sin(t*37))*sc;
     ctx.globalAlpha=0.85;ctx.drawImage(spr,e.x-tip,e.y-tip,tip*2,tip*2);
+    if(lk>0){ctx.globalAlpha=0.5*lk;ctx.strokeStyle="rgba(179,229,252,0.9)";ctx.lineWidth=Math.max(1,2*sc);var rr=(10+((t*3)%1)*16)*sc;
+      ctx.beginPath();ctx.ellipse(e.x,e.y,rr,rr*0.55,0,0,7);ctx.stroke();}
     var hs=12*sc;ctx.globalAlpha=0.95;ctx.drawImage(spr,s.x-hs,s.y-hs,hs*2,hs*2);
     ctx.globalAlpha=0.55;ctx.drawImage(spr,s.x-hs*0.55,s.y-hs*0.55,hs*1.1,hs*1.1);
   }
+  var A=p.laserArcs;
+  if(A)for(k=0;k<A.length;k++){var a=A[k];if(!(a.t>0)||!a.z||a.z.dead)continue;var zs=toScreen(a.z.x,a.z.y);zs.y-=16*sc;
+    var al=Math.min(1,a.t/0.08),ax=e.x,ay=e.y,bxx=zs.x-ax,byy=zs.y-ay,bl=Math.sqrt(bxx*bxx+byy*byy)||1,mx=-byy/bl,my=bxx/bl;
+    for(var pass=0;pass<2;pass++){ctx.globalAlpha=al*(pass?1:0.6);ctx.strokeStyle=pass?"rgba(255,255,255,0.95)":"rgba(100,181,246,0.85)";ctx.lineWidth=(pass?1.4:4)*sc;ctx.beginPath();ctx.moveTo(ax,ay);
+      for(j=1;j<7;j++){u=j/7;var off=Math.sin(a.seed+j*2.3+t*40)*bl*0.09;ctx.lineTo(ax+bxx*u+mx*off,ay+byy*u+my*off);}ctx.lineTo(zs.x,zs.y);ctx.stroke();}
+    if(spr){var gz=10*sc;ctx.globalAlpha=0.8*al;ctx.drawImage(spr,zs.x-gz,zs.y-gz,gz*2,gz*2);}}
   ctx.restore();
 }
 function drawUIButton(b,fill){ctx.fillStyle=fill||"#2ecc71";roundRect(ctx,b.x,b.y,b.w,b.h,14);ctx.fill();ctx.strokeStyle="#1a140c";ctx.lineWidth=3;roundRect(ctx,b.x,b.y,b.w,b.h,14);ctx.stroke();ctx.strokeStyle="rgba(255,255,255,0.25)";ctx.lineWidth=1.5;roundRect(ctx,b.x+3,b.y+3,b.w-6,b.h-6,11);ctx.stroke();ctx.fillStyle="#0a0a12";ctx.font="bold 18px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(b.label,b.x+b.w/2,b.y+b.h/2+1);ctx.textBaseline="alphabetic";ctx.textAlign="left";}

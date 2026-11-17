@@ -306,3 +306,129 @@ function drawMegaHammer(hx,hy,rot,sc,t,fly){
   if(Math.random()<(fly?0.9:0.35)){ctx.globalAlpha=0.9;ctx.strokeStyle="#e3f2fd";ctx.lineWidth=1;var pts=mpBoltPath(rand(-10,10),rand(-12,2),rand(-14,14),rand(-16,6),4,6);mpStroke(pts);}
   ctx.restore();
 }
+/* ---------- v20.5.2: MEGAPOWER CARDS. After the "Yo soy inevitable" cinematic the world freezes and three legendary
+   cards (Martillo del trueno, Armadura de hierro, Furia verde) flip in; tap one to take it. Why it used to stutter: the
+   moment you stepped on a pedestal the game built the transformed skin (pixel pass, ~40 ms on a 4x-throttled CPU) and
+   then cut it into limbs (~100-140 ms) on the very next frames. Now all three skins + limb sets are prepared one per
+   frame while the cards are still face down and static (nothing moves, so the work is invisible), the frozen world is a
+   single snapshot blit, and each card face is pre-rendered once. Choosing a card then costs nothing. */
+var MEGA_CARD_TXT={
+  hammer:["Golpes y martillazos","eléctricos.","Lanza el martillo","y rayos del cielo."],
+  armor:["Vuelo, repulsores y","rayo de pecho.","+30% vida, -45% daño","recibido, +12% vel."],
+  hulk:["Puños, pisotón y","salto gigante.","Vida x2,2, más grande,","-15% daño recibido."]
+};
+var MEGA_PICK=null;
+function megaCardLayout(){
+  var w=Math.round(Math.min(168,SW*0.2,SH*0.62/1.42)),h=Math.round(w*1.42),gap=Math.round(Math.max(14,w*0.16)),tot=w*3+gap*2,x0=Math.round(SW/2-tot/2),y=Math.round(SH*0.53-h/2+10);
+  return ["hammer","armor","hulk"].map(function(id,i){return{id:id,x:x0+i*(w+gap),y:y,w:w,h:h};});
+}
+function megaPrepStep(){ /* one heavy task per call; returns true while work remains */
+  var p=game&&game.player;if(!p||typeof ART_MAP==="undefined"||!ART.ready)return false;
+  var k=typeof artLookKey==="function"?artLookKey(p.look):null,m=k&&ART_MAP[k];if(!m)return false;
+  var names=[m.f];if(m.b&&m.b!==m.f)names.push(m.b);
+  var ids=["hammer","armor","hulk"],i,j,nm,img,tn,tk;
+  for(j=0;j<names.length;j++){nm=names[j];img=ART.imgs[nm];if(img&&img.width&&HERO_RIG[nm]&&!img["_rig_"+nm]){rigParts(nm,img);return true;}} /* plain skin limbs too (the transform blends from them) */
+  for(i=0;i<ids.length;i++)for(j=0;j<names.length;j++){nm=names[j];img=ART.imgs[nm];if(!img||!img.width||!HERO_RIG[nm])continue;tn=MEGA_TINT[ids[i]];tk=nm+"|"+tn;
+    if(!ART_TINT[tk]){artTint(nm,img,tn);return true;}
+    if(!ART_TINT[tk]["_rig_"+nm]){rigParts(nm,ART_TINT[tk]);return true;}}
+  return false;
+}
+function megaCardFace(id,w,h){
+  var P=MEGA_PICK,key=id+"_"+w+"_"+h;if(P.faces[key])return P.faces[key];
+  var M=MEGA[id],d=Math.min(2,window.devicePixelRatio||1),pad=6,c=document.createElement("canvas");c.width=Math.ceil((w+pad*2)*d);c.height=Math.ceil((h+pad*2)*d);
+  var g=c.getContext("2d");g.scale(d,d);g.translate(pad,pad);
+  if(typeof cuFace==="function"){var F=cuFace(5,w,h);g.drawImage(F.c,-F.pad,-F.pad,w+F.pad*2,h+F.pad*2);}
+  else{g.fillStyle="#1d1626";roundRect(g,0,0,w,h,12);g.fill();}
+  /* power-coloured wash + banner text */
+  var wg=g.createLinearGradient(0,0,0,h);wg.addColorStop(0,hexA(M.c,0.0));wg.addColorStop(0.45,hexA(M.c,0.22));wg.addColorStop(1,hexA(M.c,0.05));g.fillStyle=wg;roundRect(g,7,30,w-14,h-37,9);g.fill();
+  g.fillStyle="#3a2a00";g.fillRect(10,10,w-20,19);g.font="900 11px system-ui";g.textAlign="center";g.fillStyle="#fff3c4";g.fillText("MEGAPODER",w/2,23.5);
+  /* the hero already transformed (intact painted sprite, prepared during the face-down phase) */
+  var p=game.player,ah=h*0.44,ay=36,look={};for(var kk in p.look)look[kk]=p.look[kk];look.tint=MEGA_TINT[id];look._artScale=1;
+  var gs=glowSpr(M.c);g.save();g.globalCompositeOperation="lighter";g.globalAlpha=0.75;g.drawImage(gs,w/2-ah*0.62,ay+ah*0.02,ah*1.24,ah*1.0);g.restore();
+  try{var e=typeof artEntry==="function"?artEntry(look,2,"idle"):null;
+    if(e&&e.img){var mt=e.meta,iw=ah*(mt.w/mt.h);g.imageSmoothingQuality="high";g.drawImage(e.img,w/2-iw/2,ay,iw,ah);}}catch(err){}
+  /* power badge */
+  g.save();g.translate(w-24,ay+ah-14);g.fillStyle="rgba(10,6,16,0.85)";g.beginPath();g.arc(0,0,13,0,7);g.fill();g.strokeStyle=M.c;g.lineWidth=2;g.stroke();
+  g.scale(0.85,0.85);megaIcon(g,id);g.restore();
+  /* name + text */
+  g.textAlign="center";g.font="900 "+(w<140?12:13)+"px system-ui";g.lineJoin="round";g.strokeStyle="rgba(0,0,0,0.8)";g.lineWidth=3;
+  var nm=M.n.split(" "),l1=nm.slice(0,Math.ceil(nm.length/2)).join(" "),l2=nm.slice(Math.ceil(nm.length/2)).join(" "),ny=ay+ah+16;
+  g.strokeText(l1,w/2,ny);g.fillStyle=M.c2;g.fillText(l1,w/2,ny);g.strokeText(l2,w/2,ny+14);g.fillText(l2,w/2,ny+14);
+  g.font=(w<140?9:10)+"px system-ui";g.fillStyle="#e3e6ee";var T=MEGA_CARD_TXT[id];for(var i=0;i<T.length;i++)g.fillText(T[i],w/2,ny+31+i*12);
+  P.faces[key]={c:c,pad:pad};return P.faces[key];
+}
+function megaIcon(g,id){
+  if(id==="hammer"){g.rotate(-0.5);g.fillStyle="#6d4c41";g.fillRect(-1.6,-2,3.2,14);g.fillStyle="#b0bec5";g.fillRect(-8,-8,16,8);g.fillStyle="#eceff1";g.fillRect(-8,-8,16,2.5);g.fillStyle="#ffca28";g.fillRect(-2,-8,4,8);}
+  else if(id==="armor"){g.fillStyle="#c62828";g.beginPath();g.moveTo(-8,-7);g.lineTo(8,-7);g.lineTo(6.5,5);g.lineTo(0,9);g.lineTo(-6.5,5);g.closePath();g.fill();g.fillStyle="#ffca28";g.beginPath();g.moveTo(-5,-7);g.lineTo(5,-7);g.lineTo(3.4,-2);g.lineTo(-3.4,-2);g.closePath();g.fill();}
+  else{g.fillStyle="#43a047";g.beginPath();g.arc(0,1,8,0,7);g.fill();g.fillStyle="#66bb6a";for(var k=0;k<4;k++){g.beginPath();g.arc(-5.4+k*3.6,-5,2.3,0,7);g.fill();}}
+}
+function megaCardsOpen(){
+  MEGA_PICK={t:0,prep:1,chosen:null,ct:0,snap:null,faces:{},cards:megaCardLayout(),sw:SW,sh:SH,snd:{}};
+  game.state="hell_pick";game.hell.phase="cards";game.message=null;
+}
+function megaCardPick(id){
+  var P=MEGA_PICK;if(!P||P.chosen||!game||game.state!=="hell_pick")return;
+  while(megaPrepStep()){} /* only if tapped before the prep finished (tests) */
+  P.chosen=id;P.ct=0;sfx("rarity5");shake(6);
+}
+(function(){
+  var _ce=hellCineEnd;
+  hellCineEnd=function(){_ce.apply(this,arguments);if(game&&game.hell&&game.hell.phase==="pick"&&!game.player.mega)megaCardsOpen();};
+  var _mp=megaPick;
+  megaPick=function(p,id){if(game&&game.state==="hell_pick"){game.state="playing";}MEGA_PICK=null;return _mp.apply(this,arguments);};
+  var _pre=hellPreUpdate;
+  hellPreUpdate=function(dt){
+    if(!game||game.state!=="hell_pick")return _pre.apply(this,arguments);
+    var P=MEGA_PICK;if(!P){game.state="playing";return 1;}
+    if(P.prep){if(!megaPrepStep())P.prep=0;return 1;}  /* frozen, static frame while preparing */
+    P.t+=dt;
+    var i;for(i=0;i<3;i++){if(!P.snd[i]&&P.t>=0.12+i*0.16+0.15){P.snd[i]=1;sfx(i===2?"rarity5":"rarity4");}}
+    if(P.chosen){P.ct+=dt;if(P.ct>=0.62){var id=P.chosen;megaPick(game.player,id);}}
+    return 1;
+  };
+  var _scr=hellDrawScreen;
+  hellDrawScreen=function(){if(game&&game.state==="hell_pick"){if(typeof hellAtmosphere==="function"&&game.hell)hellAtmosphere();return 1;}return _scr.apply(this,arguments);};
+  var _draw=draw;
+  draw=function(){
+    if(!(game&&game.state==="hell_pick"&&MEGA_PICK)||(layout&&layout.isPortrait))return _draw.apply(this,arguments);
+    var P=MEGA_PICK;
+    if(P.sw!==SW||P.sh!==SH){P.cards=megaCardLayout();P.sw=SW;P.sh=SH;P.snap=null;P.faces={};}
+    if(!P.snap||P.snap.width!==canvas.width||P.snap.height!==canvas.height){
+      _draw.apply(this,arguments); /* one real frame of the frozen arena, then reuse it */
+      var sc=document.createElement("canvas");sc.width=canvas.width;sc.height=canvas.height;var sg=sc.getContext("2d");sg.drawImage(canvas,0,0);sg.fillStyle="rgba(6,4,12,0.62)";sg.fillRect(0,0,sc.width,sc.height);P.snap=sc; /* dim baked in: one blit per frame */
+      ctx.fillStyle="rgba(6,4,12,0.62)";ctx.fillRect(0,0,SW,SH);
+    }else{var M=ctx.getTransform();ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(P.snap,0,0);ctx.setTransform(M);}
+    drawMegaCards();
+  };
+  document.addEventListener("pointerdown",function(e){
+    try{if(!game||game.state!=="hell_pick"||!MEGA_PICK)return;e.stopPropagation();
+      var P=MEGA_PICK;if(P.prep||P.chosen||P.t<0.12+2*0.16+0.3)return;
+      var q=pointerToScreen(e),i,c;for(i=0;i<P.cards.length;i++){c=P.cards[i];if(q.x>=c.x&&q.x<=c.x+c.w&&q.y>=c.y&&q.y<=c.y+c.h){megaCardPick(c.id);return;}}
+    }catch(err){}
+  },true);
+})();
+function drawMegaCards(){
+  var P=MEGA_PICK,t=P.t,i,c,el,now=(game.time||0)+t;
+  if(P.chosen){ctx.fillStyle="rgba(6,4,12,"+(0.45*clamp(P.ct/0.4,0,1))+")";ctx.fillRect(0,0,SW,SH);}
+  ctx.save();ctx.textAlign="center";ctx.lineJoin="round";var ty=Math.max(30,P.cards[0].y-16);
+  ctx.font="900 "+Math.round(Math.min(24,SH*0.06))+"px system-ui";ctx.strokeStyle="#1a0a20";ctx.lineWidth=5;ctx.strokeText("Elige tu MEGAPODER",SW/2,ty);ctx.fillStyle="#ffd54f";ctx.fillText("Elige tu MEGAPODER",SW/2,ty);
+  var ready=!P.prep&&t>=0.12+2*0.16+0.3&&!P.chosen;
+  ctx.font="bold 11px system-ui";ctx.fillStyle=ready?"rgba(255,236,179,0.9)":"rgba(220,220,220,0.55)";
+  var cb=P.cards[0].y+P.cards[0].h+16;if(cb<SH-4)ctx.fillText(P.chosen?"":ready?"Toca una carta para elegirla":"Revelando poderes…",SW/2,cb);
+  ctx.restore();
+  for(i=0;i<P.cards.length;i++){c=P.cards[i];var w=c.w,h=c.h,cx=c.x+w/2,cy=c.y+h/2,M=MEGA[c.id];
+    var st=0.12+i*0.16,flipU=P.prep?0:clamp((t-st)/0.3,0,1),face=flipU>=0.5,sx=flipU>=1?1:Math.abs(Math.cos(flipU*Math.PI));
+    var sel=P.chosen===c.id,oth=P.chosen&&!sel,k=sel?smooth01(clamp(P.ct/0.35,0,1)):0,sc=1+0.14*k,al=oth?1-clamp(P.ct/0.3,0,1):1;if(al<=0)continue;
+    var bob=face&&flipU>=1&&!P.chosen?Math.sin(now*2+i)*2:0,mx=sel?(SW/2-cx)*k:0;
+    ctx.save();ctx.globalAlpha=al;ctx.translate(cx+mx,cy+bob);
+    if(face&&typeof plGlow==="function"){ctx.save();ctx.globalCompositeOperation="lighter";var pul=0.5+0.5*Math.sin(now*4+i),gz=Math.max(w,h)*(0.58+0.08*pul+0.3*k);ctx.globalAlpha=al*(0.35+0.2*pul+0.4*k);ctx.drawImage(glowSpr(M.c),-gz,-gz,gz*2,gz*2);
+      if(typeof cuRays==="function"&&sel){ctx.rotate(now*0.5+i);var rs=Math.max(w,h)*1.0;ctx.globalAlpha=al*(0.16+0.3*k);ctx.drawImage(cuRays(),-rs,-rs,rs*2,rs*2);}ctx.restore();}
+    ctx.scale(sc*sx,sc);
+    if(!face){if(typeof cuBack==="function"){var bk=cuBack(5,w,h);ctx.drawImage(bk.c,-w/2,-h/2,w,h);}else{ctx.fillStyle="#2a2238";roundRect(ctx,-w/2,-h/2,w,h,12);ctx.fill();}}
+    else{var F=megaCardFace(c.id,w,h);ctx.drawImage(F.c,-w/2-F.pad,-h/2-F.pad,w+F.pad*2,h+F.pad*2);
+      if(typeof cuShine==="function"){var ph=((now+i*0.5)%1.8)/1.8;ctx.save();roundRect(ctx,-w/2+5,-h/2+5,w-10,h-10,9);ctx.clip();ctx.globalCompositeOperation="lighter";ctx.globalAlpha=0.4*al;ctx.rotate(0.35);ctx.drawImage(cuShine(),-w*0.9+ph*w*1.8-20,-h,40,h*2);ctx.restore();}
+      if(flipU<1){ctx.globalCompositeOperation="lighter";ctx.globalAlpha=(1-flipU)*1.4*al;ctx.fillStyle="#fff";roundRect(ctx,-w/2,-h/2,w,h,12);ctx.fill();}
+      if(sel){ctx.globalCompositeOperation="lighter";ctx.globalAlpha=0.35*(1-k*0.6);ctx.strokeStyle=M.c2;ctx.lineWidth=4;roundRect(ctx,-w/2-3,-h/2-3,w+6,h+6,14);ctx.stroke();}}
+    ctx.restore();}
+  if(P.chosen&&P.ct>0.45){ctx.save();ctx.globalAlpha=clamp((P.ct-0.45)/0.17,0,1)*0.85;ctx.fillStyle="#fffdf5";ctx.fillRect(0,0,SW,SH);ctx.restore();}
+}
