@@ -18,8 +18,12 @@ function resize(){
   SW=window.innerWidth;SH=window.innerHeight;
   dpr=Math.min(window.devicePixelRatio||1,(typeof GFX!=="undefined"&&GFX.dprMax)||2);
   var maxPix=8*1024*1024;if(SW*SH*dpr*dpr>maxPix)dpr=Math.sqrt(maxPix/(SW*SH));
-  canvas.width=(SW*dpr)|0;canvas.height=(SH*dpr)|0;
-  canvas.style.width=SW+"px";canvas.style.height=SH+"px";
+  /* v20.5.3: only touch the backing store when the size really changes. Assigning canvas.width clears the (opaque)
+     canvas to black, and the boot loop calls resize() every 100 ms for 2 s, so each call used to flash a black frame
+     before the next paint: the "parpadeo" at start-up. When it does change, repaint at once (no blank frame). */
+  var cw=(SW*dpr)|0,ch=(SH*dpr)|0,sized=(canvas.width!==cw||canvas.height!==ch);
+  if(sized){canvas.width=cw;canvas.height=ch;}
+  if(canvas.style.width!==SW+"px")canvas.style.width=SW+"px";if(canvas.style.height!==SH+"px")canvas.style.height=SH+"px";
   ctx=canvas.getContext("2d",{alpha:false}); /* v20.5.1: opaque canvas (every frame paints a full background) — the compositor skips blending the whole page layer */ctx.setTransform(dpr,0,0,dpr,0,0);
   layout.isPortrait=SH>=SW;
   layout.safe=typeof readSafeInsets==="function"?readSafeInsets():{l:12,t:12,r:12,b:12};
@@ -33,6 +37,7 @@ function resize(){
   if(game&&game.state==="upgrade")layoutUpgradeCards();
   if(game&&game.state==="select")layoutSelect();
   layoutMenuButtons();
+  if(sized&&typeof booted!=="undefined"&&booted&&typeof draw==="function"){try{draw();}catch(e){}}
 }
 function layoutMenuButtons(){
   var cx=SW/2,bw=Math.min(280,SW-40),bh=44,gap=10,y;
