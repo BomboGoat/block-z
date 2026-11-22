@@ -534,6 +534,31 @@ function endChestGeom(){var s=layout.safe,w=Math.min(230,SW*0.26),h=Math.min(150
   var _re2=profRunEnd;profRunEnd=function(kind){MENU._lastGrantSlot=null;_re2(kind);if(MENU.lastRun&&MENU._lastGrantSlot!=null&&MENU.lastRun.chest)MENU.lastRun.slot=MENU._lastGrantSlot;};
 })();
 
+/* ---------- megapower keeps your painted outfit ---------- */
+/* the outfit stays as painted; the power shows through the existing overlays (storm aura + eyes, arc reactor + repulsors,
+   hulk size + cracks). The variant is built once per sprite (same pixel pass as the plain mega look) and its limbs are
+   pre-cut by megaPrepStep, so the fight costs nothing extra per frame. */
+function megaSkinId(){try{var p=game&&game.player;if(!p)return null;var sk=equippedSkin(p.hero);return REAL_SKINS[sk]?sk:null;}catch(e){return null;}}
+(function(){
+  var _t=artTint;
+  artTint=function(name,img,tint){
+    if(tint==="thor"||tint==="iron"||tint==="hulk"){
+      var k=name+"|"+tint,sk=megaSkinId(),R=sk&&REAL_SKINS[sk];
+      var meta=ART.meta&&ART.meta[name],hd=!!(meta&&(img.naturalWidth||img.width)>meta.w*1.5);
+      if(R&&R[name]&&!hd){
+        var ks=k+"|"+sk,c=ART_TINT[ks];
+        if(!c){var si=skinImg(name+"_"+sk);if(!si){var cur=ART_TINT[k];if(cur&&cur._megaSkin)delete ART_TINT[k];return _t(name,img,tint);}
+          var m=megaSkin(name,si,tint);c=document.createElement("canvas");c.width=si.naturalWidth||si.width;c.height=si.naturalHeight||si.height;c.getContext("2d").drawImage(si,0,0);
+          c._mega=m._mega;c._skinBase=img;c._megaSkin=sk;ART_TINT[ks]=c;}
+        ART_TINT[k]=c; /* megaPrepStep looks here: pre-cuts the limbs of the variant actually used */
+        return c;
+      }
+      var cur2=ART_TINT[k];if(cur2&&cur2._megaSkin)delete ART_TINT[k];
+    }
+    return _t(name,img,tint);
+  };
+})();
+
 /* ---------- screen + input ---------- */
 MENU_ST.shop=1;
 drawMenuScreen=function(){
