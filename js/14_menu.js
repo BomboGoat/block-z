@@ -71,7 +71,7 @@ var ACHS=[
   {id:"r5",name:"Superviviente",desc:"Llega a la ronda 5",rew:100,val:function(){return PROF.stats.bestRound;},goal:5},
   {id:"boss1",name:"Cazajefes",desc:"Derrota a 3 jefes en total",rew:150,val:function(){return PROF.stats.bosses;},goal:3},
   {id:"win1",name:"Héroe de la isla",desc:"Completa el Nivel 1",rew:300,val:function(){return PROF.stats.wins;},goal:1},
-  {id:"thanos",name:"Inevitable",desc:"Derrota a Thanos",rew:500,val:function(){return PROF.stats.hell;},goal:1},
+  {id:"thanos",name:"Señor del Abismo",desc:"Derrota a Vorgath",rew:500,val:function(){return PROF.stats.hell;},goal:1},
   {id:"all4",name:"Cuarteto",desc:"Gana con los 4 héroes",rew:600,val:function(){var n=0,h;for(h in PROF.stats.heroWins)if(PROF.stats.heroWins[h]>0)n++;return n;},goal:4},
   {id:"lv10",name:"Veterano",desc:"Llega al nivel 10",rew:250,val:function(){return account.level;},goal:10},
   {id:"col5",name:"Coleccionista",desc:"Consigue 5 desbloqueos",rew:200,val:function(){return countUnlocks();},goal:5},
@@ -526,7 +526,7 @@ function menuGo(st){
   if(st!=="title"&&game.state==="title")MENU.parentOk=1;
   game.state=st;MENU.enterT=MENU.t;MENU.scroll=0;MENU.press=null;
   if(st==="heroes"){MENU.heroIdx=Math.max(0,HEROES.findIndex(function(h){return h.id===selectedHero;}));}
-  if(st==="credits"&&!MENU.credits){MENU.credits=["Cargando…"];try{var x=new XMLHttpRequest();x.onload=function(){MENU.credits=String(x.responseText||"").split(/\r?\n/);};x.open("GET","CREDITS.txt?v=20.5.3");x.send();}catch(e){}}
+  if(st==="credits"&&!MENU.credits){MENU.credits=["Cargando…"];try{var x=new XMLHttpRequest();x.onload=function(){MENU.credits=String(x.responseText||"").split(/\r?\n/);};x.open("GET","CREDITS.txt?v=20.6");x.send();}catch(e){}}
   if(typeof layoutMenuButtons==="function")layoutMenuButtons();
 }
 function drawMenuTitle(){
@@ -689,7 +689,7 @@ function drawStats(){
   menuBg(0.45);mBack();mTitle("Récords y estadísticas");drawTopBar();
   var s=layout.safe,st=PROF.stats,x=s.l+12,w=SW-s.l-s.r-24,y=s.t+52,h=SH-s.b-10-y;
   var cards=[["🏁","Mejor ronda",(st.bestRound||0)+" / 10"],["💀","Zombis eliminados",fmtN(st.kills)],["🏆","Victorias",fmtN(st.wins)],["🎮","Partidas",fmtN(st.runs)],
-    ["⏱️","Tiempo jugado",fmtTime(st.time)],["👹","Jefes derrotados",fmtN(st.bosses)],["🫰","Thanos derrotado",st.hell?st.hell+" ×":"Aún no"],["⭐","Nivel de cuenta",""+account.level]];
+    ["⏱️","Tiempo jugado",fmtTime(st.time)],["👹","Jefes derrotados",fmtN(st.bosses)],["🫰","Vorgath derrotado",st.hell?st.hell+" ×":"Aún no"],["⭐","Nivel de cuenta",""+account.level]];
   var cols=4,gap=8,cw=(w-gap*(cols-1))/cols,ch=Math.min(70,(h*0.62-gap)/2),i;
   for(i=0;i<cards.length;i++){
     var cx=x+(i%cols)*(cw+gap),cy=y+Math.floor(i/cols)*(ch+gap),ent=enterK(i*0.2);
@@ -749,7 +749,7 @@ function drawCredits(){
 function drawHowToMenu(){
   menuBg(0.5);mBack();mTitle("Cómo jugar");
   var s=layout.safe,w=Math.min(560,SW-s.l-s.r-24),x=(SW-w)/2,y=s.t+50,h=SH-s.b-10-y;mPanel(x,y,w,h,14,0.9);
-  var L=[["🕹️","Mueve con el joystick (aparece donde pongas el pulgar)"],["🎯","Atacas solo al enemigo más cercano"],["💥","Super: arrástrala desde su botón para apuntar"],["🌾","El trigo y los arbustos te esconden"],["🏛️","Puedes entrar en las ruinas"],["👹","Jefes en las rondas 3, 6 y 10 · Thanos al final"],["🎁","Gana XP y monedas para desbloquear aspectos, estelas y ventajas"]],i;
+  var L=[["🕹️","Mueve con el joystick (aparece donde pongas el pulgar)"],["🎯","Atacas solo al enemigo más cercano"],["💥","Super: arrástrala desde su botón para apuntar"],["🌾","El trigo y los arbustos te esconden"],["🏛️","Puedes entrar en las ruinas"],["👹","Jefes en las rondas 3, 6 y 8 · Vorgath al final"],["🎁","Gana XP y monedas para desbloquear aspectos, estelas y ventajas"]],i;
   for(i=0;i<L.length;i++){var ly=y+20+i*Math.min(30,(h-26)/L.length);mText(L[i][0],x+24,ly,15,"#fff","center","700",0);mText(L[i][1],x+44,ly,12,"#ece4f8","left","700",2.5);}
 }
 function drawToasts(){

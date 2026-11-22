@@ -7,14 +7,14 @@ var ART_MAP={
   gompa:{f:"gompa_f"},
   neizan:{f:"neizan_f"},
   colossus:{f:"colossus_f"},
-  home:{f:"home_f"},
+  home:{f:"icaro_f"},
   final:{f:"final_f"},
   normal:{f:"z_normal_f"},fast:{f:"z_fast_f"},tank:{f:"z_tank_f"},
   exploder:{f:"z_exploder_f"},crawler:{f:"z_crawler_f"},armored:{f:"z_armored_f"},
   spitter:{f:"z_spitter_f"},jumper:{f:"z_jumper_f"},screamer:{f:"z_screamer_f"},
   splitter:{f:"z_splitter_f"},mini:{f:"z_normal_f"},
   gorgon:{f:"gorgon_f"},gorgon_open:{f:"gorgon_open_f"},
-  thanos:{f:"thanos_walk_f"},thanos_cast:{f:"thanos_cast_f"},thanos_snap:{f:"thanos_snap_f"}
+  thanos:{f:"vorgath_walk_f"},thanos_cast:{f:"vorgath_cast_f"},thanos_snap:{f:"vorgath_snap_f"}
 };
 function artLookKey(look){
   if(!look)return null;
@@ -40,9 +40,9 @@ function artLoad(done){
       im.src=(ART.meta[k]&&ART.meta[k].file)||("assets/spr/"+k+".webp");
     })(keys[i]);
   };
-  mj.onerror=tick;mj.open("GET","assets/spr/meta.json?v=20.5.3");mj.send();
-  var mw=new Image();mw.onload=function(){ART.menuWide=mw;tick();};mw.onerror=tick;mw.src="assets/ui/menu-wide.webp?v=20.5.3";
-  var ar=new Image();ar.onload=function(){ART.arena=ar;if(map){map.chunks={};map.dirty=1;}tick();};ar.onerror=tick;ar.src="assets/env/arena.webp?v=20.5.3";
+  mj.onerror=tick;mj.open("GET","assets/spr/meta.json?v=20.6");mj.send();
+  var mw=new Image();mw.onload=function(){ART.menuWide=mw;tick();};mw.onerror=tick;mw.src="assets/ui/menu-wide.webp?v=20.6";
+  var ar=new Image();ar.onload=function(){ART.arena=ar;if(map){map.chunks={};map.dirty=1;}tick();};ar.onerror=tick;ar.src="assets/env/arena.webp?v=20.6";
 }
 function artEntry(look,dir,pose){
   if(!ART.ready||!ART.meta)return null;

@@ -43,7 +43,7 @@ function spawnHome(x,y){
   var z=spawnZombie("boss",x,y,5);
   var bs=(typeof waveDifficulty==="function"?waveDifficulty(5).bossHp:1.21);
   z.hp=Math.round(1260*bs);z.maxHp=z.hp;z.isBoss=1;z.isHome=1;z.r=20*CFG.CHAR;z.h=50*CFG.CHAR;z.speed=90*CFG.SPD;z.damage=Math.round(17*bs);z.score=900;z.xp=380;
-  z.look=makeHomeLook();z.phase="intro";z.introT=4;z.atkCd=1.8;z.windup=null;z.windupT=0;z.p2=0;z.bName="HOMELANDER";
+  z.look=makeHomeLook();z.phase="intro";z.introT=4;z.atkCd=1.8;z.windup=null;z.windupT=0;z.p2=0;z.bName="ÍCARO";
   z.bubbleText="";z.bubbleFull="¿Sabéis quién soy?";z.bubbleIdx=0;z.bubbleT=0;z.rings=[];z.diveT=0;if(typeof placeOnGround==="function")placeOnGround(z);z.tx=z.x;z.ty=z.y;
   return z;
 }
@@ -643,7 +643,7 @@ function startWave(idx){
 function beginCombat(){
   var p=game.player;
   if(game.wave===2){var s=(typeof pickBossSpawn==='function'?pickBossSpawn(p):pickSpawn(p));startBoss(spawnColossus(s.x,s.y),"¡Vamos a gamblear!","Va va vamos a gam gam blear",88);return;}
-  if(game.wave===5){var s1=(typeof pickBossSpawn==='function'?pickBossSpawn(p):pickSpawn(p));startBoss(spawnHome(s1.x,s1.y),"¿Sabéis quién soy?","Sa sa sabeis quien soy yo",110);return;}
+  if(game.wave===5){var s1=(typeof pickBossSpawn==='function'?pickBossSpawn(p):pickSpawn(p));startBoss(spawnHome(s1.x,s1.y),"¡Ícaro ha llegado!","Arrodillaos ante el cielo",110);return;}
   if(game.wave===7){var sg=(typeof gorgonSpot==='function'&&(gorgonSpot(p.x,p.y,110,180,18)||gorgonSpot(p.x,p.y,90,240,14)))||(typeof pickBossSpawn==='function'?pickBossSpawn(p):pickSpawn(p));startBoss(spawnGorgon(sg.x,sg.y),"","",0);return;}
   if(game.wave===9){var s2=(typeof pickBossSpawn==='function'?pickBossSpawn(p):pickSpawn(p)),fb=spawnZombie("boss",s2.x,s2.y,9),bs=(typeof waveDifficulty==="function"?waveDifficulty(9).bossHp:1.49);fb.isBoss=1;fb.hp=Math.round(1320*bs);fb.maxHp=fb.hp;fb.r=26;fb.h=58;if(typeof placeOnGround==="function")placeOnGround(fb);fb.speed=Math.round(60*(typeof waveDifficulty==="function"?waveDifficulty(9).speed:1));fb.damage=Math.round(28*(typeof waveDifficulty==="function"?waveDifficulty(9).dmg:1));fb.bName="JEFE FINAL";fb.look.final=1;fb.look.kind="final";fb.look.type="boss";fb.rings=[];fb.throws=[];fb.atkCd=2;fb.windup=null;fb.windupT=0;fb.chargeT=0;startBoss(fb,"¡El fin!","El fin",70);return;}
   p.invuln=Math.max(p.invuln,0.9);game.state="playing";game.spawnTimer=0.5;game.graceT=1.4;

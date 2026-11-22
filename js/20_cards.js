@@ -35,7 +35,7 @@ var HCARDS=[
  {id:"hc_gompa_l",hero:"gompa",fixedR:5,once:1,minR:5,icon:"🏋️",name:"Lluvia de pesas",desc:"Cada 7 s caen 6 pesas gigantes del cielo sobre la horda",plus:["Meteoros","Área"],minus:[]},
  {id:"hc_neizan_e",hero:"neizan",fixedR:3,once:1,minR:3,icon:"🐉",name:"Aliento de dragón",desc:"Tus cartuchos escupen un cono de fuego que quema todo delante",plus:["Fuego","Cono"],minus:[]},
  {id:"hc_neizan_m",hero:"neizan",fixedR:4,once:1,minR:4,icon:"💣",name:"Slug explosivo",desc:"Cada 3.er disparo lanza un slug que explota con metralla",plus:["Explosión"],minus:[]},
- {id:"hc_neizan_l",hero:"neizan",fixedR:5,once:1,minR:5,icon:"🔴",name:"Protocolo Terminator",desc:"Cada 10 s tu ojo dispara un láser rojo que barre la zona",plus:["Láser","Barrido"],minus:[]}
+ {id:"hc_neizan_l",hero:"neizan",fixedR:5,once:1,minR:5,icon:"🔵",name:"Protocolo Exterminio",desc:"Cada 10 s tu ojo cibernético dispara un láser que barre la zona",plus:["Láser","Barrido"],minus:[]}
 ];
 HCARDS.forEach(function(c){c.flag=c.id;UPGRADE_DEFS.push(c);});
 /* ---------- effect engine ---------- */
@@ -185,7 +185,7 @@ function hcDraw(){
       var fl=typeof ensureFlameSpr==="function"?ensureFlameSpr():null;if(fl){for(var fi=0;fi<4;fi++){var fw=(60+fi*25)*sc*(0.6+u*0.8),fh=(16+fi*9)*sc*(0.6+u),off=(fi-1.5)*0.16;ctx.save();ctx.rotate(off);ctx.globalAlpha=fa8*(0.85-fi*0.12);ctx.scale(-1,1);ctx.drawImage(fl,-fw-6*sc,-fh/2,fw,fh);ctx.restore();}}}
     else if(o.k==="slug"){var A2=p._handSx!=null?{x:p._handSx,y:p._handSy}:toScreen(o.x,o.y),B2=toScreen(o.tx,o.ty);B2.y-=10*sc;var sx=A2.x+(B2.x-A2.x)*u,sy=A2.y+(B2.y-A2.y)*u-Math.sin(u*Math.PI)*20*sc;ctx.globalCompositeOperation="lighter";var sg=10*sc;ctx.drawImage(hcGlow("255,150,60"),sx-sg,sy-sg,sg*2,sg*2);ctx.fillStyle="#ffe0b2";ctx.beginPath();ctx.arc(sx,sy,2.8*sc,0,7);ctx.fill();}
     else if(o.k==="laser"){var eye=toScreen(p.x,p.y);eye.y-=(p._handLift||22)+10*sc;var la2=Math.atan2(Math.sin(o.a||0)*ys,Math.cos(o.a||0)),fa9=u<0.08?u/0.08:u>0.9?(1-u)/0.1:1,LL=430*sc;ctx.translate(eye.x,eye.y);ctx.rotate(la2);ctx.globalCompositeOperation="lighter";
-      ctx.globalAlpha=fa9;if(typeof plStreak==="function"){ctx.save();ctx.scale(-1,1);ctx.drawImage(plStreak("255,30,30","laser"),-LL,-10*sc,LL,20*sc);ctx.restore();}ctx.fillStyle="rgba(255,220,220,"+fa9+")";ctx.fillRect(0,-1.4*sc,LL,2.8*sc);var eg=16*sc*(0.9+0.2*Math.sin(t*40));ctx.drawImage(hcGlow("255,40,40"),-eg,-eg,eg*2,eg*2);}
+      ctx.globalAlpha=fa9;if(typeof plStreak==="function"){ctx.save();ctx.scale(-1,1);ctx.drawImage(plStreak("30,220,255","laserc"),-LL,-10*sc,LL,20*sc);ctx.restore();}ctx.fillStyle="rgba(220,250,255,"+fa9+")";ctx.fillRect(0,-1.4*sc,LL,2.8*sc);var eg=16*sc*(0.9+0.2*Math.sin(t*40));ctx.drawImage(hcGlow("40,220,255"),-eg,-eg,eg*2,eg*2);}
     ctx.restore();
   }
   ctx.globalAlpha=1;

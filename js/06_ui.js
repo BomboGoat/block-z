@@ -730,7 +730,7 @@ function drawHUD(){
   lab=wpn==="bolt"?"Rayos":wpn==="knife"?"Cuchillo":wpn==="fist"||wpn==="bell"?"Pesas":wpn==="smg"?"Subfusil":wpn==="shotgun"?"Escopeta":wpn==="revolver"?"Revólver":wpn==="rifle"?"Rifle":wpn==="gl"?"Lanzagranadas":wpn==="dbshot"?"Escopeta doble":"Pistola";if(p.miniT>0||p.miniSpin>0)lab="Minigun";
   pal={classic:{bg:"#ff8f00",fg:"#1a0a00"},trueno:{bg:"#00e5ff",fg:"#00363d"},mr:{bg:"#ff1744",fg:"#fff"},gompa:{bg:"#c6ff00",fg:"#142000"},neizan:{bg:"#ff3d00",fg:"#fff"}};
   var col=pal[hero]||pal.classic;
-  if(p.mega&&typeof MEGA!=="undefined"&&MEGA[p.mega]){lab=p.mega==="hammer"?"Martillo":p.mega==="armor"?"Armadura":"Furia verde";col={bg:MEGA[p.mega].c,fg:p.mega==="armor"?"#fff":"#0a0a12"};}
+  if(p.mega&&typeof MEGA!=="undefined"&&MEGA[p.mega]){lab=p.mega==="hammer"?"Mazo":p.mega==="armor"?"Titán":"Furia";col={bg:MEGA[p.mega].c,fg:p.mega==="armor"?"#fff":"#0a0a12"};}
   hudFont("bold",9);var tw=ctx.measureText(lab).width+14,px=x+w-tw-8,py=y+38;
   ctx.fillStyle=col.bg;roundRect(ctx,px,py,tw,16,8);ctx.fill();
   ctx.fillStyle=col.fg;ctx.textAlign="center";ctx.fillText(lab,px+tw/2,py+9);ctx.textAlign="left";

@@ -31,7 +31,7 @@ Colossus boss: "Battle Theme"
   Verified v20.1: the source page describes the track as "Orchestral."
   Not chiptune / not procedural.
 
-Homelander (phase 1): "Determined Pursuit (epic orchestra loop)"
+Ícaro, flying boss (phase 1): "Determined Pursuit (epic orchestra loop)"
   Author: Emma_MA
   Source: https://opengameart.org/content/determined-pursuit-epic-orchestra-loop
   License: CC0 1.0 Universal
@@ -39,7 +39,7 @@ Homelander (phase 1): "Determined Pursuit (epic orchestra loop)"
   Verified v20.1: listed as "Frantic strings, determined horns and busy drums."
   Recorded orchestral production, not retro / not chiptune.
 
-Homelander (phase 2): "Fall of Nightmares [Epic, Orchestral]"
+Ícaro, flying boss (phase 2): "Fall of Nightmares [Epic, Orchestral]"
   Author: nene  (voices: Helena Kesti, Matias Lindgren)
   Source: https://opengameart.org/content/fall-of-nightmares-epic-orchestral
   License: CC0 1.0 Universal
@@ -268,40 +268,40 @@ audio unlock are original to Block Z. No procedural synth beeps remain.
 v20.1 checked the baked SFX for chiptune-like spectra (very peaky, thin
 high-frequency buzz); the hero attacks above are recorded sources.
 
-v20.2.1 additions — Round 10: THANOS in the lost hell planet
--------------------------------------------------------------
-Thanos boss theme (v20.2.3): "Final Confrontation" (track 19, "The Nine Lives or Er the Cat" OST)
+v20.2.1 additions — Round 10: VORGATH in the lost hell planet (renamed/redesigned in v20.6)
+------------------------------------------------------------------------------------
+Final boss theme (v20.2.3): "Final Confrontation" (track 19, "The Nine Lives or Er the Cat" OST)
   Author: tcarisland
   Source: https://opengameart.org/content/final-confrontation
   License: CC-BY 4.0
-  File: assets/mus/thanos.mp3 (trimmed 4 s-156 s for the loop, loudness-normalised, 112 kbps)
+  File: assets/mus/abismo.mp3 (trimmed 4 s-156 s for the loop, loudness-normalised, 112 kbps)
   Dramatic orchestral boss music with timpani, low brass and choir. Not chiptune.
 
-Thanos voice line "Yo soy inevitable": synthesized with Piper TTS
-  (voice es_ES-davefx-medium, rhasspy/piper-voices; dataset license CC0 per
-  the model card), pitched down with formant preservation, a
-  sub-octave layer and a dark hall reverb. File: assets/sfx/thanos_voice.mp3
+Vorgath voice line "Este mundo... ya es mío." (v20.6): Microsoft Edge neural TTS
+  (es-ES-AlvaroNeural), pitched down with formant preservation, a sub-octave layer and
+  a dark echo. File: assets/sfx/villain_voice.mp3
 
-Thanos deep impact: assets/sfx/thanos_boom.mp3 — made in-house by pitching
+Abyss deep impact: assets/sfx/abyss_boom.mp3 — made in-house by pitching
   down and layering the CC0 samples already credited above (explode.mp3,
   stomp.mp3) with a generated reverb.
 
-Thanos sprites (walk, gauntlet-raise cast, snap) and the hell-planet ground
-painting were generated for Block Z and keyed through the chroma-key pipeline.
-The mega-powers ("MARTILLO DEL TRUENO", "ARMADURA DE HIERRO", "FURIA VERDE")
-are generic names with original procedural designs; no third-party logos.
+VORGATH sprites (assets/spr/vorgath_walk_f/cast_f/snap_f.webp), the flying boss ÍCARO
+(assets/spr/icaro_f.webp) and the hell-planet ground painting are original artwork
+generated for Block Z and keyed through the chroma-key pipeline (v20.6 redesign: no
+third-party characters, names, costumes or logos).
+The mega-powers ("MAZO DE TORMENTA", "ARMADURA TITÁN", "FURIA SALVAJE") are original
+names with original procedural designs; no third-party logos.
 
-v20.2.3 additions — the ending ("Y yo... soy...")
--------------------------------------------------
+v20.2.3 additions — the ending ("Se acabó... tu reinado.", v20.6)
+------------------------------------------------------------------
 Final finger snap: assets/sfx/final_snap.mp3 — "snap_of_the_fingers3.wav" from
   "Snap of the fingers sounds" by Vinrax, https://opengameart.org/content/snap-of-the-fingers-sounds
-  License: CC0. Layered in-house with a reverb tail and the Thanos boom above.
-Hero voice lines "Y yo... soy... <name>": assets/sfx/final_voice_{classic,trueno,mr,gompa}.mp3,
-  synthesized with Piper TTS (voice es_ES-davefx-medium, dataset license CC0 per
-  the model card), cut at word boundaries with dramatic pauses, slightly deepened
-  with formant preservation and a hall reverb.
-Infinity Gauntlet item sprite (assets/spr/gauntlet.webp) was generated for Block Z
-  and keyed through the chroma-key pipeline.
+  License: CC0. Layered in-house with a reverb tail and the abyss boom above.
+Hero voice lines "Se acabó... tu reinado.": assets/sfx/final_voice_{classic,trueno,mr,gompa,neizan}.mp3,
+  Microsoft Edge neural TTS (es-ES-AlvaroNeural), pitched per hero with formant
+  preservation and a light echo (Neizan: extra flanger for the half-machine voice).
+Brazal del Abismo item and close-up sprites (assets/spr/brazal.webp, snap_pre.webp,
+  snap_post.webp) are original artwork generated for Block Z (v20.6).
 
 v20.3 additions
 ---------------
@@ -318,9 +318,8 @@ Neizan minigun spin-up (assets/sfx/minigun_spin.mp3): "Minigun Motor Loop" by Br
   #500198, CC0, pitch-ramped as a spin-up.
 Neizan double-barrel shot (assets/sfx/neizan_shot.mp3): "shotgun close" by CeebFrack, freesound.org
   #108794, CC0, layered with the existing shotgun recording and bass-boosted.
-Neizan final line (assets/sfx/final_voice_neizan.mp3): Microsoft Edge neural TTS (es-ES-AlvaroNeural),
-  slowed, pitched down, with a light flanger and echo for the half-machine voice.
-Neizan sprite (assets/spr/neizan_f.webp, neizan_f_hd.webp): generated for Block Z and cut out in-house.
+Neizan sprite (assets/spr/neizan_f.webp, neizan_f_hd.webp): original artwork generated for Block Z and cut out in-house
+  (v20.6: olive field jacket and a smooth cyber face plate with a cyan lens).
 
 CC0: https://creativecommons.org/publicdomain/zero/1.0/
 CC-BY 3.0: https://creativecommons.org/licenses/by/3.0/

@@ -257,7 +257,7 @@ function nzRobotHand(c,x,y,sc,lw,o){
   var g=c.createLinearGradient(x-3*sc,y-3*sc,x+3*sc,y+3*sc);g.addColorStop(0,"#eceff1");g.addColorStop(0.5,"#90a4ae");g.addColorStop(1,"#37474f");
   c.fillStyle=g;c.beginPath();c.ellipse(x,y,3.2*sc,3.5*sc,0,0,7);c.fill();c.strokeStyle=o;c.lineWidth=lw;c.stroke();
   var i;for(i=0;i<3;i++){c.fillStyle=g;roundRect(c,x-2.6*sc+i*1.8*sc,y+1.2*sc,1.5*sc,3*sc,0.6*sc);c.fill();c.strokeStyle=o;c.lineWidth=lw*0.7;c.stroke();}
-  c.fillStyle="#ff1744";c.beginPath();c.arc(x+0.4*sc,y-0.8*sc,0.7*sc,0,7);c.fill();
+  c.fillStyle="#18ffff";c.beginPath();c.arc(x+0.4*sc,y-0.8*sc,0.7*sc,0,7);c.fill();
 }
 
 /* ---------- projectiles art ---------- */
