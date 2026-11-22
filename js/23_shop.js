@@ -538,7 +538,8 @@ function endChestGeom(){var s=layout.safe,w=Math.min(230,SW*0.26),h=Math.min(150
 /* the outfit stays as painted; the power shows through the existing overlays (storm aura + eyes, arc reactor + repulsors,
    hulk size + cracks). The variant is built once per sprite (same pixel pass as the plain mega look) and its limbs are
    pre-cut by megaPrepStep, so the fight costs nothing extra per frame. */
-function megaSkinId(){try{var p=game&&game.player;if(!p)return null;var sk=equippedSkin(p.hero);return REAL_SKINS[sk]?sk:null;}catch(e){return null;}}
+var _MSK={k:"",v:null};
+function megaSkinId(){try{var p=game&&game.player;if(!p)return null;var k=p.hero+"|"+(PROF.eq.skin[p.hero]||"");if(k!==_MSK.k){var sk=equippedSkin(p.hero);_MSK.k=k;_MSK.v=REAL_SKINS[sk]?sk:null;}return _MSK.v;}catch(e){return null;}} /* memo: artTint runs every frame in the fight */
 (function(){
   var _t=artTint;
   artTint=function(name,img,tint){
