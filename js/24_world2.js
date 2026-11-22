@@ -90,10 +90,11 @@ function w2IsIce(){return WORLD.cur===2&&typeof W2_DATA!=="undefined";}
     var k=name;if(C[k])return C[k];
     var w=img.naturalWidth||img.width,h=img.naturalHeight||img.height,c=document.createElement("canvas");c.width=w;c.height=h;var g=c.getContext("2d");
     g.drawImage(img,0,0);
-    g.globalCompositeOperation="saturation";g.fillStyle="rgba(128,128,128,0.55)";g.fillRect(0,0,w,h);
-    g.globalCompositeOperation="multiply";g.fillStyle="#b8dcff";g.fillRect(0,0,w,h);
+    /* hue -> ice blue (green skin turns frost-bitten, red eyes turn into cold glowing blue), contrast kept */
+    g.globalCompositeOperation="hue";g.fillStyle="rgba(64,170,255,0.92)";g.fillRect(0,0,w,h);
+    g.globalCompositeOperation="saturation";g.fillStyle="rgba(128,128,128,0.28)";g.fillRect(0,0,w,h);
     g.globalCompositeOperation="source-atop";
-    var gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,"rgba(235,248,255,0.34)");gr.addColorStop(0.32,"rgba(200,232,255,0.12)");gr.addColorStop(1,"rgba(90,150,220,0.10)");
+    var gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,"rgba(240,250,255,0.30)");gr.addColorStop(0.28,"rgba(215,240,255,0.10)");gr.addColorStop(1,"rgba(120,180,240,0.04)");
     g.fillStyle=gr;g.fillRect(0,0,w,h);
     g.globalCompositeOperation="destination-in";g.drawImage(img,0,0);
     C[k]=c;return c;
@@ -116,6 +117,11 @@ function w2WarmList(){
       var n=WORLD.warm.shift(),im=ART.imgs&&ART.imgs[n];if(im&&im.width)try{artTint(n,im,"frost");}catch(e){}
     }
   };
+})();
+/* the island's last boss is a frozen king on the ice */
+(function(){
+  var _sb=startBoss;
+  startBoss=function(z,line,bab,pitch){if(WORLD.cur===2&&z&&z.look&&z.look.kind==="final"){z.bName="REY DE ESCARCHA";line="¡El hielo os tragará!";}return _sb.call(this,z,line,bab,pitch);};
 })();
 /* the leg pre-cut (3-2-1 / cards / boss intro) works on the icy sprites when on the ice */
 (function(){
