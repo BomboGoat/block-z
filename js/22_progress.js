@@ -45,7 +45,7 @@ SKINS.gompa=[{id:"orig",name:"Original"},{id:"dorado",name:"Oro",lv:10,real:1,pc
 SKINS.neizan=[{id:"orig",name:"Original"},{id:"hielo",name:"Hielo",lv:8},{id:"dorado",name:"Oro",cost:400,real:1,pc:10},{id:"cromo",name:"Cromo",ex:1,real:1,pc:15}];
 (function(){var _ur=unlockedReq;unlockedReq=function(it,key){if(key&&PROF&&PROF.own[key])return 1;if(it&&it.ex)return 0;return _ur(it,key);};})();
 function skinDef(hero,id){var l=SKINS[hero]||[];for(var i=0;i<l.length;i++)if(l[i].id===id)return l[i];return null;}
-function heroName(id){var h=HEROES.filter(function(x){return x.id===id;})[0];return h?h.name:id;}
+function p21HeroName(id){var h=HEROES.filter(function(x){return x.id===id;})[0];return h?h.name:id;}
 function lockedRealSkins(exOnly){var out=[],h,i;for(h in SKINS)for(i=0;i<SKINS[h].length;i++){var s=SKINS[h][i];if(s.real&&!skinOk(h,s)&&(!exOnly||s.ex))out.push({hero:h,id:s.id,ex:!!s.ex});}return out;}
 
 /* ---------- profile v2 (versioned, lossless migration) ---------- */
@@ -157,7 +157,7 @@ function missMake(pool,k){
     out.push(m);}
   return out;
 }
-function missText(m){return m.d.replace("{n}",fmtN(m.n)).replace("{s}",m.n>1?"s":"").replace("{h}",heroName(m.h));}
+function missText(m){return m.d.replace("{n}",fmtN(m.n)).replace("{s}",m.n>1?"s":"").replace("{h}",p21HeroName(m.h));}
 function missRefresh(){
   var M=PROF.miss,dk=dayKey(),wk=weekKey(),ch=0;
   if(M.day!==dk){M.day=dk;M.daily=missMake(MISS_DAILY,3);ch=1;}
@@ -297,8 +297,8 @@ function drawChestBar(){
 function p21RewardLabel(w){
   if(w.k==="coins")return ["🪙",(w.bonus?"Extra ":"")+"+"+fmtN(w.n),"Monedas","#ffd54f"];
   if(w.k==="pxp")return ["🎖️","+"+fmtN(w.n),"XP de pase","#80d8ff"];
-  if(w.k==="skin"){var d=skinDef(w.hero,w.id);return ["👕",(d?d.name:w.id),heroName(w.hero)+(w.dup?" · repetido +500🪙":" · ¡NUEVO ASPECTO!"),d&&d.ex?"#ff80ab":"#ffd54f"];}
-  if(w.k==="pieces"){var d2=skinDef(w.hero,w.id),have=PROF.pieces[w.hero+":"+w.id]||0,need=(d2&&d2.pc)||10;return ["🧩","+"+w.n+" piezas",(d2?d2.name:"")+" de "+heroName(w.hero)+(w.done?" · ¡COMPLETO!":" · "+have+"/"+need),"#b9f6ca"];}
+  if(w.k==="skin"){var d=skinDef(w.hero,w.id);return ["👕",(d?d.name:w.id),p21HeroName(w.hero)+(w.dup?" · repetido +500🪙":" · ¡NUEVO ASPECTO!"),d&&d.ex?"#ff80ab":"#ffd54f"];}
+  if(w.k==="pieces"){var d2=skinDef(w.hero,w.id),have=PROF.pieces[w.hero+":"+w.id]||0,need=(d2&&d2.pc)||10;return ["🧩","+"+w.n+" piezas",(d2?d2.name:"")+" de "+p21HeroName(w.hero)+(w.done?" · ¡COMPLETO!":" · "+have+"/"+need),"#b9f6ca"];}
   if(w.k==="title")return ["🏷️",w.name,"Título","#80d8ff"];
   if(w.k==="chest")return ["🎁","Cofre "+CHEST[w.r].n,"","#fff"];
   return ["?","",""];
@@ -435,7 +435,7 @@ function drawPass(){
     else mText(ic,tw/2,chh*0.36,isz*0.62,"#fff","center","700",0);
     ctx.font="900 10px system-ui";var lt=lab[1];while(ctx.measureText(lt).width>tw-8&&lt.length>3)lt=lt.slice(0,-2);
     mText(lt,tw/2,chh*0.68,10,lab[2],"center","900",2.5);
-    if(R.k==="skin")mText(heroName(R.hero),tw/2,chh*0.68+12,8.5,"#e8e0f0","center","800",2);
+    if(R.k==="skin")mText(p21HeroName(R.hero),tw/2,chh*0.68+12,8.5,"#e8e0f0","center","800",2);
     if(cl){mText(R.k==="title"&&PROF.eq.title===R.id?"EQUIPADO":"✔",tw/2,chh-12,R.k==="title"?9:14,"#b9f6ca","center","900",2.5);}
     else if(can){ctx.fillStyle="#2fb24a";roundRect(ctx,6,chh-24,tw-12,18,9);ctx.fill();mText("RECLAMAR",tw/2,chh-15,9,"#fff","center","900",2);}
     else{ctx.fillStyle="rgba(8,4,14,0.45)";roundRect(ctx,0,0,tw,chh,12);ctx.fill();mText("🔒",tw/2,chh-14,11,"#fff","center","700",0);}
@@ -461,7 +461,7 @@ function passClaim(n){
   if(R.title)rewardApply({k:"title",id:R.title.id,name:R.title.name});
   profSave();checkAchievements(1);
   var L=p21RewardLabel(w);try{sfx(R.k==="skin"?"rarity4":"rarity2");}catch(e){}
-  menuToast(L[0]+" "+(R.k==="skin"?"¡Aspecto "+L[1]+" para "+heroName(R.hero)+"!":R.k==="title"?"Título: "+R.name:R.k==="pieces"?L[1]+" · "+L[2]:L[1]+" "+L[2]),L[3]||"#ffd54f");
+  menuToast(L[0]+" "+(R.k==="skin"?"¡Aspecto "+L[1]+" para "+p21HeroName(R.hero)+"!":R.k==="title"?"Título: "+R.name:R.k==="pieces"?L[1]+" · "+L[2]:L[1]+" "+L[2]),L[3]||"#ffd54f");
   return 1;
 }
 
@@ -539,7 +539,7 @@ drawMenuScreen=function(){
     if(st==="pass"){
       if(id==="pass_all"){var n=0,hadChest=0;for(var i=1;i<=passTier();i++){if(PROF.pass.claimed[i])continue;if(PASS[i-1].k==="chest"){if(hadChest)continue;hadChest=1;}if(passClaim(i))n++;}return;}
       if(/^pt\d/.test(id)){var tn=h.data;
-        if(PROF.pass.claimed[tn]){var R=PASS[tn-1];if(R.k==="title"){ok();PROF.eq.title=PROF.eq.title===R.id?"":R.id;profSave();}else if(R.k==="skin"){ok();PROF.eq.skin[R.hero]=R.id;profSave();menuToast("👕 "+skinDef(R.hero,R.id).name+" equipado en "+heroName(R.hero),"#ff80ab");}return;}
+        if(PROF.pass.claimed[tn]){var R=PASS[tn-1];if(R.k==="title"){ok();PROF.eq.title=PROF.eq.title===R.id?"":R.id;profSave();}else if(R.k==="skin"){ok();PROF.eq.skin[R.hero]=R.id;profSave();menuToast("👕 "+skinDef(R.hero,R.id).name+" equipado en "+p21HeroName(R.hero),"#ff80ab");}return;}
         if(tn<=passTier()){passClaim(tn);return;}
         try{sfx("hurt");}catch(e){}menuToast("🔒 Nivel "+tn+" del pase · te faltan "+fmtN(tn*PASS_TIER_XP-PROF.pass.xp)+" XP","#b388ff");return;}
     }
@@ -593,3 +593,5 @@ function goldOf(col){
   var _hs=drawHeroShowcaseRaw;
   drawHeroShowcaseRaw=function(hero,x,footY,H,skin,glow){var was=WPN_GOLD;WPN_GOLD=skin==="dorado"?1:0;try{return _hs.apply(this,arguments);}finally{WPN_GOLD=was;}};
 })();
+/* the ending close-ups show the painted outfit you wear (the megapower look stays for the fight itself) */
+(function(){if(typeof hellFinalStart!=="function")return;var _hf=hellFinalStart;hellFinalStart=function(){try{var p=game.player,sk=equippedSkin(p.hero);if(REAL_SKINS[sk]&&p.look){p._megaTint=p.look.tint;p.look.tint=sk;skinWarm(p.hero,sk);var fe=artEntry(p.look,angDir(Math.PI/2),"idle");if(fe){finHDLoad(fe.name);}}}catch(e){}return _hf.apply(this,arguments);};})();
