@@ -202,3 +202,12 @@ function w2zChillSpr(){
 })();
 window.__w2z={ready:w2zReady,load:w2zLoad};
 if(window.__w2){window.__w2.load=function(){w2LoadImg();};window.__w2.select=function(n){WORLD.sel=n;if(n===2)w2LoadImg();};}
+/* the wave builder also reads WAVE_UNLOCKS directly for the round's "fresh" types: on the ice it reads the ice roster */
+(function(){
+  var _sw=startWave;
+  startWave=function(idx){
+    if(!w2zOn()||!w2zReady())return _sw.apply(this,arguments);
+    var keep=WAVE_UNLOCKS;WAVE_UNLOCKS=W2Z.unlocks;
+    try{return _sw.apply(this,arguments);}finally{WAVE_UNLOCKS=keep;}
+  };
+})();
