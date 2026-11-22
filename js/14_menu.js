@@ -420,7 +420,7 @@ function drawTopBar(){
   var R=17;
   ctx.save();
   if(!isTitle){
-    var cw0=96,cx0=SW-s.r-12-cw0,lw=74,lx=cx0-lw-8;
+    var cw0=96,cx0=SW-s.r-12-cw0-(typeof PROF.gems==="number"?84+8:0),lw=74,lx=cx0-lw-8;
     ctx.fillStyle="rgba(14,8,20,0.72)";roundRect(ctx,lx,y+4,lw,26,13);ctx.fill();ctx.strokeStyle="rgba(179,136,255,0.6)";ctx.lineWidth=1.5;roundRect(ctx,lx,y+4,lw,26,13);ctx.stroke();
     mText("⭐",lx+14,y+17.5,13,"#fff","center","700",0);mText("Nv "+account.level,lx+lw-10,y+17.5,13,"#e1d4ff","right","900",3);
     ctx.fillStyle="#7c4dff";roundRect(ctx,lx+8,y+26,(lw-16)*clamp(account.xp/Math.max(1,account.xpToNext),0,1),2.5,1.2);ctx.fill();
@@ -440,6 +440,11 @@ function drawTopBar(){
   ctx.fillStyle="rgba(14,8,20,0.72)";roundRect(ctx,cx,cy,cw,26,13);ctx.fill();ctx.strokeStyle="rgba(255,213,79,0.6)";ctx.lineWidth=1.5;roundRect(ctx,cx,cy,cw,26,13);ctx.stroke();
   mText("🪙",cx+15,cy+13.5,15,"#fff","center","700",0);
   mText(fmtN(PROF.coins),cx+cw-12,cy+13.5,14,"#ffe082","right","900",3);
+  /* v21.1: gems pill (scarce currency for outfits and the best chests) */
+  if(typeof PROF.gems==="number"){var gw=84,gx=cx-gw-8;
+    ctx.fillStyle="rgba(14,8,20,0.72)";roundRect(ctx,gx,cy,gw,26,13);ctx.fill();ctx.strokeStyle="rgba(128,222,234,0.75)";ctx.lineWidth=1.5;roundRect(ctx,gx,cy,gw,26,13);ctx.stroke();
+    mText("💎",gx+14,cy+13.5,13,"#fff","center","700",0);mText(fmtN(PROF.gems),gx+gw-12,cy+13.5,14,"#b2ebf2","right","900",3);
+    if(typeof GEMFX!=="undefined"&&GEMFX.t>0){ctx.globalAlpha=Math.min(1,GEMFX.t);mText("+"+GEMFX.n,gx+gw/2,cy+40-(1-Math.min(1,GEMFX.t))*8,12,"#80deea","center","900",3);ctx.globalAlpha=1;}}
   ctx.restore();
 }
 
@@ -526,7 +531,7 @@ function menuGo(st){
   if(st!=="title"&&game.state==="title")MENU.parentOk=1;
   game.state=st;MENU.enterT=MENU.t;MENU.scroll=0;MENU.press=null;
   if(st==="heroes"){MENU.heroIdx=Math.max(0,HEROES.findIndex(function(h){return h.id===selectedHero;}));}
-  if(st==="credits"&&!MENU.credits){MENU.credits=["Cargando…"];try{var x=new XMLHttpRequest();x.onload=function(){MENU.credits=String(x.responseText||"").split(/\r?\n/);};x.open("GET","CREDITS.txt?v=21.0");x.send();}catch(e){}}
+  if(st==="credits"&&!MENU.credits){MENU.credits=["Cargando…"];try{var x=new XMLHttpRequest();x.onload=function(){MENU.credits=String(x.responseText||"").split(/\r?\n/);};x.open("GET","CREDITS.txt?v=21.1");x.send();}catch(e){}}
   if(typeof layoutMenuButtons==="function")layoutMenuButtons();
 }
 function drawMenuTitle(){
@@ -546,7 +551,7 @@ function drawMenuTitle(){
   ctx.save();ctx.translate(bx+bw/2,y0+pH/2);ctx.scale(pulse,pulse);ctx.translate(-(bx+bw/2),-(y0+pH/2));
   mButton("play",bx,y0,bw,pH,"JUGAR","▶","play",{shine:1,fs:Math.round(pH*0.45),enter:enterK(0)});
   ctx.restore();
-  var items=[["pass","PASE","🎖️","teal"],["missions","MISIONES","📜","gold"],["heroes","HÉROES","🦸","blue"],["unlocks","MEJORAS","🎁","purple"],["achievements","LOGROS","🏆","gold"],["stats","RÉCORDS","📊","teal"],["settings","AJUSTES","⚙️","grey"],["credits","CRÉDITOS","🎬","red"]];
+  var items=[["shop","TIENDA","🛒","red"],["pass","PASE","🎖️","teal"],["missions","MISIONES","📜","gold"],["heroes","HÉROES","🦸","blue"],["unlocks","MEJORAS","🎁","purple"],["achievements","LOGROS","🏆","gold"],["stats","RÉCORDS","📊","teal"],["settings","AJUSTES","⚙️","grey"]]; /* v21.1: TIENDA in, Créditos moved into Ajustes */
   var rows=Math.ceil(items.length/2),gap=7,gw=(bw-gap)/2,gh=Math.min(44,(SH-s.b-12-(y0+pH+12)-(rows-1)*gap)/rows),i;
   for(i=0;i<items.length;i++){
     var it=items[i],x=bx+(i%2)*(gw+gap),y=y0+pH+12+Math.floor(i/2)*(gh+gap);
@@ -733,6 +738,7 @@ function drawSettingsMenu(){
     }
   }
   mButton("howto",x+w-150,y+h-34,138,28,"Cómo jugar","❔","dark",{fs:12});
+  mButton("credits",x+w-150-146,y+h-34,138,28,"Créditos","🎬","dark",{fs:12});
   mText("Versión v"+(typeof BZ_VER!=="undefined"?BZ_VER:"?"),x+16,y+h-20,11,"#a49cb5","left","700",2);
 }
 function drawCredits(){
