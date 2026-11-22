@@ -264,7 +264,7 @@ function skinThumb(hero,id,S){
 }
 function chestSlotsGeom(){
   var s=layout.safe,hero=selectedHero||"classic",H=Math.min(SH*0.62,250),hx=s.l+Math.min(SW*0.2,170);
-  var bw=Math.min(300,SW*0.36),bx=SW-s.r-12-bw,lx0=hx+H*0.2,lmax=bx-lx0-16;
+  var bw=Math.min(300,SW*0.36),bx=SW-s.r-12-bw,lx0=hx+H*0.3,lmax=bx-lx0-12;
   var n=4,gap=8,S=Math.max(40,Math.min(66,(lmax-gap*(n-1))/n)),W=S*n+gap*(n-1),x0=lx0+lmax/2-W/2,y0=SH-s.b-S-14;
   return {x0:x0,y0:y0,S:S,gap:gap,W:W};
 }
@@ -370,12 +370,12 @@ function drawChestInfo(){
   mText("Probabilidades de los cofres",x+w/2,y+20,16,"#ffe08a","center","900",4);
   var ks=["poco","epico","asombroso"],cw=(w-40)/3,i;
   for(i=0;i<3;i++){var C=CHEST[ks[i]],xx=x+14+i*(cw+6),yy=y+40,col=C.c==="rainbow"?rainbowCol(MENU.t||0):C.c;
-    ctx.fillStyle="rgba(255,255,255,0.05)";roundRect(ctx,xx,yy,cw,h-54,12);ctx.fill();ctx.strokeStyle=col;ctx.lineWidth=1.8;roundRect(ctx,xx,yy,cw,h-54,12);ctx.stroke();
+    ctx.fillStyle="rgba(255,255,255,0.05)";roundRect(ctx,xx,yy,cw,h-66,12);ctx.fill();ctx.strokeStyle=col;ctx.lineWidth=1.8;roundRect(ctx,xx,yy,cw,h-66,12);ctx.stroke();
     var im=chestImg(ks[i],0);if(im){var iw=Math.min(cw*0.5,60),ih=iw*im.height/im.width;ctx.drawImage(im,xx+cw/2-iw/2,yy+6,iw,ih);}
     mText(C.n,xx+cw/2,yy+76,13,col,"center","900",3);
     mText(C.p+"%",xx+cw/2,yy+96,20,"#fff","center","900",4);
-    var L=["🪙 "+C.coins[0]+"–"+C.coins[1]+" monedas","🎖️ +"+C.pxp+" XP de pase","👕 Aspecto: "+C.skin+"%","🧩 Piezas: "+(C.pcsP>=100?"seguro":C.pcsP+"%")+" ("+C.pcs[0]+"–"+C.pcs[1]+")"];
-    for(var j=0;j<L.length;j++)mText(L[j],xx+cw/2,yy+120+j*17,9.5,"#e8e0f0","center","800",2.2);
+    var L=["🪙 "+C.coins[0]+"–"+C.coins[1]+" monedas","🎖️ +"+C.pxp+" XP de pase","👕 Aspecto nuevo: "+C.skin+"%","🧩 Piezas: "+(C.pcsP>=100?"seguro":C.pcsP+"%")+" ("+C.pcs[0]+"–"+C.pcs[1]+")"];
+    for(var j=0;j<L.length;j++)mText(L[j],xx+cw/2,yy+116+j*16,9.5,"#e8e0f0","center","800",2.2);
   }
   mText("Ganas un cofre al ganar una partida o al llegar a la ronda 6 · Si las 4 ranuras están llenas no recibes cofre",x+w/2,y+h-9,8.5,"#b0a8c0","center","700",2);
   mHit("ov_info",0,0,SW,SH);
@@ -397,7 +397,7 @@ function drawPass(){
   /* header: season, tier, XP to next */
   var hx=s.l+12,hy=s.t+52,hw=SW-s.l-s.r-24;
   mText("TEMPORADA 1 · GRATIS",hx+2,hy+6,10,"#80d8ff","left","900",2.5);
-  var bx=hx+150,bw=Math.max(80,hw-150-150);
+  var bx=hx+196,bw=Math.max(80,hw-196-150);
   var pr=tier>=PASS_TIERS?1:xpIn/PASS_TIER_XP;
   ctx.fillStyle="#ffd54f";ctx.beginPath();ctx.arc(bx-18,hy+12,15,0,7);ctx.fill();ctx.strokeStyle="#5d3a00";ctx.lineWidth=2.5;ctx.stroke();mText(String(tier),bx-18,hy+12.5,13,"#3a1c00","center","900",0);
   mBar(bx,hy+6,bw,12,pr,"#40c4ff");
