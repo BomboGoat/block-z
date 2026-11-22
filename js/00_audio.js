@@ -17,7 +17,7 @@ function ensureMusicBeds(){
   if(audio.beds)return;
   audio.beds={};
   Object.keys(MUS_BEDS).forEach(function(k){
-    var a=new Audio(MUS_BEDS[k]+(MUS_BEDS[k].indexOf("?")>=0?"":"?v=21.1"));
+    var a=new Audio(MUS_BEDS[k]+(MUS_BEDS[k].indexOf("?")>=0?"":"?v=21.2"));
     a.loop=true;a.preload="auto";a.crossOrigin="anonymous";a.volume=0;a.setAttribute("playsinline","playsinline");
     audio.beds[k]={el:a,gain:null,wanted:0,src:null};
   });
@@ -89,7 +89,7 @@ function ensureAudio(){
 function setMuteSfx(v){audio.mutedSfx=!!v;if(audio.sfxG)audio.sfxG.gain.value=audio.mutedSfx?0:0.55;saveAudioSettings();}
 function setMuteMus(v){audio.mutedMus=!!v;if(audio.musG)audio.musG.gain.value=audio.mutedMus?0:0.42;saveAudioSettings();}
 
-var SFX_UI={unlock:1,click:1,card:1,rarity0:1,rarity1:1,rarity2:1,rarity3:1,rarity4:1,xp:1,level:1,wave:1,clear:1,ch_drop:1,ch_creak:1,ch_latch:1,ch_pop:1,ch_charge:1,ch_burst_e:1,ch_vortex:1,ch_burst_a:1,rw_coin:1,rw_gem:1,rw_card:1,rw_flip:1,rw_fanfare:1,rw_epic:1};
+var SFX_UI={unlock:1,click:1,card:1,rarity0:1,rarity1:1,rarity2:1,rarity3:1,rarity4:1,xp:1,level:1,wave:1,clear:1,cx_land:1,cx_wobble:1,cx_shimmer:1,cx_riser_e:1,cx_riser_a:1,cx_whoosh:1,cx_burst_p:1,cx_burst_e:1,cx_burst_a:1,cx_coin:1,cx_gem:1,cx_card:1,cx_flip:1,cx_rare:1,cx_epic:1,cx_myth:1,cx_done:1,cx_big_hit:1,cx_fanfare:1};
 var SFX_BOSS={boss:1,sting:1,growl:1,laugh:1,stomp:1,foot_heavy:1,gorgon_roar:1,gorgon_growl:1,portal:1};
 var SFX_FILES={
   explode:"assets/sfx/explode.mp3",click:"assets/sfx/click.mp3",foot_heavy:"assets/sfx/foot_heavy.mp3",
@@ -113,8 +113,8 @@ var SFX_FILES={
   final_snap:"assets/sfx/final_snap.mp3",final_voice_classic:"assets/sfx/final_voice_classic.mp3",final_voice_trueno:"assets/sfx/final_voice_trueno.mp3",
   final_voice_mr:"assets/sfx/final_voice_mr.mp3",final_voice_gompa:"assets/sfx/final_voice_gompa.mp3",
   final_voice_neizan:"assets/sfx/final_voice_neizan.mp3",neizan_shot:"assets/sfx/neizan_shot.mp3",
-  /* v21.1 chest + reward sfx (layered from CC0 Kenney packs + the game's own sounds, see CREDITS.txt) */
-  ch_drop:"assets/sfx/thud.mp3",ch_creak:"assets/sfx/ch_creak.mp3",ch_latch:"assets/sfx/ch_latch.mp3",ch_pop:"assets/sfx/ch_pop.mp3",ch_charge:"assets/sfx/ch_charge.mp3",ch_burst_e:"assets/sfx/ch_burst_e.mp3",ch_vortex:"assets/sfx/ch_vortex.mp3",ch_burst_a:"assets/sfx/ch_burst_a.mp3",rw_coin:"assets/sfx/rw_coin.mp3",rw_gem:"assets/sfx/rw_gem.mp3",rw_card:"assets/sfx/rw_card.mp3",rw_flip:"assets/sfx/rw_flip.mp3",rw_fanfare:"assets/sfx/rw_fanfare.mp3",rw_epic:"assets/sfx/rw_epic.mp3",
+  /* v21.2 chest + reward sfx: synthesized for Block Z (bells, choir, brass, whooshes; see CREDITS.txt) */
+  cx_land:"assets/sfx/cx_land.mp3",cx_wobble:"assets/sfx/cx_wobble.mp3",cx_shimmer:"assets/sfx/cx_shimmer.mp3",cx_riser_e:"assets/sfx/cx_riser_e.mp3",cx_riser_a:"assets/sfx/cx_riser_a.mp3",cx_whoosh:"assets/sfx/cx_whoosh.mp3",cx_burst_p:"assets/sfx/cx_burst_p.mp3",cx_burst_e:"assets/sfx/cx_burst_e.mp3",cx_burst_a:"assets/sfx/cx_burst_a.mp3",cx_coin:"assets/sfx/cx_coin.mp3",cx_gem:"assets/sfx/cx_gem.mp3",cx_card:"assets/sfx/cx_card.mp3",cx_flip:"assets/sfx/cx_flip.mp3",cx_rare:"assets/sfx/cx_rare.mp3",cx_epic:"assets/sfx/cx_epic.mp3",cx_myth:"assets/sfx/cx_myth.mp3",cx_done:"assets/sfx/cx_done.mp3",cx_big_hit:"assets/sfx/cx_big_hit.mp3",cx_fanfare:"assets/sfx/cx_fanfare.mp3",
   minigun_spin:"assets/sfx/minigun_spin.mp3",minigun_loop:"assets/sfx/minigun_loop.mp3",minigun_stop:"assets/sfx/minigun_stop.mp3"
 };
 function combatLive(){return typeof game!=="undefined"&&game&&game.state==="playing";}
@@ -158,7 +158,7 @@ function prefetchSfx(){
     if(audio.sfxRaw[k])return;
     var ctrl=typeof AbortController==="function"?new AbortController():null;
     var to=setTimeout(function(){try{if(ctrl)ctrl.abort();}catch(e){}},8000);
-    fetch(SFX_FILES[k]+"?v=21.1",ctrl?{signal:ctrl.signal}:undefined).then(function(r){return r&&r.ok?r.arrayBuffer():null;}).then(function(ab){
+    fetch(SFX_FILES[k]+"?v=21.2",ctrl?{signal:ctrl.signal}:undefined).then(function(r){return r&&r.ok?r.arrayBuffer():null;}).then(function(ab){
       clearTimeout(to);
       if(ab)audio.sfxRaw[k]=ab;
       if(audio.ctx)decodeFetchedSfx();
@@ -194,7 +194,7 @@ function bakeSfxSync(){
 
 function initVoicePool(){
   if(!audio.ctx||!audio.sfxG||audio.voices)return;
-  var n=8,i,ch;
+  var n=12,i,ch; /* v21.2: 12 voices so a chest burst + reward stingers + fanfare never steal each other */
   audio.voices=[];audio.voiceN=0;
   for(i=0;i<n;i++){
     ch={gain:audio.ctx.createGain(),src:null,armed:0,busy:0,until:0};
