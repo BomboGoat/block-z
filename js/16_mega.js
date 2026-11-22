@@ -255,7 +255,7 @@ var MEGA_TF=1.9; /* seconds */
       if(T<1.15){
         var u=smooth01((T-0.55)/0.5),lift=Math.sin(clamp(T/1.15,0,1)*Math.PI)*10;p.airH=air0+lift;
         var tint=p.look.tint,sca=p.look._artScale;
-        if(u<1){p.look.tint=null;if(p.mega==="hulk")p.look._artScale=1;ctx.save();ctx.globalAlpha=1-u;_dh.apply(this,arguments);ctx.restore();p.look.tint=tint;p.look._artScale=sca;}
+        if(u<1){p.look.tint=(typeof megaSkinId==="function"&&megaSkinId())||null;if(p.mega==="hulk")p.look._artScale=1;ctx.save();ctx.globalAlpha=1-u;_dh.apply(this,arguments);ctx.restore();p.look.tint=tint;p.look._artScale=sca;}
         if(u>0){ctx.save();ctx.globalAlpha=u;_dh.apply(this,arguments);ctx.restore();}
       }else _dh.apply(this,arguments);
     }finally{p.weapon=w0;p.airH=air0;}

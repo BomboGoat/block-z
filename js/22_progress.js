@@ -15,8 +15,8 @@ function skinImg(file){
   var o=SKIN_IMG[file];if(o)return o.ok?o.im:null;
   o=SKIN_IMG[file]={im:new Image(),ok:0,tries:0};
   o.im.onload=function(){if(o.im.width){o.ok=1;SKIN_LOADED++;if(typeof menuDirty!=="undefined")menuDirty=1;}};
-  o.im.onerror=function(){if(++o.tries<4)setTimeout(function(){o.im.src="assets/spr/skins/"+file+".webp?v=21.0&r="+o.tries;},1500*o.tries);};
-  o.im.src="assets/spr/skins/"+file+".webp?v=21.0";return null;
+  o.im.onerror=function(){if(++o.tries<4)setTimeout(function(){o.im.src="assets/spr/skins/"+file+".webp?v=21.1&r="+o.tries;},1500*o.tries);};
+  o.im.src="assets/spr/skins/"+file+".webp?v=21.1";return null;
 }
 function skinIsReal(id){return !!REAL_SKINS[id];}
 /* warm every normal-size sprite of one skin (menu preview, countdown) */
@@ -98,7 +98,7 @@ var CHEST={
   asombroso:{n:"Asombroso",c:"rainbow",c2:"#004d40",img:"chest_a",p:4,coins:[420,650],pxp:400,skin:100,pcs:[8,10],pcsP:100}
 };
 var CHEST_IMG={};
-function chestImg(k,open){var key=CHEST[k].img+(open?"_open":"");var o=CHEST_IMG[key];if(o)return o.width?o:null;o=CHEST_IMG[key]=new Image();o.onload=function(){if(typeof menuDirty!=="undefined")menuDirty=1;};o.src="assets/ui/"+key+".webp?v=21.0";return null;}
+function chestImg(k,open){var key=CHEST[k].img+(open?"_open":"");var o=CHEST_IMG[key];if(o)return o.width?o:null;o=CHEST_IMG[key]=new Image();o.onload=function(){if(typeof menuDirty!=="undefined")menuDirty=1;};o.src="assets/ui/"+key+".webp?v=21.1";return null;}
 var CHEST_TH={};
 function chestThumb(k,w){var key=k+"|"+Math.round(w),c=CHEST_TH[key];if(c)return c;var im=chestImg(k,0);if(!im)return null;var K=Math.min(2,dpr||1);c=document.createElement("canvas");c.width=Math.ceil(w*K);c.height=Math.ceil(w*im.height/im.width*K);c.getContext("2d").drawImage(im,0,0,c.width,c.height);c._w=w;c._h=w*im.height/im.width;return (CHEST_TH[key]=c);}
 function chestRoll(min){var r=Math.random()*100;var k=r<CHEST.asombroso.p?"asombroso":r<CHEST.asombroso.p+CHEST.epico.p?"epico":"poco";if(min==="epico"&&k==="poco")k="epico";return k;}
@@ -390,7 +390,7 @@ function passRewardLabel(i){
   if(R.k==="chest")return ["chest:"+R.r,CHEST[R.r].n,CHEST[R.r].c==="rainbow"?rainbowCol(MENU.t||0,i*30):CHEST[R.r].c];
   if(R.k==="title")return ["🏷️",R.name.replace(/^\S+\s/,""),"#80d8ff"];
   if(R.k==="pieces")return ["🧩",R.n+" piezas","#b9f6ca"];
-  if(R.k==="skin"){var d=skinDef(R.hero,R.id);return ["skin:"+R.hero+":"+R.id,d?d.name:R.id,"#ff80ab"];}
+  if(R.k==="skin"){var d=skinDef(R.hero,R.id);return ["skin:"+R.hero+":"+R.id,d?d.name:R.id,d&&d.rar&&typeof rarCol==="function"?rarCol(d.rar,MENU.t||0,i*30):"#ff80ab"];}
   return ["?","","#fff"];
 }
 function drawPass(){
@@ -438,6 +438,7 @@ function drawPass(){
     ctx.font="900 10px system-ui";var lt=lab[1];while(ctx.measureText(lt).width>tw-8&&lt.length>3)lt=lt.slice(0,-2);
     mText(lt,tw/2,chh*0.68,10,lab[2],"center","900",2.5);
     if(R.k==="skin")mText(p21HeroName(R.hero),tw/2,chh*0.68+12,8.5,"#e8e0f0","center","800",2);
+    if(typeof PASS_GEMS!=="undefined"&&PASS_GEMS[n]){ctx.fillStyle=cl?"rgba(40,60,64,0.9)":"rgba(8,40,48,0.95)";roundRect(ctx,tw-34,4,30,16,8);ctx.fill();ctx.strokeStyle=cl?"rgba(128,222,234,0.35)":"#80deea";ctx.lineWidth=1.3;roundRect(ctx,tw-34,4,30,16,8);ctx.stroke();mText("💎"+PASS_GEMS[n],tw-19,12,8.5,cl?"#7a9aa0":"#e0f7fa","center","900",2);}
     if(cl){mText(R.k==="title"&&PROF.eq.title===R.id?"EQUIPADO":"✔",tw/2,chh-12,R.k==="title"?9:14,"#b9f6ca","center","900",2.5);}
     else if(can){ctx.fillStyle="#2fb24a";roundRect(ctx,6,chh-24,tw-12,18,9);ctx.fill();mText("RECLAMAR",tw/2,chh-15,9,"#fff","center","900",2);}
     else{ctx.fillStyle="rgba(8,4,14,0.45)";roundRect(ctx,0,0,tw,chh,12);ctx.fill();mText("🔒",tw/2,chh-14,11,"#fff","center","700",0);}
@@ -485,7 +486,7 @@ function drawMissions(){
       mText(tt,tx,yy+rh*0.3,11,m.c?"#9e98aa":"#fff","left","800",2.5);
       mBar(tx,yy+rh*0.55,bw,9,m.p/m.n,m.c?"#5e8c6a":done?"#ffd54f":"#40c4ff");
       mText(fmtN(Math.min(m.p,m.n))+" / "+fmtN(m.n),tx+bw/2,yy+rh*0.55+4.5,8,"#fff","center","900",2.2);
-      mText("🎖️ +"+m.x+" XP",tx,yy+rh*0.82,9,"#80d8ff","left","800",2);
+      mText("🎖️ +"+m.x+" XP"+(C[3]==="w"&&typeof GEM!=="undefined"?"   💎 +"+GEM.weekly:""),tx,yy+rh*0.82,9,"#80d8ff","left","800",2);
       var bx=x+colW-8-92,by=yy+rh/2-15;
       if(m.c)mText("✔ Hecha",bx+46,yy+rh/2,11,"#b9f6ca","center","900",2.5);
       else if(done)mButton(id,bx,by,84,30,"RECLAMAR",null,"green",{fs:11,data:{L:C[3],i:i}});

@@ -324,3 +324,10 @@ Neizan sprite (assets/spr/neizan_f.webp, neizan_f_hd.webp): original artwork gen
 CC0: https://creativecommons.org/publicdomain/zero/1.0/
 CC-BY 3.0: https://creativecommons.org/licenses/by/3.0/
 CC-BY 4.0: https://creativecommons.org/licenses/by/4.0/
+
+v21.1 chest and reward sounds (ch_creak, ch_latch, ch_pop, ch_charge, ch_burst_e, ch_vortex, ch_burst_a,
+rw_coin, rw_gem, rw_card, rw_flip, rw_fanfare, rw_epic)
+  Layered and mixed for Block Z from Kenney packs (RPG Audio, Impact Sounds, Interface Sounds, Sci-fi Sounds,
+  Casino Audio, Music Jingles) plus Block Z's own effects.
+  Author: Kenney (www.kenney.nl) — License: Creative Commons Zero (CC0)
+  Sources: https://kenney.nl/assets

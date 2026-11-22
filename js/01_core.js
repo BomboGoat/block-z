@@ -1,4 +1,4 @@
-var BZ_VER="21.0"; /* release label (shown in Ajustes and Créditos; index.html checks it against the page) */
+var BZ_VER="21.1"; /* release label (shown in Ajustes and Créditos; index.html checks it against the page) */
 var CFG={CHAR:0.82,MOVE:0.78,SPD:0.905*0.78,MAP_W:1104,MAP_H:624,CELL:8,YSCALE:0.70,PLAYER_R:10.7,PLAYER_SPEED:226,MAX_HP:100,INVULN_MS:700,AUTO_RANGE:326,FIRE_COOLDOWN:0.38,BULLET_SPEED:470,BULLET_DAMAGE:12,BULLET_LIFE:1.05,BASE_ZOMBIES:5,ZOMBIES_PER_WAVE:2,MAX_ALIVE:10,SPAWN_INTERVAL:1.25,BOSS_HP:720,CAM_LERP:6.5,WORLD_BASE_W:520,WORLD_BASE_H:300,SAFE_PAD:8,SUPER_COST:100};
 var RARITIES=[
 {id:"comun",name:"Común",w:55,color:"#9e9e9e",glow:"#bdbdbd",mul:1.10,frame:"#757575"},

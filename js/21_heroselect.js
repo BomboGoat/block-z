@@ -84,26 +84,29 @@ drawHeroes=function(){
     var val=i===0?String(h.hp):String(Math.round(v*10));mText(val,bx+bwid+16,yy+rowH/2-1,10.5,"#fff","center","900",2.5);}
   y+=6*rowH+8;
   /* skins */
-  var list=SKINS[h.id]||[],cols=Math.min(3,list.length),nrow=Math.ceil(list.length/cols),sw=(iw-(cols-1)*8)/cols,avail=py+ph-y-50,shh=Math.max(30,Math.min(46,(avail-(nrow-1)*6)/nrow));
-  for(i=0;i<list.length;i++){
-    var sk2=list[i],ok=skinOk(h.id,sk2),eq=equippedSkin(h.id)===sk2.id,xx2=ix+(i%cols)*(sw+8),yy2=y+Math.floor(i/cols)*(shh+6),k=mPressK("skin"+i);
-    ctx.save();ctx.translate(xx2+sw/2,yy2+shh/2);ctx.scale(k,k);ctx.translate(-sw/2,-shh/2);
-    ctx.fillStyle=eq?"rgba(255,213,79,0.22)":sk2.ex?"rgba(255,128,171,0.10)":"rgba(255,255,255,0.07)";roundRect(ctx,0,0,sw,shh,9);ctx.fill();
-    ctx.strokeStyle=eq?"#ffd54f":sk2.ex?"rgba(255,128,171,0.6)":sk2.real?"rgba(255,213,79,0.45)":"rgba(255,255,255,0.18)";ctx.lineWidth=eq?2.2:1.2;roundRect(ctx,0,0,sw,shh,9);ctx.stroke();
-    var th=typeof skinThumb==="function"?skinThumb(h.id,sk2.id,48):null,ts=shh-8;
-    if(th){ctx.save();roundRect(ctx,4,4,ts,ts,7);ctx.clip();ctx.fillStyle="rgba(0,0,0,0.3)";ctx.fillRect(4,4,ts,ts);ctx.drawImage(th,4,4,ts,ts);ctx.restore();}
-    else{var T=SKIN_TINT[sk2.id],scol=sk2.id==="orig"?h.col:T?(T.mul||"#eef"):sk2.ex?"#ff80ab":"#ffd54f";ctx.fillStyle=scol;ctx.beginPath();ctx.arc(4+ts/2,shh/2,Math.min(8,ts/2),0,7);ctx.fill();ctx.strokeStyle="#1a1020";ctx.lineWidth=2;ctx.stroke();}
-    var tx2=ts+9;ctx.font="800 9.5px system-ui";var nm=sk2.name;while(ctx.measureText(nm).width>sw-tx2-4&&nm.length>3)nm=nm.slice(0,-2);
-    mText(nm,tx2,shh*0.36,9.5,"#fff","left","800",2.2);
-    var pcs=PROF.pieces&&PROF.pieces[h.id+":"+sk2.id]||0;
-    var req=ok?(eq?"Equipado":"Equipar"):sk2.ex?(pcs?"🧩 "+pcs+"/"+sk2.pc:"🎁 Cofre/Pase"):(sk2.cost?"🪙 "+sk2.cost:"Nivel "+sk2.lv)+(pcs?" · 🧩"+pcs:"");
-    mText(req,tx2,shh*0.7,8.5,ok?(eq?"#ffd54f":"#b9f6ca"):sk2.ex?"#ff80ab":(sk2.cost&&PROF.coins>=sk2.cost?"#ffe082":"#b0a8c0"),"left","800",2);
-    if(!ok)mText("🔒",sw-9,9,8,"#fff","center","700",0);
-    ctx.restore();mHit("skin"+i,xx2,yy2,sw,shh,i);}
-  y+=(nrow-1)*(shh+6);
-  /* flavour line + wins when there is room (taller phones) */
-  var fy2=y+shh+8,room=py+ph-50-fy2;
-  if(room>=18){var wins=(PROF.stats&&PROF.stats.heroWins&&PROF.stats.heroWins[h.id])||0;mText("🏆 Victorias: "+wins+"   ·   "+(h.desc||""),ix,fy2+Math.min(room,26)/2,10,"#cfc6df","left","700",2);}
+  /* v21.1: compact thumbnail grid (10+ outfits per hero) + one info line for the focused outfit */
+  var list=SKINS[h.id]||[],n=list.length,avail=py+ph-y-50-18,gp=5,rowsN=1,ts=0,cols=n;
+  for(var rr=1;rr<=4;rr++){var cc=Math.ceil(n/rr),t2=Math.min(46,(iw-(cc-1)*gp)/cc);if(rr*t2+(rr-1)*gp<=avail&&t2>ts){ts=t2;rowsN=rr;cols=cc;}}
+  if(!ts){rowsN=Math.ceil(n/cols);ts=Math.max(24,(avail-(rowsN-1)*gp)/rowsN);}
+  var gx0=ix+(iw-(cols*ts+(cols-1)*gp))/2,eqId=equippedSkin(h.id),foc=(MENU.previewSkin&&MENU.previewSkin.hero===h.id)?MENU.previewSkin.id:eqId,focDef=null;
+  for(i=0;i<n;i++){
+    var sk2=list[i],ok=skinOk(h.id,sk2),eq=eqId===sk2.id,xx2=gx0+(i%cols)*(ts+gp),yy2=y+Math.floor(i/cols)*(ts+gp),k=mPressK("skin"+i),rc=typeof rarCol==="function"?rarCol(sk2.rar,0,i*36):"#ffd54f";
+    if(sk2.id===foc)focDef=sk2;
+    ctx.save();ctx.translate(xx2+ts/2,yy2+ts/2);ctx.scale(k,k);ctx.translate(-ts/2,-ts/2);
+    ctx.fillStyle=eq?"rgba(255,213,79,0.22)":"rgba(255,255,255,0.07)";roundRect(ctx,0,0,ts,ts,8);ctx.fill();
+    var th=typeof skinThumb==="function"?skinThumb(h.id,sk2.id,48):null;
+    if(th){ctx.save();roundRect(ctx,2,2,ts-4,ts-4,7);ctx.clip();ctx.fillStyle="rgba(0,0,0,0.3)";ctx.fillRect(2,2,ts-4,ts-4);ctx.drawImage(th,2,2,ts-4,ts-4);if(!ok){ctx.fillStyle="rgba(10,6,16,0.5)";ctx.fillRect(2,2,ts-4,ts-4);}ctx.restore();}
+    else{var T=SKIN_TINT[sk2.id],scol=sk2.id==="orig"?h.col:T?(T.mul||"#eef"):"#ffd54f";ctx.fillStyle=scol;ctx.beginPath();ctx.arc(ts/2,ts/2,Math.min(9,ts/3),0,7);ctx.fill();ctx.strokeStyle="#1a1020";ctx.lineWidth=2;ctx.stroke();}
+    ctx.strokeStyle=eq?"#ffd54f":sk2.id===foc?"#ffffff":sk2.rar?rc:"rgba(255,255,255,0.18)";ctx.lineWidth=eq||sk2.id===foc?2.4:1.6;roundRect(ctx,1,1,ts-2,ts-2,8);ctx.stroke();
+    if(sk2.rar&&sk2.rar!=="comun"){ctx.fillStyle=rc;roundRect(ctx,4,ts-6,ts-8,3,1.5);ctx.fill();}
+    if(!ok)mText("🔒",ts-8,9,8,"#fff","center","700",0);else if(eq)mText("✔",ts-8,9,9,"#ffd54f","center","900",2);
+    ctx.restore();mHit("skin"+i,xx2,yy2,ts,ts,i);}
+  y+=rowsN*ts+(rowsN-1)*gp;
+  if(focDef){var fok=skinOk(h.id,focDef),fpcs=PROF.pieces&&PROF.pieces[h.id+":"+focDef.id]||0,R=typeof RAR!=="undefined"&&focDef.rar?RAR[focDef.rar]:null;
+    var st2=fok?(focDef.id===eqId?"✔ Equipado":"Toca para equipar"):focDef.gem?"💎 "+focDef.gem+" en la TIENDA"+(fpcs?" · 🧩 "+fpcs+"/"+focDef.pc:""):focDef.ex?(fpcs?"🧩 "+fpcs+"/"+focDef.pc+" · ":"")+"🎁 Cofre/Pase":(focDef.cost?"🪙 "+focDef.cost:"Nivel "+focDef.lv)+(fpcs?" · 🧩 "+fpcs+"/"+focDef.pc:"");
+    var iy=y+12;mText(focDef.name,ix,iy,11,"#fff","left","900",2.5);ctx.font="900 11px system-ui";var nw=ctx.measureText(focDef.name).width;
+    if(R){mText(R.n.toUpperCase(),ix+nw+8,iy,8.5,typeof rarCol==="function"?rarCol(focDef.rar):"#fff","left","900",2.2);}
+    mText(st2,ix+iw,iy,9,fok?(focDef.id===eqId?"#ffd54f":"#b9f6ca"):focDef.gem?"#80deea":"#cfc6df","right","800",2.2);}
   });
   var ix=px+14,iw=pw2-28;
   /* buttons */
