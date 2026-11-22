@@ -556,3 +556,40 @@ drawMenuScreen=function(){
     return _ma(h);
   };
 })();
+
+/* ---------- Oro: the weapon turns to real gold too ---------- */
+/* the vector weapons are recoloured on the fly through a thin context proxy (only while a gold hero's weapon is drawn):
+   every metal/wood/plastic colour maps to a gold ramp by brightness; skin, outline and glow effects are untouched */
+var WPN_GOLD=0,GOLD_MAP={};
+function goldOf(col){
+  if(typeof col!=="string"||col.charAt(0)!=="#"||(col.length!==7&&col.length!==4))return col;
+  var m=GOLD_MAP[col];if(m)return m;
+  var h=col.length===4?"#"+col[1]+col[1]+col[2]+col[2]+col[3]+col[3]:col,n=parseInt(h.slice(1),16),r=(n>>16)&255,g=(n>>8)&255,b=n&255;
+  var L=(0.3*r+0.59*g+0.11*b)/255,t=0.25+0.75*Math.pow(L,0.6);
+  var A=[70,44,4],B=[214,160,40],C=[255,244,190],o=t<0.6?[A,B,t/0.6]:[B,C,(t-0.6)/0.4],u=o[2];
+  var rr=Math.round(o[0][0]+(o[1][0]-o[0][0])*u),gg=Math.round(o[0][1]+(o[1][1]-o[0][1])*u),bb=Math.round(o[0][2]+(o[1][2]-o[0][2])*u);
+  return (GOLD_MAP[col]="#"+((1<<24)|(rr<<16)|(gg<<8)|bb).toString(16).slice(1));
+}
+(function(){
+  var _dw=drawWeapon34,PX=new WeakMap();
+  function proxyFor(c,keep){
+    var P=new Proxy(c,{
+      get:function(t,k){
+        if(k==="createLinearGradient"||k==="createRadialGradient")return function(){var g=t[k].apply(t,arguments),ad=g.addColorStop.bind(g);return {addColorStop:function(o,cl){ad(o,keep[cl]?cl:goldOf(cl));},_g:g};};
+        var v=t[k];return typeof v==="function"?v.bind(t):v;},
+      set:function(t,k,v){
+        if((k==="fillStyle"||k==="strokeStyle")){if(v&&v._g)v=v._g;else if(typeof v==="string"&&!keep[v]&&t.globalCompositeOperation!=="lighter")v=goldOf(v);}
+        t[k]=v;return true;}
+    });
+    return P;
+  }
+  drawWeapon34=function(c,hx,hy,ang,wpn,sc,muzzle,skin,two){
+    if(!WPN_GOLD||wpn==="bolt"||wpn==="fist")return _dw.apply(this,arguments);
+    var sk=skin||"#e8c4a0",keep={};GOLD_MAP["#1a140c"]="#4a3200";keep[sk]=1;keep[shadeHex(sk,28)]=1;keep[shadeHex(sk,-28)]=1;
+    return _dw.call(this,proxyFor(c,keep),hx,hy,ang,wpn,sc,muzzle,skin,two);
+  };
+  var _dc=drawChar34;
+  drawChar34=function(wx,wy,look,ang,anim,opts){var was=WPN_GOLD;WPN_GOLD=look&&look.kind==="player"&&look.tint==="dorado"?1:0;try{return _dc.apply(this,arguments);}finally{WPN_GOLD=was;}};
+  var _hs=drawHeroShowcaseRaw;
+  drawHeroShowcaseRaw=function(hero,x,footY,H,skin,glow){var was=WPN_GOLD;WPN_GOLD=skin==="dorado"?1:0;try{return _hs.apply(this,arguments);}finally{WPN_GOLD=was;}};
+})();
