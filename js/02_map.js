@@ -569,6 +569,10 @@ function buildMap(seed){
         for(yy=y0;yy<=y1;yy++)for(xx=x0;xx<=x1;xx++){k=yy*D.cols+xx;if(D.typemap&&D.typemap[k]===2){D.walk[k]=0;D.typemap[k]=0;}}}
       return !drop;});}
   addAll(D.trees);addAll(D.ruins);addAll(D.crates);addAll(D.barrels);addAll(D.rocks);
+  /* v21.5: W1 ruins/crates/barrels/rocks collide through the traced grid now; their old boxes only keep
+     telling spawnHidden() where a zombie would pop in hidden behind a drawn object */
+  map.hides=(D.hides||[]).slice();
+  map.bossSpots=(D.bossSpots||[]).slice();
   map.spawns=(D.spawns||[]).slice();
   (function nudgeSpawns(){
     var i,e,s;
@@ -774,6 +778,8 @@ function spawnHidden(x,y,rad){
       if(x>s.x-m&&x<s.x+s.w+m&&y<s.y+s.d&&y>s.y-hy)return 1;
     }
   }
+  a=map.hides||[];
+  for(i=0;i<a.length;i++){s=a[i];hy=(s.h||16)/ys+m;if(x>s.x-m&&x<s.x+s.w+m&&y<s.y+s.d&&y>s.y-hy)return 1;}
   return 0;
 }
 function _freeCells(rad){
@@ -856,6 +862,8 @@ function pickBossSpawn(p){
     {x:(map.start&&map.start.x)||552,y:((map.start&&map.start.y)||430)-20},
     {x:620,y:400},{x:500,y:400},{x:640,y:360},{x:480,y:360}
   ],i,s,e;
+  /* v21.5: W1's traced boulder north of the start took the old first spot; the map data names a clear one */
+  if(map.bossSpots&&map.bossSpots.length)cands=map.bossSpots.concat(cands);
   for(i=0;i<cands.length;i++){
     s=cands[i];
     if(!spawnBlocked(s.x,s.y,rad))return {x:s.x,y:s.y};

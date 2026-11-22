@@ -11,17 +11,17 @@ var W2Z={
   names:{normal:"Congelado",fast:"Patinador",tank:"Bruto de hielo",spitter:"Lanzaesquirlas",exploder:"Bomba de escarcha"},
   banner:{fast:1,tank:1,spitter:1,exploder:1},
   unlocks:[["fast"],["tank"],[],["spitter"],[],["exploder"],[],[],[],["boss"]],
-  meta:{"w2_walker_f":{"file":"assets/spr/w2_walker_f.webp","w":201,"h":360,"fx":0.262,"fy":0.992,"hx":0.98,"hy":0.656,"ex":0.578,"ey":0.284},
-        "w2_skater_f":{"file":"assets/spr/w2_skater_f.webp","w":271,"h":360,"fx":0.118,"fy":0.992,"hx":0.985,"hy":0.604,"ex":0.671,"ey":0.234},
-        "w2_brute_f":{"file":"assets/spr/w2_brute_f.webp","w":289,"h":360,"fx":0.342,"fy":0.992,"hx":0.986,"hy":0.528,"ex":0.582,"ey":0.191},
-        "w2_thrower_f":{"file":"assets/spr/w2_thrower_f.webp","w":237,"h":360,"fx":0.202,"fy":0.992,"hx":0.983,"hy":0.575,"ex":0.578,"ey":0.273},
-        "w2_bomber_f":{"file":"assets/spr/w2_bomber_f.webp","w":216,"h":360,"fx":0.296,"fy":0.992,"hx":0.981,"hy":0.606,"ex":0.543,"ey":0.272}},
+  meta:{"w2_walker_f":{"file":"assets/spr/w2_walker_f.webp","w":201,"h":360,"fx":0.492,"fy":0.992,"hx":0.98,"hy":0.656,"ex":0.578,"ey":0.284},
+        "w2_skater_f":{"file":"assets/spr/w2_skater_f.webp","w":271,"h":360,"fx":0.417,"fy":0.992,"hx":0.985,"hy":0.604,"ex":0.671,"ey":0.234},
+        "w2_brute_f":{"file":"assets/spr/w2_brute_f.webp","w":289,"h":360,"fx":0.549,"fy":0.992,"hx":0.986,"hy":0.528,"ex":0.582,"ey":0.191},
+        "w2_thrower_f":{"file":"assets/spr/w2_thrower_f.webp","w":237,"h":360,"fx":0.494,"fy":0.992,"hx":0.983,"hy":0.575,"ex":0.578,"ey":0.273},
+        "w2_bomber_f":{"file":"assets/spr/w2_bomber_f.webp","w":216,"h":360,"fx":0.529,"fy":0.992,"hx":0.981,"hy":0.606,"ex":0.543,"ey":0.272}},
   imgs:{},n:0,loading:0,icy:0,boom:0
 };
 function w2zReady(){return W2Z.n>=5;}
 function w2zLoad(){
   if(W2Z.loading)return;W2Z.loading=1;
-  Object.keys(W2Z.meta).forEach(function(k){var im=new Image();im.onload=function(){W2Z.imgs[k]=im;W2Z.n++;};im.onerror=function(){W2Z.loading=0;};im.src=W2Z.meta[k].file+"?v=21.4";});
+  Object.keys(W2Z.meta).forEach(function(k){var im=new Image();im.onload=function(){W2Z.imgs[k]=im;W2Z.n++;};im.onerror=function(){W2Z.loading=0;};im.src=W2Z.meta[k].file+"?v=21.5";});
 }
 function w2zOn(){return typeof WORLD!=="undefined"&&WORLD.cur===2&&!(typeof HELL!=="undefined"&&HELL.active);}
 (function(){var _l=w2LoadImg;w2LoadImg=function(){w2zLoad();return _l.apply(this,arguments);};if(w2Unlocked())setTimeout(w2zLoad,2600);})();
