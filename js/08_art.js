@@ -165,7 +165,9 @@ function rigParts(name,img){
     var c=cv(),g=c.getContext("2d");path(g,a.poly);g.clip();g.drawImage(img,0,0);
     try{
       var d=g.getImageData(0,0,iw,ih),px=d.data,x,y,i,r,gg,b,v,mn,cutY=Math.floor((R.cut||0.6)*ih);
-      for(y=0;y<ih;y++)for(x=0;x<iw;x++){i=(y*iw+x)*4;if(!px[i+3])continue;r=px[i];gg=px[i+1];b=px[i+2];v=Math.max(r,gg,b);mn=Math.min(r,gg,b);
+      /* v21: painted skins share the base silhouette; the clothes test reads the base sprite's colours so a gold or ninja outfit is cut exactly like the original */
+      var tp=px;if(img._skinBase){var tc=cv(),tg=tc.getContext("2d");tg.drawImage(img._skinBase,0,0,iw,ih);tp=tg.getImageData(0,0,iw,ih).data;}
+      for(y=0;y<ih;y++)for(x=0;x<iw;x++){i=(y*iw+x)*4;if(!px[i+3])continue;r=tp[i];gg=tp[i+1];b=tp[i+2];v=Math.max(r,gg,b);mn=Math.min(r,gg,b);
         if(R.grey&&v>120&&(v-mn)<v*0.14){px[i+3]=0;continue;}
         if(y>cutY&&(a===R.L?x>iw*0.19:x<iw*0.86)&&((b>r+10&&v<135)||(R.black&&v<60)))px[i+3]=0;}
       g.putImageData(d,0,0);
