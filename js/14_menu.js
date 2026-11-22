@@ -526,7 +526,7 @@ function menuGo(st){
   if(st!=="title"&&game.state==="title")MENU.parentOk=1;
   game.state=st;MENU.enterT=MENU.t;MENU.scroll=0;MENU.press=null;
   if(st==="heroes"){MENU.heroIdx=Math.max(0,HEROES.findIndex(function(h){return h.id===selectedHero;}));}
-  if(st==="credits"&&!MENU.credits){MENU.credits=["Cargando…"];try{var x=new XMLHttpRequest();x.onload=function(){MENU.credits=String(x.responseText||"").split(/\r?\n/);};x.open("GET","CREDITS.txt?v=20.6");x.send();}catch(e){}}
+  if(st==="credits"&&!MENU.credits){MENU.credits=["Cargando…"];try{var x=new XMLHttpRequest();x.onload=function(){MENU.credits=String(x.responseText||"").split(/\r?\n/);};x.open("GET","CREDITS.txt?v=21.0");x.send();}catch(e){}}
   if(typeof layoutMenuButtons==="function")layoutMenuButtons();
 }
 function drawMenuTitle(){
@@ -546,12 +546,13 @@ function drawMenuTitle(){
   ctx.save();ctx.translate(bx+bw/2,y0+pH/2);ctx.scale(pulse,pulse);ctx.translate(-(bx+bw/2),-(y0+pH/2));
   mButton("play",bx,y0,bw,pH,"JUGAR","▶","play",{shine:1,fs:Math.round(pH*0.45),enter:enterK(0)});
   ctx.restore();
-  var items=[["heroes","HÉROES","🦸","blue"],["unlocks","MEJORAS","🎁","purple"],["achievements","LOGROS","🏆","gold"],["stats","RÉCORDS","📊","teal"],["settings","AJUSTES","⚙️","grey"],["credits","CRÉDITOS","🎬","red"]];
-  var gap=8,gw=(bw-gap)/2,gh=Math.min(44,(SH-s.b-12-(y0+pH+12)-2*gap)/3),i;
+  var items=[["pass","PASE","🎖️","teal"],["missions","MISIONES","📜","gold"],["heroes","HÉROES","🦸","blue"],["unlocks","MEJORAS","🎁","purple"],["achievements","LOGROS","🏆","gold"],["stats","RÉCORDS","📊","teal"],["settings","AJUSTES","⚙️","grey"],["credits","CRÉDITOS","🎬","red"]];
+  var rows=Math.ceil(items.length/2),gap=7,gw=(bw-gap)/2,gh=Math.min(44,(SH-s.b-12-(y0+pH+12)-(rows-1)*gap)/rows),i;
   for(i=0;i<items.length;i++){
     var it=items[i],x=bx+(i%2)*(gw+gap),y=y0+pH+12+Math.floor(i/2)*(gh+gap);
-    var badge=it[0]==="achievements"?ACHS.filter(function(a){return !PROF.ach[a.id]&&a.val()>=a.goal;}).length:0;
+    var badge=typeof menuBadge==="function"?menuBadge(it[0]):0;
     mButton(it[0],x,y,gw,gh,it[1],it[2],it[3],{fs:Math.round(gh*0.34),enter:enterK(1+i*0.4)});
+    if(badge&&typeof drawBadgeDot==="function"&&enterK(1+i*0.4)>0.99)drawBadgeDot(x+gw-4,y+3,badge);
   }
 }
 var LV_THUMB=null;
