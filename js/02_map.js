@@ -569,6 +569,9 @@ function buildMap(seed){
         for(yy=y0;yy<=y1;yy++)for(xx=x0;xx<=x1;xx++){k=yy*D.cols+xx;if(D.typemap&&D.typemap[k]===2){D.walk[k]=0;D.typemap[k]=0;}}}
       return !drop;});}
   addAll(D.trees);addAll(D.ruins);addAll(D.crates);addAll(D.barrels);addAll(D.rocks);
+  /* v21.5: W1 ruins/crates/barrels/rocks collide through the traced grid now; their old boxes only keep
+     telling spawnHidden() where a zombie would pop in hidden behind a drawn object */
+  map.hides=(D.hides||[]).slice();
   map.spawns=(D.spawns||[]).slice();
   (function nudgeSpawns(){
     var i,e,s;
@@ -774,6 +777,8 @@ function spawnHidden(x,y,rad){
       if(x>s.x-m&&x<s.x+s.w+m&&y<s.y+s.d&&y>s.y-hy)return 1;
     }
   }
+  a=map.hides||[];
+  for(i=0;i<a.length;i++){s=a[i];hy=(s.h||16)/ys+m;if(x>s.x-m&&x<s.x+s.w+m&&y<s.y+s.d&&y>s.y-hy)return 1;}
   return 0;
 }
 function _freeCells(rad){
