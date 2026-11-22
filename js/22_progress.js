@@ -99,6 +99,8 @@ var CHEST={
 };
 var CHEST_IMG={};
 function chestImg(k,open){var key=CHEST[k].img+(open?"_open":"");var o=CHEST_IMG[key];if(o)return o.width?o:null;o=CHEST_IMG[key]=new Image();o.onload=function(){if(typeof menuDirty!=="undefined")menuDirty=1;};o.src="assets/ui/"+key+".webp?v=21.0";return null;}
+var CHEST_TH={};
+function chestThumb(k,w){var key=k+"|"+Math.round(w),c=CHEST_TH[key];if(c)return c;var im=chestImg(k,0);if(!im)return null;var K=Math.min(2,dpr||1);c=document.createElement("canvas");c.width=Math.ceil(w*K);c.height=Math.ceil(w*im.height/im.width*K);c.getContext("2d").drawImage(im,0,0,c.width,c.height);c._w=w;c._h=w*im.height/im.width;return (CHEST_TH[key]=c);}
 function chestRoll(min){var r=Math.random()*100;var k=r<CHEST.asombroso.p?"asombroso":r<CHEST.asombroso.p+CHEST.epico.p?"epico":"poco";if(min==="epico"&&k==="poco")k="epico";return k;}
 function chestGrant(r){var i=PROF.chests.indexOf(null);if(i<0)return -1;PROF.chests[i]={r:r,t:Date.now()};profSave();return i;}
 function chestRewards(r){
@@ -278,7 +280,7 @@ function drawChestBar(){
     ctx.fillStyle="rgba(14,8,22,0.72)";roundRect(ctx,0,0,S,S,12);ctx.fill();
     if(c){var C=CHEST[c.r]||CHEST.poco,col=C.c==="rainbow"?rainbowCol(t,i*40):C.c;
       var gl=typeof glowSpr==="function"?glowSpr(C.c==="rainbow"?"#ffffff":C.c):null;if(gl){ctx.globalAlpha=0.5+0.2*Math.sin(t*3+i);ctx.drawImage(gl,-S*0.2,-S*0.15,S*1.4,S*1.3);ctx.globalAlpha=1;}
-      var im=chestImg(c.r,0),bob=Math.sin(t*2.4+i*1.3)*1.5;if(im){var w=S*0.84,h=w*im.height/im.width;ctx.drawImage(im,S/2-w/2,S*0.48-h/2+bob,w,h);}
+      var im=chestThumb(c.r,S*0.84),bob=Math.sin(t*2.4+i*1.3)*1.5;if(im){ctx.drawImage(im,S/2-im._w/2,S*0.48-im._h/2+bob,im._w,im._h);}
       ctx.strokeStyle=col;ctx.lineWidth=2.2;roundRect(ctx,1,1,S-2,S-2,12);ctx.stroke();
       mText("ABRIR",S/2,S-7,8.5,"#fff","center","900",2.5);
     }else{ctx.strokeStyle="rgba(255,255,255,0.16)";ctx.lineWidth=1.5;ctx.setLineDash([4,4]);roundRect(ctx,1.5,1.5,S-3,S-3,12);ctx.stroke();ctx.setLineDash([]);
@@ -589,7 +591,7 @@ function goldOf(col){
     return _dw.call(this,proxyFor(c,keep),hx,hy,ang,wpn,sc,muzzle,skin,two);
   };
   var _dc=drawChar34;
-  drawChar34=function(wx,wy,look,ang,anim,opts){var was=WPN_GOLD;WPN_GOLD=look&&look.kind==="player"&&look.tint==="dorado"?1:0;try{return _dc.apply(this,arguments);}finally{WPN_GOLD=was;}};
+  drawChar34=function(wx,wy,look,ang,anim,opts){if(!(look&&look.tint==="dorado"&&look.kind==="player"))return _dc(wx,wy,look,ang,anim,opts);WPN_GOLD=1;try{return _dc(wx,wy,look,ang,anim,opts);}finally{WPN_GOLD=0;}};
   var _hs=drawHeroShowcaseRaw;
   drawHeroShowcaseRaw=function(hero,x,footY,H,skin,glow){var was=WPN_GOLD;WPN_GOLD=skin==="dorado"?1:0;try{return _hs.apply(this,arguments);}finally{WPN_GOLD=was;}};
 })();
