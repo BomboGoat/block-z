@@ -50,7 +50,7 @@ function w2IsIce(){return WORLD.cur===2&&typeof W2_DATA!=="undefined";}
     return r;
   };
   var _cts=createTitleState;createTitleState=function(){WORLD.cur=1;return _cts.apply(this,arguments);};
-  var _sg=startGame;startGame=function(){WORLD.cur=(WORLD.sel===2&&w2Unlocked()&&WORLD.img&&typeof W2_DATA!=="undefined")?2:1;WORLD.warm=null;var r=_sg.apply(this,arguments);if(WORLD.cur===2){WORLD.warm=w2WarmList();}return r;};
+  var _sg=startGame;startGame=function(){WORLD.cur=(WORLD.sel===2&&w2Unlocked()&&WORLD.img&&typeof W2_DATA!=="undefined")?2:1;WORLD.warm=null;if(typeof EVENT_DEFS!=="undefined"&&EVENT_DEFS.tesoro)EVENT_DEFS.tesoro.banner=WORLD.cur===2?"¡Tesoro en las cabañas!":"¡Tesoro en las ruinas!";var r=_sg.apply(this,arguments);if(WORLD.cur===2){WORLD.warm=w2WarmList();}return r;};
   /* the island's ruin cut-outs only exist on World 1 */
   var _roi=ruinOccItems;ruinOccItems=function(list){if(WORLD.cur===2)return;return _roi.apply(this,arguments);};
   /* round 10 on the ice: no hell portal — the final boss fights on the frozen island */
@@ -59,6 +59,19 @@ function w2IsIce(){return WORLD.cur===2&&typeof W2_DATA!=="undefined";}
     var r=_wc.apply(this,arguments);
     if(WORLD.cur===2&&game&&game.state==="victory"){game.state="level_done";game.hell={t:0,doneTime:game.time,w2:1};try{startMusic("menu");}catch(e){}try{sfx("level",1);}catch(e){}layoutMenuButtons();}
     return r;
+  };
+})();
+/* area names on the ice (minimap label); same kinds as the island so no grass FX ever triggers here */
+(function(){
+  var _za=zoneAt;
+  zoneAt=function(x,y){
+    if(WORLD.cur!==2||(typeof HELL!=="undefined"&&HELL.active))return _za.apply(this,arguments);
+    var dx=(x-472)/100,dy=(y-282)/64;
+    if(dx*dx+dy*dy<1||(x>530&&x<660&&y>318&&y<415&&sampleType(x,y)===0&&Math.abs((y-318)-(x-530)*0.72)<26))return {k:"ice",name:"Lago helado"};
+    if(x>600&&x<910&&y>55&&y<285)return {k:"cabins",name:"Cabañas"};
+    if(x>290&&x<420&&y>95&&y<210)return {k:"igloo",name:"Iglú"};
+    var t=sampleType(x,y);if(t===1)return {k:"pond",name:"Río helado"};if(t===2)return {k:"forest",name:"Bosque nevado"};
+    return {k:"path",name:"Nieve"};
   };
 })();
 /* ---------- progress: W2 runs are tracked apart, W1 records stay exactly as they were ---------- */
