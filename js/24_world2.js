@@ -7,7 +7,7 @@
 var WORLD={sel:1,cur:1,img:null,imgLoading:0,w1:null,w1Img:null,snow:null,warm:null};
 function w2LoadImg(){
   if(WORLD.img||WORLD.imgLoading)return;WORLD.imgLoading=1;
-  try{var im=new Image();im.onload=function(){WORLD.img=im;WORLD.imgLoading=0;};im.onerror=function(){WORLD.imgLoading=0;};im.src="assets/env/ice.webp?v=21.3";}catch(e){WORLD.imgLoading=0;}
+  try{var im=new Image();im.onload=function(){WORLD.img=im;WORLD.imgLoading=0;};im.onerror=function(){WORLD.imgLoading=0;};im.src="assets/env/ice.webp?v=21.4";}catch(e){WORLD.imgLoading=0;}
 }
 /* ---------- save: profile v4 (world progress), versioned with a backup ---------- */
 PROF_DEF.v=4;PROF_DEF.worlds={w1done:0,w2:{runs:0,wins:0,best:0,heroWins:{}}};
@@ -67,7 +67,9 @@ function w2IsIce(){return WORLD.cur===2&&typeof W2_DATA!=="undefined";}
   zoneAt=function(x,y){
     if(WORLD.cur!==2||(typeof HELL!=="undefined"&&HELL.active))return _za.apply(this,arguments);
     var dx=(x-472)/100,dy=(y-282)/64;
-    if(dx*dx+dy*dy<1||(x>530&&x<660&&y>318&&y<415&&sampleType(x,y)===0&&Math.abs((y-318)-(x-530)*0.72)<26))return {k:"ice",name:"Lago helado"};
+    if(dx*dx+dy*dy<1.25||(x>530&&x<700&&y>318&&y<445&&Math.abs((y-318)-(x-530)*0.72)<34))return {k:"ice",name:"Lago helado"};
+    if(x>455&&x<655&&y>462&&y<578)return {k:"bridge",name:"Puente helado"};
+    if(y>=578)return {k:"path",name:"Orilla sur"};
     if(x>600&&x<910&&y>55&&y<285)return {k:"cabins",name:"Cabañas"};
     if(x>290&&x<420&&y>95&&y<210)return {k:"igloo",name:"Iglú"};
     var t=sampleType(x,y);if(t===1)return {k:"pond",name:"Río helado"};if(t===2)return {k:"forest",name:"Bosque nevado"};
@@ -113,10 +115,11 @@ function w2IsIce(){return WORLD.cur===2&&typeof W2_DATA!=="undefined";}
     C[k]=c;return c;
   };
   var _sz=spawnZombie;
-  spawnZombie=function(){var z=_sz.apply(this,arguments);if(WORLD.cur===2&&z&&z.look&&z.look.kind==="zombie"&&!z.look.tint){z.look.tint="frost";z.frost=1;}return z;};
+  spawnZombie=function(){var z=_sz.apply(this,arguments);if(typeof w2zDress==="function"&&w2zDress(z))return z;if(WORLD.cur===2&&z&&z.look&&z.look.kind==="zombie"&&!z.look.tint){z.look.tint="frost";z.frost=1;}return z;};
 })();
 function w2WarmList(){
   var out=[],t;if(typeof ART_MAP==="undefined")return out;
+  if(typeof w2zReady==="function"&&w2zReady())return ["final_f"]; /* v21.4: ice zombies have their own paintings; only the frozen king is tinted */
   for(t in ART_MAP){var e=ART_MAP[t];if(t.indexOf("z_")!==0&&!/^(normal|fast|tank|crawler|spitter|jumper|armored|exploder|screamer|splitter|mini|boss|final)$/.test(t))continue;
     if(e.f)out.push(e.f);if(e.b)out.push(e.b);}
   return out;
@@ -145,7 +148,7 @@ function w2WarmList(){
     if(game.state==="boss_intro"){if(game.boss)zLegWarmLook(game.boss.look);return;}
     var wv=game.state==="upgrade"?(game.wave||0)+1:(game.wave||0),pool=typeof poolForWave==="function"?poolForWave(wv)||[]:[],i,t;
     if(wv>=9&&pool.indexOf("boss")<0)pool=pool.concat(["boss"]);
-    for(i=0;i<pool.length;i++){t=pool[i];if(!LF[t]){LF[t]=makeZombieLook(t,1);LF[t].tint="frost";}if(zLegWarmLook(LF[t]))return;}
+    for(i=0;i<pool.length;i++){t=pool[i];if(!LF[t]){LF[t]=makeZombieLook(t,1);if(typeof W2Z!=="undefined"&&W2Z.map[t]&&w2zReady())LF[t].w2=W2Z.map[t];else LF[t].tint="frost";}if(zLegWarmLook(LF[t]))return;}
   };
 })();
 /* ---------- snowfall (replaces leaves/pollen on the ice; same sprite budget) ---------- */
@@ -199,7 +202,7 @@ function w2DrawSnow(dt){
     if(st==="levels"&&id==="l1"){WORLD.sel=1;return _ma.apply(this,arguments);}
     if(st==="levels"&&id==="l2"){
       if(!w2Unlocked()){try{sfx("hurt");}catch(e){}menuToast("🔒 Completa el Mundo 1","#9fd8ff");return;}
-      if(!WORLD.img){w2LoadImg();try{sfx("click");}catch(e){}menuToast("Cargando el Lugar del Hielo…","#9fd8ff");return;}
+      if(!WORLD.img||(typeof w2zReady==="function"&&!w2zReady())){w2LoadImg();try{sfx("click");}catch(e){}menuToast("Cargando el Lugar del Hielo…","#9fd8ff");return;}
       WORLD.sel=2;if(PROF.worlds._w1doneNew){delete PROF.worlds._w1doneNew;profSave();}try{sfx("click");sfx("card");}catch(e){}menuGo("heroes");MENU.heroMode="play";return;
     }
     return _ma.apply(this,arguments);
