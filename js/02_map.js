@@ -572,6 +572,7 @@ function buildMap(seed){
   /* v21.5: W1 ruins/crates/barrels/rocks collide through the traced grid now; their old boxes only keep
      telling spawnHidden() where a zombie would pop in hidden behind a drawn object */
   map.hides=(D.hides||[]).slice();
+  map.bossSpots=(D.bossSpots||[]).slice();
   map.spawns=(D.spawns||[]).slice();
   (function nudgeSpawns(){
     var i,e,s;
@@ -861,6 +862,8 @@ function pickBossSpawn(p){
     {x:(map.start&&map.start.x)||552,y:((map.start&&map.start.y)||430)-20},
     {x:620,y:400},{x:500,y:400},{x:640,y:360},{x:480,y:360}
   ],i,s,e;
+  /* v21.5: W1's traced boulder north of the start took the old first spot; the map data names a clear one */
+  if(map.bossSpots&&map.bossSpots.length)cands=map.bossSpots.concat(cands);
   for(i=0;i<cands.length;i++){
     s=cands[i];
     if(!spawnBlocked(s.x,s.y,rad))return {x:s.x,y:s.y};
