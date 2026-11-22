@@ -531,7 +531,7 @@ function menuGo(st){
   if(st!=="title"&&game.state==="title")MENU.parentOk=1;
   game.state=st;MENU.enterT=MENU.t;MENU.scroll=0;MENU.press=null;
   if(st==="heroes"){MENU.heroIdx=Math.max(0,HEROES.findIndex(function(h){return h.id===selectedHero;}));}
-  if(st==="credits"&&!MENU.credits){MENU.credits=["Cargando…"];try{var x=new XMLHttpRequest();x.onload=function(){MENU.credits=String(x.responseText||"").split(/\r?\n/);};x.open("GET","CREDITS.txt?v=21.2");x.send();}catch(e){}}
+  if(st==="credits"&&!MENU.credits){MENU.credits=["Cargando…"];try{var x=new XMLHttpRequest();x.onload=function(){MENU.credits=String(x.responseText||"").split(/\r?\n/);};x.open("GET","CREDITS.txt?v=21.3");x.send();}catch(e){}}
   if(typeof layoutMenuButtons==="function")layoutMenuButtons();
 }
 function drawMenuTitle(){
@@ -562,21 +562,28 @@ function drawMenuTitle(){
 }
 var LV_THUMB=null;
 function drawLevels(){
-  menuBg(0.3);mBack();mTitle("Elige nivel");drawTopBar();
+  menuBg(0.3);mBack();mTitle("Elige mundo");drawTopBar();
   var s=layout.safe,n=3,gap=14,cw=Math.min(230,(SW-s.l-s.r-40-gap*2)/3),ch=Math.min(260,SH-s.t-s.b-96),x0=(SW-(cw*3+gap*2))/2,y=s.t+56,i;
-  var L=[{id:"l1",name:"Nivel 1",sub:"La Isla",ok:1},{id:"l2",name:"Nivel 2",sub:"La Ciudad",ok:0},{id:"l3",name:"Nivel 3",sub:"El Abismo",ok:0}];
+  var w2ok=typeof w2Unlocked==="function"&&w2Unlocked();
+  var L=[{id:"l1",name:"Mundo 1",sub:"La Isla",ok:1,img:(typeof WORLD!=="undefined"&&WORLD.w1Img)||ART.arena||GFX.arena},
+    {id:"l2",name:"Mundo 2",sub:"El Lugar del Hielo",ok:w2ok?1:0,ice:1,img:typeof WORLD!=="undefined"?WORLD.img:null},
+    {id:"l3",name:"Mundo 3",sub:"???",ok:0}];
+  if(typeof w2LoadImg==="function"&&!L[1].img)w2LoadImg();
   for(i=0;i<n;i++){
     var l=L[i],x=x0+i*(cw+gap),ent=enterK(i*0.6),k=mPressK(l.id),yy=y+(1-ent)*40;
     ctx.save();ctx.globalAlpha=ent;ctx.translate(x+cw/2,yy+ch/2);ctx.scale(k,k);ctx.translate(-cw/2,-ch/2);
     mPanel(0,0,cw,ch,16,0.94);
     ctx.save();roundRect(ctx,6,6,cw-12,ch*0.62,12);ctx.clip();
-    var img=GFX.menuBg&&i===0?null:null,ar=ART.arena||GFX.arena;
-    if(ar&&ar.width){ /* v20.3.2: pan over a small pre-scaled copy of the map art, not the full-size texture */
-      var tk=(cw-12)*(dpr||1)/(ar.width*0.62),TH=LV_THUMB&&LV_THUMB.k===tk&&LV_THUMB.src===ar?LV_THUMB:null;
+    var ar=l.img;if(!LV_THUMB||LV_THUMB.length==null)LV_THUMB=[];
+    if(ar&&ar.width){ /* v20.3.2: pan over a small pre-scaled copy of the map art, not the full-size texture (one per world) */
+      var tk=(cw-12)*(dpr||1)/(ar.width*0.62),TH=LV_THUMB[i]&&LV_THUMB[i].k===tk&&LV_THUMB[i].src===ar?LV_THUMB[i]:null;
       if(!TH){var tc=document.createElement("canvas");tc.width=Math.ceil(ar.width*0.72*tk);tc.height=Math.ceil(ar.height*0.62*tk);var tg=tc.getContext("2d");tg.imageSmoothingQuality="high";
-        tg.drawImage(ar,ar.width*0.14,ar.height*0.16,ar.width*0.72,ar.height*0.62,0,0,tc.width,tc.height);TH=LV_THUMB={k:tk,src:ar,c:tc};}
+        tg.drawImage(ar,ar.width*0.14,ar.height*0.16,ar.width*0.72,ar.height*0.62,0,0,tc.width,tc.height);TH=LV_THUMB[i]={k:tk,src:ar,c:tc};}
       var sw=ar.width*0.62*tk,sh=ar.height*0.62*tk,ox=(ar.width*0.05+Math.sin(MENU.t*0.2+i)*ar.width*0.05)*tk;ctx.drawImage(TH.c,ox,0,sw,sh,6,6,cw-12,ch*0.62);}
-    if(!l.ok){
+    if(!l.ok&&l.ice&&ar&&ar.width){
+      ctx.fillStyle="rgba(6,14,30,0.62)";ctx.fillRect(6,6,cw-12,ch*0.62);
+      mText("🔒",cw/2,ch*0.3,34,"#fff","center","700",0);
+    }else if(!l.ok){
       var g=ctx.createLinearGradient(0,0,0,ch*0.62);
       g.addColorStop(0,i===1?"rgba(30,40,70,0.9)":"rgba(70,10,20,0.9)");g.addColorStop(1,"rgba(8,6,14,0.95)");
       ctx.fillStyle=g;ctx.fillRect(6,6,cw-12,ch*0.62);
@@ -591,12 +598,14 @@ function drawLevels(){
     mText(l.name,cw/2,ch*0.7,20,l.ok?"#ffe08a":"#9a92a8","center","900",4);
     mText(l.sub,cw/2,ch*0.79,13,l.ok?"#fff":"#8a8398","center","700",3);
     if(l.ok){
-      var best=PROF.stats.bestRound;
-      mText(PROF.stats.wins>0?"✔ Completado · "+PROF.stats.wins+" victorias":"Mejor ronda: "+(best||"—")+" / 10",cw/2,ch*0.88,10.5,"#b9f6ca","center","700",3);
+      var W2S=l.ice&&PROF.worlds&&PROF.worlds.w2,best=W2S?W2S.best|0:PROF.stats.bestRound,wins=W2S?W2S.wins|0:PROF.stats.wins;
+      mText(wins>0?"✔ Completado · "+wins+" victorias":"Mejor ronda: "+(best||"—")+" / 10",cw/2,ch*0.88,10.5,l.ice?"#b3e5fc":"#b9f6ca","center","700",3);
+      if(l.ice&&PROF.worlds&&PROF.worlds._w1doneNew){var nb=0.75+0.25*Math.sin(MENU.t*5);ctx.globalAlpha=ent*nb;ctx.fillStyle="#29b6f6";roundRect(ctx,cw-58,12,48,18,9);ctx.fill();mText("¡NUEVO!",cw-34,21,10,"#fff","center","900",0);ctx.globalAlpha=ent;}
       var tagW=74;ctx.fillStyle="#ff6d00";roundRect(ctx,cw/2-tagW/2,ch*0.93,tagW,16,8);ctx.fill();mText("JUGAR ▶",cw/2,ch*0.93+8,10,"#fff","center","900",0);
     }else{
-      ctx.fillStyle="rgba(255,255,255,0.12)";roundRect(ctx,cw/2-50,ch*0.86,100,22,11);ctx.fill();
-      mText("Próximamente",cw/2,ch*0.86+11,12,"#ffd54f","center","800",3);
+      var lockTxt=l.ice?"Completa el Mundo 1":"Próximamente",lw=l.ice?130:100;
+      ctx.fillStyle="rgba(255,255,255,0.12)";roundRect(ctx,cw/2-lw/2,ch*0.86,lw,22,11);ctx.fill();
+      mText(lockTxt,cw/2,ch*0.86+11,l.ice?11:12,l.ice?"#9fd8ff":"#ffd54f","center","800",3);
     }
     ctx.restore();ctx.globalAlpha=1;
     mHit(l.id,x,y,cw,ch);

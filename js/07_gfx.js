@@ -19,7 +19,7 @@ function gfxLoad(done){
   function tick(){if(--left<=0){GFX.ready=1;if(typeof map!=="undefined"&&map){map.chunks={};map.dirty=1;}if(done)done();}}
   keys.forEach(function(k){var im=new Image();im.onload=function(){GFX.tex[k]=im;tick();};im.onerror=tick;im.src=urls[k]+"?v=20";});
   trees.forEach(function(k){var im=new Image();im.onload=function(){GFX.trees[k]=im;tick();};im.onerror=tick;im.src="assets/env/tree_"+k+".webp?v=20";});
-  var ro=new Image();ro.onload=function(){GFX.ruinOcc=ro;};ro.src="assets/env/ruin_occ.webp?v=21.2";
+  var ro=new Image();ro.onload=function(){GFX.ruinOcc=ro;};ro.src="assets/env/ruin_occ.webp?v=21.3";
   var mb=new Image();mb.onload=function(){GFX.menuBg=mb;tick();};mb.onerror=tick;mb.src="assets/ui/menu-bg.webp?v=20";
 }
 function gfxTick(dt){
@@ -95,7 +95,7 @@ function drawLighting(){
   if(!GFX.lights||!game)return;
   var sc=layout.scale,t=game.time||0,i,s,o,flick;
   /* dusk grade — warm, matches the title art */
-  ctx.fillStyle="rgba(28,10,6,0.07)";ctx.fillRect(0,0,SW,SH);
+  ctx.fillStyle=(typeof WORLD!=="undefined"&&WORLD.cur===2)?"rgba(6,24,58,0.09)":"rgba(28,10,6,0.07)";ctx.fillRect(0,0,SW,SH);
   ctx.globalCompositeOperation="lighter";
   if(map&&map.lamps){
     for(i=0;i<map.lamps.length;i++){
