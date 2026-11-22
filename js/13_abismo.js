@@ -3,7 +3,7 @@
    own painted ground, minimap and walk grid (HELL_DATA). Thanos arrives with a cinematic, the hero
    picks ONE mega-power from 3 pedestals, and the fight is Thanos alone (no zombies). */
 var HELL={img:null,island:null,islandImg:null,building:0,active:0};
-(function(){try{var im=new Image();im.onload=function(){HELL.img=im;if(HELL.active&&typeof ART!=="undefined"){ART.arena=im;if(map){map.chunks={};}}};im.src="assets/env/hell.webp?v=21.2";}catch(e){}})();
+(function(){try{var im=new Image();im.onload=function(){HELL.img=im;if(HELL.active&&typeof ART!=="undefined"){ART.arena=im;if(map){map.chunks={};}}};im.src="assets/env/hell.webp?v=21.3";}catch(e){}})();
 var GEMS={
   power:{c:"#18ffff",n:"IMPACTO"},space:{c:"#40c4ff",n:"VACÍO"},reality:{c:"#00e5c0",n:"ESPEJISMO"},
   soul:{c:"#64ffda",n:"ESPECTRO"},time:{c:"#80d8ff",n:"LETARGO"},mind:{c:"#a7ffeb",n:"ECO"}
@@ -613,7 +613,7 @@ function hellOpenExit(x,y){hellDropGlove(x,y);} /* legacy name */
 var FIN={rise0:0.6,rise1:2.0,aim0:1.7,aim1:2.4,slide0:2.45,lock:3.25,gem0:3.75,gemDt:0.42,burst:6.4,voice:6.9,raise0:10.15,raise1:10.9,insert:11.05,snap:12.45,white:13.0,done:13.7};
 FIN.soy=FIN.voice+1.48;FIN.name=FIN.voice+2.88;
 var SNAPIMG={pre:null,post:null};
-(function(){try{["pre","post"].forEach(function(k){var im=new Image();im.onload=function(){SNAPIMG[k]=im;};im.src="assets/spr/snap_"+k+".webp?v=21.2";});}catch(e){}})();
+(function(){try{["pre","post"].forEach(function(k){var im=new Image();im.onload=function(){SNAPIMG[k]=im;};im.src="assets/spr/snap_"+k+".webp?v=21.3";});}catch(e){}})();
 function heroName(p){return (HEROES.filter(function(x){return x.id===p.hero;})[0]||{}).name||"Héroe";}
 function hellPlayBuf(name,gain){
   try{
@@ -655,7 +655,7 @@ function finPower(T){
 /* v20.3.4: the ending close-up uses 2x super-resolved hero art (cut into its own rig) so the hero stays crisp at
    cinematic zoom; falls back to the game sprite until it has loaded */
 var FIN_HD={};
-function finHDLoad(name){if(FIN_HD[name]!==undefined)return;FIN_HD[name]=null;try{var im=new Image();im.onload=function(){FIN_HD[name]=im;};im.src="assets/spr/"+name+"_hd.webp?v=21.2";}catch(e){}}
+function finHDLoad(name){if(FIN_HD[name]!==undefined)return;FIN_HD[name]=null;try{var im=new Image();im.onload=function(){FIN_HD[name]=im;};im.src="assets/spr/"+name+"_hd.webp?v=21.3";}catch(e){}}
 var FIN_HDT={};
 function finHDImg(name,tint){var hd=FIN_HD[name];if(!hd)return null;if(!tint)return hd;
   var k=name+"|"+tint;if(FIN_HDT[k])return FIN_HDT[k];
@@ -1218,12 +1218,13 @@ function drawLevelDone(){
   ctx.save();ctx.textAlign="center";ctx.globalAlpha=a;
   var pu=t<0.6?1.6-0.6*(t/0.6):1+0.02*Math.sin(t*3);
   ctx.save();ctx.translate(SW/2,SH*0.22);ctx.scale(pu,pu);ctx.font="900 "+Math.round(Math.min(40,SW*0.05))+"px system-ui";ctx.lineJoin="round";
-  ctx.strokeStyle="#1a0f00";ctx.lineWidth=8;ctx.strokeText("¡PRIMER MUNDO COMPLETADO!",0,0);
-  var g=ctx.createLinearGradient(0,-30,0,8);g.addColorStop(0,"#fff59d");g.addColorStop(1,"#ffb300");ctx.fillStyle=g;ctx.fillText("¡PRIMER MUNDO COMPLETADO!",0,0);ctx.restore();
-  hudFont("italic",14);ctx.fillStyle="#e1bee7";ctx.fillText("Has derrotado a Vorgath. El Brazal del Abismo es tuyo.",SW/2,SH*0.22+26);
+  var w2d=h&&h.w2,ttl=w2d?"¡SEGUNDO MUNDO COMPLETADO!":"¡PRIMER MUNDO COMPLETADO!";
+  ctx.strokeStyle=w2d?"#021226":"#1a0f00";ctx.lineWidth=8;ctx.strokeText(ttl,0,0);
+  var g=ctx.createLinearGradient(0,-30,0,8);if(w2d){g.addColorStop(0,"#ffffff");g.addColorStop(1,"#4fc3f7");}else{g.addColorStop(0,"#fff59d");g.addColorStop(1,"#ffb300");}ctx.fillStyle=g;ctx.fillText(ttl,0,0);ctx.restore();
+  hudFont("italic",14);ctx.fillStyle=w2d?"#b3e5fc":"#e1bee7";ctx.fillText(w2d?"El Lugar del Hielo es libre. La horda helada ha caído.":"Has derrotado a Vorgath. El Brazal del Abismo es tuyo.",SW/2,SH*0.22+26);
   var hero=(HEROES.filter(function(x){return x.id===p.hero;})[0]||{}).name||"—";
   var tt=(h&&h.doneTime)||game.time||0,mm=Math.floor(tt/60),ss=Math.floor(tt%60);
-  var rows=[["Bajas",""+(game.kills||0)],["Tiempo",mm+":"+(ss<10?"0":"")+ss],["Héroe",hero],["Megapoder",p.mega?MEGA[p.mega].n:"—"]];
+  var rows=[["Bajas",""+(game.kills||0)],["Tiempo",mm+":"+(ss<10?"0":"")+ss],["Héroe",hero]];if(!w2d)rows.push(["Megapoder",p.mega?MEGA[p.mega].n:"—"]);
   var bw=Math.min(420,SW*0.56),bx=SW/2-bw/2,by=SH*0.36,bh=rows.length*22+14;
   hudGlass(bx,by,bw,bh,10);
   for(var i=0;i<rows.length;i++){hudFont("bold",13);ctx.textAlign="left";ctx.fillStyle="#bdbdbd";ctx.fillText(rows[i][0],bx+18,by+26+i*22);ctx.textAlign="right";ctx.fillStyle="#fff8e1";ctx.fillText(rows[i][1],bx+bw-18,by+26+i*22);}
@@ -1231,7 +1232,7 @@ function drawLevelDone(){
   for(i=0;i<menuBtns.length;i++){var b=menuBtns[i];ctx.fillStyle=b.id==="again"?"#ffb300":"rgba(255,255,255,0.12)";roundRect(ctx,b.x,b.y,b.w,b.h,10);ctx.fill();
     ctx.strokeStyle=b.id==="again"?"#5d3a00":"rgba(255,255,255,0.4)";ctx.lineWidth=2;roundRect(ctx,b.x,b.y,b.w,b.h,10);ctx.stroke();
     hudFont("bold",15);ctx.fillStyle=b.id==="again"?"#2a1600":"#fff";ctx.fillText(b.label,b.x+b.w/2,b.y+b.h/2+5);}
-  hudFont("italic",13);ctx.fillStyle="#ffcc80";ctx.globalAlpha=a*(0.7+0.3*Math.sin(t*3));ctx.fillText("Mundo 2 próximamente",SW/2,SH*0.72+66);
+  hudFont("italic",13);ctx.fillStyle="#ffcc80";ctx.globalAlpha=a*(0.7+0.3*Math.sin(t*3));ctx.fillText(w2d?"Mundo 3 próximamente":"¡Mundo 2 desbloqueado: El Lugar del Hielo!",SW/2,SH*0.72+66);
   ctx.restore();ctx.textAlign="left";
   if(HELL.finWhite){var wa=1-clamp(t/1.2,0,1);if(wa<=0)HELL.finWhite=0;else{ctx.fillStyle="rgba(255,255,255,"+wa+")";ctx.fillRect(0,0,SW,SH);}}
 }
