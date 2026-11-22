@@ -137,7 +137,7 @@ function w2SnowSpr(){
   g.fillStyle=gr;g.fillRect(0,0,16,16);WORLD.snowSpr=c;return c;
 }
 function w2SnowInit(){
-  var a=[],i;for(i=0;i<64;i++)a.push({x:Math.random(),y:Math.random(),s:0.5+Math.random()*1.1,ph:Math.random()*6.283,d:i%3});
+  var a=[],i;for(i=0;i<56;i++)a.push({x:Math.random(),y:Math.random(),s:0.5+Math.random()*1.1,ph:Math.random()*6.283,d:i%3});
   WORLD.snow=a;return a;
 }
 function w2DrawSnow(dt){
@@ -154,6 +154,23 @@ function w2DrawSnow(dt){
 (function(){
   var _pa=plDrawAmbient;
   plDrawAmbient=function(dt){if(WORLD.cur===2&&!(typeof HELL!=="undefined"&&HELL.active)){if(game&&(game.state==="pause"||game.state==="upgrade"))dt=0;return w2DrawSnow(dt);}return _pa.apply(this,arguments);};
+})();
+/* ---------- screen grade on snow ----------
+   The island's vignette / hurt flash only paint four edge bands (their centre is nearly clear and hidden by the busy
+   grass). On flat snow the band edge shows as a faint rectangle, so on the ice the same cached gradient is laid over
+   the whole screen instead: it is baked into the same device-size layer, so the per-frame cost is still one blit. */
+(function(){
+  var _vb=_plVigBands;
+  _plVigBands=function(c){if(WORLD.cur!==2)return _vb.apply(this,arguments);c.drawImage(_plVig,0,0,_plVig.width,_plVig.height,0,0,SW,SH);};
+  var _dv=drawVignette;
+  drawVignette=function(){if(_plVigBake&&_plVigBake.world!==WORLD.cur)_plVigBake=null;var r=_dv.apply(this,arguments);if(_plVigBake)_plVigBake.world=WORLD.cur;return r;};
+  var _hf=drawHurtFlash;
+  drawHurtFlash=function(){
+    if(WORLD.cur!==2)return _hf.apply(this,arguments);
+    var h=game&&game.hurtFlash;if(!(h>0.01))return;
+    if(!_hurtVig){_hf.apply(this,arguments);return;}
+    ctx.save();ctx.globalAlpha=Math.min(0.85,h*0.9);ctx.drawImage(_hurtVig,0,0,_hurtVig.width,_hurtVig.height,0,0,SW,SH);ctx.restore();
+  };
 })();
 /* ---------- level select ---------- */
 (function(){
