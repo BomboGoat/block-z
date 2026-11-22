@@ -434,7 +434,7 @@ function drawChestOpen(){
   var col=r?(rb?rainbowCol(MT):C.c):"#ffd54f",hexc=r?(rb?"#ffffff":C.c):"#ffd54f",rcol=r?(rb?"rainbow":C.c):"#ffd54f",S=Math.min(SH*0.44,200),ly=cy-S*0.12;
   /* ---- phase machine ---- */
   if(r){
-    if(O.ph==="drop"&&t>=0.3){O.ph="idle";O.tI=t;cfxSil(chestImg(r,0));try{sfx("cx_land");}catch(e){}SHAKE.a=Math.max(SHAKE.a,TL.shake*0.5+1);O.landT=t;
+    if(O.ph==="drop"&&t>=0.3){O.ph="idle";O.tI=t;cfxSil(chestImg(r,0));try{sfx("cx_land");if(rb)sfx("cx_shimmer");}catch(e){}SHAKE.a=Math.max(SHAKE.a,TL.shake*0.5+1);O.landT=t;
       cfxBurst(0,18,cx,cy+S*0.38,60,200,0.6,6,[hexc==="#ffffff"?"#e0f7fa":hexc,"#ffffff"],0);}
     if(O.ph==="charge"){for(var ci=0;ci<TL.cues.length;ci++){var cu=TL.cues[ci];if(t-O.tC>=cu[0]&&!O.cues[ci]){O.cues[ci]=1;try{sfx(cu[1]);}catch(e){}}}
       if(r!=="poco"&&Math.random()<dt*(rb?90:60)){var a0=Math.random()*6.283,R0=S*(1.1+Math.random()*0.9);var Pp=cfxAdd(5,cx+Math.cos(a0)*R0,cy+Math.sin(a0)*R0*0.8,cx,ly,0.55,4+Math.random()*4,rb?CFX.HUES[(Math.random()*12)|0]:(Math.random()<0.3?"#ffffff":C.c));}
