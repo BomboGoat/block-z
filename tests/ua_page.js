@@ -16,7 +16,7 @@ UA.setup=function(hero,pre){
   titleSplash=0;selectedHero=hero;startGame();Date.now=dn;
   var g=game;g.countdown=0;if(g.state==="countdown")beginCombat();
   g.state="playing";g.zombies=[];g.spawnQueue=[{type:"hold"}];g.events=[];g.graceT=1e9;g.bossFight=0;
-  var p=g.player;p.runXPNext=1e12;p.invuln=0;
+  var p=g.player;/* v22.0: Mr's ulti ring is tested on open grass (the v21.5 traced boulder north of the start sat inside the ring) */if(hero==="mr"&&(typeof WORLD==="undefined"||WORLD.cur!==2)){p.x=500;p.y=470;p.vx=p.vy=0;}p.runXPNext=1e12;p.invuln=0;
   (pre||[]).forEach(function(id){UA.give(id);});
   wrapBullets();seed(4242);
   return p;
