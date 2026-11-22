@@ -1,4 +1,4 @@
-var BZ_VER="20.5.3"; /* release label (shown in Ajustes and Créditos; index.html checks it against the page) */
+var BZ_VER="20.6"; /* release label (shown in Ajustes and Créditos; index.html checks it against the page) */
 var CFG={CHAR:0.82,MOVE:0.78,SPD:0.905*0.78,MAP_W:1104,MAP_H:624,CELL:8,YSCALE:0.70,PLAYER_R:10.7,PLAYER_SPEED:226,MAX_HP:100,INVULN_MS:700,AUTO_RANGE:326,FIRE_COOLDOWN:0.38,BULLET_SPEED:470,BULLET_DAMAGE:12,BULLET_LIFE:1.05,BASE_ZOMBIES:5,ZOMBIES_PER_WAVE:2,MAX_ALIVE:10,SPAWN_INTERVAL:1.25,BOSS_HP:720,CAM_LERP:6.5,WORLD_BASE_W:520,WORLD_BASE_H:300,SAFE_PAD:8,SUPER_COST:100};
 var RARITIES=[
 {id:"comun",name:"Común",w:55,color:"#9e9e9e",glow:"#bdbdbd",mul:1.10,frame:"#757575"},
@@ -178,7 +178,7 @@ function rngRange(rng,a,b){return a+rng()*(b-a);}
 var selectedHero="classic";
 var HEROES=[
 {id:"classic",name:"Eric",desc:"Equilibrado. Super Cañonazo: abanico masivo de balas.",hp:130,spd:100,dmg:100,wpn:"Pistola",col:"#1565c0"},
-{id:"trueno",name:"Tro",desc:"Rayos en cadena y un láser dirigido.",hp:120,spd:105,dmg:115,wpn:"Rayos",col:"#ffd54f"},
+{id:"trueno",name:"Tro",desc:"Rayos en cadena y un láser que apunta solo.",hp:120,spd:105,dmg:115,wpn:"Rayos",col:"#ffd54f"},
 {id:"mr",name:"Mr.",desc:"Cuchillo ágil. Super: abanico de cuchillos en llamas.",hp:150,spd:115,dmg:100,wpn:"Cuchillo",col:"#37474f"},
 {id:"gompa",name:"Gompa",desc:"Culturista. Super Gigante: crece, salta y aplasta.",hp:175,spd:88,dmg:100,wpn:"Pesas",col:"#6d4c41"},
 {id:"neizan",name:"Neizan",desc:"Medio hombre, medio máquina. Super: Minigun 10 s.",hp:185,spd:92,dmg:120,wpn:"Escopeta doble",col:"#b71c1c"}

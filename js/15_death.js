@@ -178,7 +178,7 @@ function drawDeathScreen(){
   ctx.save();ctx.globalAlpha=a;ctx.drawImage(deathPanelCache(L),Pn.x-8+dx,Pn.y-8,Pn.w+16,Pn.h+16);
   ctx.translate(Pn.x+dx,Pn.y);
   var w=Pn.w,h=Pn.h,R=D.rew||{xp:0,coins:0,ach:[],acc1:account};
-  mText(D.hell?"Reino de Thanos · ¡tan cerca!":"Nivel 1 · La Isla",w/2,66,12.5,"#ffb4a0","center","800",3);
+  mText(D.hell?"Reino de Vorgath · ¡tan cerca!":"Nivel 1 · La Isla",w/2,66,12.5,"#ffb4a0","center","800",3);
   /* stat tiles: 3 x 2 */
   var stats=[
     {ic:"🌊",lb:"Ronda alcanzada",v:D.round,f:function(n){return Math.round(n)+" / 10";}},

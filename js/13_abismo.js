@@ -3,16 +3,16 @@
    own painted ground, minimap and walk grid (HELL_DATA). Thanos arrives with a cinematic, the hero
    picks ONE mega-power from 3 pedestals, and the fight is Thanos alone (no zombies). */
 var HELL={img:null,island:null,islandImg:null,building:0,active:0};
-(function(){try{var im=new Image();im.onload=function(){HELL.img=im;if(HELL.active&&typeof ART!=="undefined"){ART.arena=im;if(map){map.chunks={};}}};im.src="assets/env/hell.webp?v=20.5.3";}catch(e){}})();
+(function(){try{var im=new Image();im.onload=function(){HELL.img=im;if(HELL.active&&typeof ART!=="undefined"){ART.arena=im;if(map){map.chunks={};}}};im.src="assets/env/hell.webp?v=20.6";}catch(e){}})();
 var GEMS={
-  power:{c:"#c77dff",n:"PODER"},space:{c:"#4d8dff",n:"ESPACIO"},reality:{c:"#ff2d4a",n:"REALIDAD"},
-  soul:{c:"#ff9a1f",n:"ALMA"},time:{c:"#2fe37a",n:"TIEMPO"},mind:{c:"#ffe14a",n:"MENTE"}
+  power:{c:"#18ffff",n:"IMPACTO"},space:{c:"#40c4ff",n:"VACÍO"},reality:{c:"#00e5c0",n:"ESPEJISMO"},
+  soul:{c:"#64ffda",n:"ESPECTRO"},time:{c:"#80d8ff",n:"LETARGO"},mind:{c:"#a7ffeb",n:"ECO"}
 };
 var GEM_ORDER=["power","space","mind","reality","time","soul"];
 var MEGA={
-  hammer:{n:"MARTILLO DEL TRUENO",c:"#7fc8ff",c2:"#e3f2fd",sub:"Golpe, lanzamiento y rayos"},
-  armor:{n:"ARMADURA DE HIERRO",c:"#ff5a4a",c2:"#ffd54f",sub:"Vuelo, repulsores y rayo de pecho"},
-  hulk:{n:"FURIA VERDE",c:"#62e05a",c2:"#c5ffb8",sub:"Puños, pisotón y salto"}
+  hammer:{n:"MAZO DE TORMENTA",c:"#b388ff",c2:"#ede7f6",sub:"Golpe, lanzamiento y rayos"},
+  armor:{n:"ARMADURA TITÁN",c:"#4fc3f7",c2:"#cfd8dc",sub:"Vuelo, propulsores y rayo del núcleo"},
+  hulk:{n:"FURIA SALVAJE",c:"#ff8a3d",c2:"#ffe0b2",sub:"Puños, pisotón y salto"}
 };
 var _glowC={};
 function glowSpr(col){
@@ -161,7 +161,7 @@ function hellEnter(){
 }
 function spawnThanos(x,y){
   var z=spawnZombie("boss",x,y,9);
-  z.isBoss=1;z.isThanos=1;z.bName="THANOS";
+  z.isBoss=1;z.isThanos=1;z.bName="VORGATH";
   z.hp=z.maxHp=7800;z.r=22*CFG.CHAR;z.h=64*CFG.CHAR;z.speed=66*CFG.SPD;z.damage=16;z.score=5000;z.xp=900;
   z.look={kind:"thanos",type:"boss",pose:"walk"};z.phase="fight";z.introT=0;z.spawnT=0;
   z.ts="idle";z.tt=0;z.cd=1.6;z.gemI=0;z.queue=[];z.p2=0;z.snapDone=0;z.healed=0;z.ghost=1;z.rings=[];z.glow=0.4;z.alpha=0;
@@ -175,7 +175,7 @@ function hellPreUpdate(dt){
     var k=1-Math.exp(-8*dt);game.camX+=(P.x-game.camX)*k;game.camY+=(P.y-18-game.camY)*k;
     hellSetView((layout.baseViewW||380)*(1-0.42*smooth01(T/1.0)));
     p.x+=(P.x-p.x)*Math.min(1,4*dt);p.y+=(P.y-p.y)*Math.min(1,4*dt);
-    if(Math.random()<0.7)hellPart(P.x+rand(-30,30),P.y+rand(-20,10),Math.random()<0.5?"#e040fb":"#ffd54f",0.6,(P.x-p.x)*2,rand(-60,-20),rand(2,4),3);
+    if(Math.random()<0.7)hellPart(P.x+rand(-30,30),P.y+rand(-20,10),Math.random()<0.5?"#18ffff":"#e0f7fa",0.6,(P.x-p.x)*2,rand(-60,-20),rand(2,4),3);
     if(typeof updateFX==="function")updateFX(dt);
     if(T>=1.05){
       hellSetView(layout.baseViewW||380);
@@ -245,7 +245,7 @@ function hellTick(dt){
   var p=game.player,h=game.hell;
   if(game.hellPortal){
     var hp=game.hellPortal;hp.t+=dt;
-    if(Math.random()<0.5)hellPart(hp.x+rand(-18,18),hp.y+rand(-8,4),Math.random()<0.5?"#e040fb":"#ffd54f",0.8,rand(-10,10),rand(-70,-30),rand(2,4),3);
+    if(Math.random()<0.5)hellPart(hp.x+rand(-18,18),hp.y+rand(-8,4),Math.random()<0.5?"#18ffff":"#e0f7fa",0.8,rand(-10,10),rand(-70,-30),rand(2,4),3);
     if(hp.t>0.8&&dist(p.x,p.y,hp.x,hp.y)<20)hellStartTrans("in",hp.x,hp.y);
     return;
   }
@@ -603,17 +603,17 @@ hurtPlayer=function(p,dmg){
 function hellDropGlove(x,y){
   var h=game.hell,sp=(sampleType(x,y)===0&&sampleSDF(x,y)>=10)?{x:x,y:y}:(hellSpot(x,y,0,40,14)||hellSpot(HELL_DATA.center.x,HELL_DATA.center.y,0,40,24)||{x:HELL_DATA.center.x,y:HELL_DATA.center.y});
   h.glove={x:sp.x,y:sp.y,t:0};h.phase="won";h.won=1;
-  game.message="¡Coge el Guantelete!";game.messageTimer=6;
+  game.message="¡Coge el Brazal del Abismo!";game.messageTimer=6;
   sfx("zap",1);sfx("clear",1);shake(6);
   for(var i=0;i<12;i++){var g=GEM_ORDER[i%6];hellPart(sp.x,sp.y-20,GEMS[g].c,1.0,rand(-90,90),rand(-120,-20),rand(3,5),3);}
 }
 function hellOpenExit(x,y){hellDropGlove(x,y);} /* legacy name */
 /* ---------- v20.3: ending cinematic — pick up the Gauntlet, slide it on, six gems light up, the power floods the
-   hero's whole body, "Y yo... soy... <HERO>", the hand rises, close-up finger SNAP, white. Drawn with the rigged hero. ---------- */
+   hero's whole body, the final line "Se acabó... tu reinado.", the hand rises, close-up finger SNAP, white. Drawn with the rigged hero. ---------- */
 var FIN={rise0:0.6,rise1:2.0,aim0:1.7,aim1:2.4,slide0:2.45,lock:3.25,gem0:3.75,gemDt:0.42,burst:6.4,voice:6.9,raise0:10.15,raise1:10.9,insert:11.05,snap:12.45,white:13.0,done:13.7};
 FIN.soy=FIN.voice+1.48;FIN.name=FIN.voice+2.88;
 var SNAPIMG={pre:null,post:null};
-(function(){try{["pre","post"].forEach(function(k){var im=new Image();im.onload=function(){SNAPIMG[k]=im;};im.src="assets/spr/snap_"+k+".webp?v=20.5.3";});}catch(e){}})();
+(function(){try{["pre","post"].forEach(function(k){var im=new Image();im.onload=function(){SNAPIMG[k]=im;};im.src="assets/spr/snap_"+k+".webp?v=20.6";});}catch(e){}})();
 function heroName(p){return (HEROES.filter(function(x){return x.id===p.hero;})[0]||{}).name||"Héroe";}
 function hellPlayBuf(name,gain){
   try{
@@ -655,7 +655,7 @@ function finPower(T){
 /* v20.3.4: the ending close-up uses 2x super-resolved hero art (cut into its own rig) so the hero stays crisp at
    cinematic zoom; falls back to the game sprite until it has loaded */
 var FIN_HD={};
-function finHDLoad(name){if(FIN_HD[name]!==undefined)return;FIN_HD[name]=null;try{var im=new Image();im.onload=function(){FIN_HD[name]=im;};im.src="assets/spr/"+name+"_hd.webp?v=20.5.3";}catch(e){}}
+function finHDLoad(name){if(FIN_HD[name]!==undefined)return;FIN_HD[name]=null;try{var im=new Image();im.onload=function(){FIN_HD[name]=im;};im.src="assets/spr/"+name+"_hd.webp?v=20.6";}catch(e){}}
 var FIN_HDT={};
 function finHDImg(name,tint){var hd=FIN_HD[name];if(!hd)return null;if(!tint)return hd;
   var k=name+"|"+tint;if(FIN_HDT[k])return FIN_HDT[k];
@@ -734,15 +734,15 @@ function hellFinalEnd(){
   HELL.fin=null;HELL.finWhite=1;hellLevelDone();
 }
 function drawGauntletAt(cx,by,hgt,glow,t,rot,lit){
-  var im=typeof ART!=="undefined"&&ART.imgs?ART.imgs.gauntlet:null,w=hgt*(127/200),i;
+  var im=typeof ART!=="undefined"&&ART.imgs?ART.imgs.brazal:null,w=hgt*(im?im.width/im.height:91/200),i;
   ctx.save();ctx.translate(cx,by);if(rot)ctx.rotate(rot);
   ctx.globalCompositeOperation="lighter";ctx.globalAlpha=Math.min(0.8,0.3+0.3*glow);
   var cyc=GEMS[GEM_ORDER[((t*2)|0)%6]].c,gr=hgt*(0.9+0.25*glow);
   ctx.drawImage(glowSpr(cyc),-gr,-hgt*0.55-gr*0.8,gr*2,gr*1.6);
   ctx.globalCompositeOperation="source-over";ctx.globalAlpha=1;
   if(im&&im.width)ctx.drawImage(im,-w/2,-hgt,w,hgt);
-  else{ctx.fillStyle="#d4a017";ctx.strokeStyle="#3e2a00";ctx.lineWidth=2;roundRect(ctx,-w*0.35,-hgt,w*0.7,hgt,w*0.2);ctx.fill();ctx.stroke();}
-  var G=[[0.19,0.26,"power"],[0.31,0.26,"space"],[0.45,0.28,"reality"],[0.58,0.31,"mind"],[0.30,0.43,"time"],[0.86,0.43,"soul"]];
+  else{ctx.fillStyle="#1d1f26";ctx.strokeStyle="#4dfff0";ctx.lineWidth=2;roundRect(ctx,-w*0.35,-hgt,w*0.7,hgt,w*0.2);ctx.fill();ctx.stroke();}
+  var G=[[0.398,0.317,"power"],[0.598,0.306,"space"],[0.762,0.332,"reality"],[0.875,0.359,"mind"],[0.128,0.425,"time"],[0.5,0.62,"soul"]]; /* v20.6: Brazal del Abismo shards */
   ctx.globalCompositeOperation="lighter";
   for(i=0;i<6;i++){var lv=lit?(lit[G[i][2]]||0):1;if(lit&&lv<=0)continue;
     var a=(0.35+0.65*glow*(0.7+0.3*Math.sin(t*7+i*1.7)))*lv,r=hgt*(0.07+0.07*glow)*(lit?1+1.6*Math.max(0,1-lv)*lv*4:1);ctx.globalAlpha=Math.min(1,a);
@@ -892,7 +892,7 @@ function finLightning(x0,y0,x1,y1,col,w){
 function finDrawInsert(T,F,p,t){
   var u=smooth01((T-FIN.insert)/0.35),post=T>=FIN.snap,ts=T-FIN.snap,pre=SNAPIMG.pre,img=post?(SNAPIMG.post||pre):pre;
   ctx.save();
-  var bg=ctx.createRadialGradient(SW/2,SH*0.45,10,SW/2,SH*0.45,Math.max(SW,SH)*0.75);bg.addColorStop(0,"#3a1250");bg.addColorStop(0.5,"#14061f");bg.addColorStop(1,"#030106");
+  var bg=ctx.createRadialGradient(SW/2,SH*0.45,10,SW/2,SH*0.45,Math.max(SW,SH)*0.75);bg.addColorStop(0,"#0f3a44");bg.addColorStop(0.5,"#06161c");bg.addColorStop(1,"#010406");
   ctx.fillStyle=bg;ctx.fillRect(0,0,SW,SH);
   /* rotating gem-coloured rays */
   ctx.globalCompositeOperation="lighter";
@@ -909,14 +909,14 @@ function finDrawInsert(T,F,p,t){
     ctx.drawImage(img,x0,y0,gw,gh);
   }else drawGauntletAt(ix,iy+gh/2,gh,1,t,0,null);
   /* gem glints (positions in the close-up art) */
-  var GP=[[0.187,0.323,"power"],[0.331,0.327,"space"],[0.475,0.358,"reality"],[0.611,0.396,"mind"],[0.311,0.483,"time"],[0.36,0.08,"soul"]];
+  var GP=[[0.548,0.327,"power"],[0.702,0.327,"space"],[0.823,0.346,"reality"],[0.913,0.365,"mind"],[0.279,0.408,"time"],[0.642,0.506,"soul"]];
   ctx.save();ctx.globalCompositeOperation="lighter";
   for(i=0;i<6;i++){var gx=x0+GP[i][0]*gw,gy=y0+GP[i][1]*gh,r=gh*(i===5?0.05:0.065)*(1+0.25*Math.sin(t*9+i)),col=GEMS[GP[i][2]].c;ctx.globalAlpha=i===5?0.5:0.9;ctx.drawImage(glowSpr(col),gx-r,gy-r,r*2,r*2);}
   /* crackling arcs between the gems and the fingers */
-  if(!post||ts<0.4){var ft={x:x0+0.43*gw,y:y0+0.1*gh};
+  if(!post||ts<0.4){var ft={x:x0+0.47*gw,y:y0+0.13*gh};
     for(i=0;i<3;i++){var gq=GP[(Math.random()*5)|0],col2=GEMS[gq[2]].c;ctx.globalAlpha=0.7;finLightning(x0+gq[0]*gw,y0+gq[1]*gh,ft.x+rand(-gw*0.15,gw*0.15),ft.y+rand(-gh*0.05,gh*0.1),col2,Math.max(1,gh*0.008));}}
   /* the snap: contact flash, smear lines and a shock ring from the fingertips */
-  if(post){var cp={x:x0+0.43*gw,y:y0+0.17*gh},k=clamp(ts/0.45,0,1);
+  if(post){var cp={x:x0+0.2*gw,y:y0+0.21*gh},k=clamp(ts/0.45,0,1);
     ctx.globalAlpha=(1-k)*0.85;var fs=gh*(0.12+0.5*k);ctx.drawImage(glowSpr("#ffffff"),cp.x-fs,cp.y-fs,fs*2,fs*2);
     ctx.strokeStyle="#ffffff";ctx.lineWidth=Math.max(1.5,gh*0.02*(1-k));ctx.beginPath();ctx.arc(cp.x,cp.y,gh*(0.1+1.4*k),0,6.283);ctx.stroke();
     if(ts<0.12){ctx.globalAlpha=0.8*(1-ts/0.12);ctx.lineWidth=Math.max(1,gh*0.01);for(i=0;i<5;i++){var sx=cp.x-gw*0.08+i*gw*0.04;ctx.beginPath();ctx.moveTo(sx,cp.y-gh*0.18);ctx.lineTo(sx+gw*0.01,cp.y+gh*0.02);ctx.stroke();}}
@@ -937,7 +937,7 @@ function drawHellFinal(){
   ctx.save();ctx.textAlign="center";ctx.lineJoin="round";
   var fs=Math.round(Math.min(26,SH*0.065)),ly=SH-hb*0.42;
   if(T>=FIN.voice&&T<FIN.insert){
-    var parts=["Y yo..."];if(T>=FIN.soy)parts.push("soy...");
+    var parts=["Se acabó..."];if(T>=FIN.soy)parts.push("tu reinado.");
     var line=parts.join(" "),sa=clamp((T-FIN.voice)/0.3,0,1)*(T<FIN.name?1:clamp((FIN.name+0.6-T)/0.4,0,1));
     if(sa>0){ctx.globalAlpha=sa;ctx.font="italic 800 "+fs+"px Georgia,serif";ctx.strokeStyle="rgba(0,0,0,0.95)";ctx.lineWidth=6;ctx.strokeText(line,SW/2,ly);ctx.fillStyle="#fff3e0";ctx.fillText(line,SW/2,ly);}
   }
@@ -1083,7 +1083,7 @@ function hellDrawUnder(){
     ctx.strokeStyle="#fff59d";ctx.lineWidth=3*sc;ctx.beginPath();ctx.ellipse(s.x,s.y,o.r*sc,o.r*CFG.YSCALE*sc,0,0,7);ctx.stroke();}
   if(h.phase==="pick")for(i=0;i<h.peds.length;i++)if(!h.peds[i].gone)drawPedestal(h.peds[i],t);
   if(h.glove){var gv=h.glove,gs=toScreen(gv.x,gv.y),du=clamp(gv.t/0.6,0,1),gl=(1-du)*60*sc+(du>=1?Math.sin(t*3)*3*sc+5*sc:Math.abs(Math.sin(du*Math.PI*1.5))*14*sc*(1-du));
-    ctx.save();ctx.globalCompositeOperation="lighter";ctx.globalAlpha=0.45+0.15*Math.sin(t*5);ctx.drawImage(glowSpr("#ffd54f"),gs.x-28*sc,gs.y-12*sc,56*sc,24*sc);
+    ctx.save();ctx.globalCompositeOperation="lighter";ctx.globalAlpha=0.45+0.15*Math.sin(t*5);ctx.drawImage(glowSpr("#4dfff0"),gs.x-28*sc,gs.y-12*sc,56*sc,24*sc);
     ctx.globalAlpha=0.22+0.08*Math.sin(t*3);ctx.drawImage(glowSpr("#fff59d"),gs.x-10*sc,gs.y-90*sc,20*sc,90*sc);ctx.restore();
     ctx.fillStyle="rgba(0,0,0,0.35)";fillEllipse(ctx,gs.x,gs.y,9*sc,3.5*sc);
     drawGauntletAt(gs.x,gs.y-gl,26*sc,0.7+0.3*Math.sin(t*4),t,0);}
@@ -1179,10 +1179,10 @@ function hellDrawScreen(){
     ctx.save();ctx.textAlign="center";
     if(t>0.9&&t<5.4){var na=clamp((t-0.9)/0.4,0,1)*clamp((5.4-t)/0.4,0,1),pu=t<1.3?1.8-0.8*((t-0.9)/0.4):1;
       ctx.globalAlpha=na;ctx.save();ctx.translate(SW/2,hb*0.62);ctx.scale(pu,pu);ctx.font="900 "+Math.round(Math.min(40,SH*0.1))+"px system-ui";ctx.lineJoin="round";
-      ctx.strokeStyle="rgba(0,0,0,0.9)";ctx.lineWidth=7;ctx.strokeText("THANOS",0,0);
-      var tg=ctx.createLinearGradient(0,-30,0,6);tg.addColorStop(0,"#ffe082");tg.addColorStop(1,"#b388ff");ctx.fillStyle=tg;ctx.fillText("THANOS",0,0);ctx.restore();}
+      ctx.strokeStyle="rgba(0,0,0,0.9)";ctx.lineWidth=7;ctx.strokeText("VORGATH",0,0);
+      var tg=ctx.createLinearGradient(0,-30,0,6);tg.addColorStop(0,"#e0f7fa");tg.addColorStop(1,"#26c6da");ctx.fillStyle=tg;ctx.fillText("VORGATH",0,0);ctx.restore();}
     if(t>2.0&&t<5.3){
-      var line="Yo soy inevitable.",nch=Math.min(line.length,Math.floor((t-2.0)/1.3*line.length)+1),sa=clamp((5.3-t)/0.4,0,1);
+      var line="Este mundo ya es mío.",nch=Math.min(line.length,Math.floor((t-2.0)/1.3*line.length)+1),sa=clamp((5.3-t)/0.4,0,1);
       ctx.globalAlpha=sa;ctx.font="italic 800 "+Math.round(Math.min(26,SH*0.065))+"px Georgia,serif";ctx.lineJoin="round";
       var ly=SH-hb*0.42;ctx.strokeStyle="rgba(0,0,0,0.95)";ctx.lineWidth=6;ctx.strokeText("«"+line.slice(0,nch)+(nch<line.length?"":"»"),SW/2,ly);
       ctx.fillStyle="#fff3e0";ctx.fillText("«"+line.slice(0,nch)+(nch<line.length?"":"»"),SW/2,ly);}
@@ -1204,7 +1204,7 @@ function hellDrawHUDExtra(){
   if(HELL.active&&h&&h.safe&&h.safe.length&&game.boss){
     var z=game.boss,u=clamp(z.tt/4,0,1);
     ctx.save();ctx.textAlign="center";hudFont("900",Math.round(Math.min(22,SH*0.055)));ctx.lineJoin="round";
-    var ty=SH*0.3,msg="¡VA A CHASQUEAR LOS DEDOS!";ctx.strokeStyle="#000";ctx.lineWidth=6;ctx.strokeText(msg,SW/2,ty);ctx.fillStyle="#ffd54f";ctx.fillText(msg,SW/2,ty);
+    var ty=SH*0.3,msg="¡VA A DESATAR EL ABISMO!";ctx.strokeStyle="#000";ctx.lineWidth=6;ctx.strokeText(msg,SW/2,ty);ctx.fillStyle="#ffd54f";ctx.fillText(msg,SW/2,ty);
     hudFont("bold",14);msg="Corre a un círculo dorado";ctx.lineWidth=4;ctx.strokeText(msg,SW/2,ty+22);ctx.fillStyle="#fff8e1";ctx.fillText(msg,SW/2,ty+22);
     var bw=200;ctx.fillStyle="rgba(0,0,0,0.6)";ctx.fillRect(SW/2-bw/2,ty+32,bw,7);ctx.fillStyle="#ffd54f";ctx.fillRect(SW/2-bw/2,ty+32,bw*u,7);
     ctx.restore();
@@ -1220,7 +1220,7 @@ function drawLevelDone(){
   ctx.save();ctx.translate(SW/2,SH*0.22);ctx.scale(pu,pu);ctx.font="900 "+Math.round(Math.min(40,SW*0.05))+"px system-ui";ctx.lineJoin="round";
   ctx.strokeStyle="#1a0f00";ctx.lineWidth=8;ctx.strokeText("¡PRIMER MUNDO COMPLETADO!",0,0);
   var g=ctx.createLinearGradient(0,-30,0,8);g.addColorStop(0,"#fff59d");g.addColorStop(1,"#ffb300");ctx.fillStyle=g;ctx.fillText("¡PRIMER MUNDO COMPLETADO!",0,0);ctx.restore();
-  hudFont("italic",14);ctx.fillStyle="#e1bee7";ctx.fillText("Has derrotado a Thanos. El Guantelete es tuyo.",SW/2,SH*0.22+26);
+  hudFont("italic",14);ctx.fillStyle="#e1bee7";ctx.fillText("Has derrotado a Vorgath. El Brazal del Abismo es tuyo.",SW/2,SH*0.22+26);
   var hero=(HEROES.filter(function(x){return x.id===p.hero;})[0]||{}).name||"—";
   var tt=(h&&h.doneTime)||game.time||0,mm=Math.floor(tt/60),ss=Math.floor(tt%60);
   var rows=[["Bajas",""+(game.kills||0)],["Tiempo",mm+":"+(ss<10?"0":"")+ss],["Héroe",hero],["Megapoder",p.mega?MEGA[p.mega].n:"—"]];
