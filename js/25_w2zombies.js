@@ -201,3 +201,4 @@ function w2zChillSpr(){
   };
 })();
 window.__w2z={ready:w2zReady,load:w2zLoad};
+if(window.__w2){window.__w2.load=function(){w2LoadImg();};window.__w2.select=function(n){WORLD.sel=n;if(n===2)w2LoadImg();};}
