@@ -16,7 +16,7 @@ var YM={fx:[],beam:null,pick:null,reward:null,art:{},faces:{},bakeQ:null,lastUlt
 CAB_META.ymir={file:"assets/spr/ymir_f.webp",w:394,h:526,fx:0.551,fy:0.992,ex:0.519,ey:0.289};
 CAB_META.ymir_cast={file:"assets/spr/ymir_cast_f.webp",w:404,h:526,fx:0.504,fy:0.992,ex:0.497,ey:0.212};
 delete CAB_META.rey;
-CAB_BOSS.ymir={name:"YMIR",tag:"El Rey del Invierno Eterno",hp:5200,r:30,h:112,speed:44,dmg:16,mus:"final",H:4.3,spr:"ymir"};
+CAB_BOSS.ymir={name:"YMIR",tag:"El Rey del Invierno Eterno",hp:5200,r:30,h:100,speed:44,dmg:16,mus:"final",H:3.6,spr:"ymir"};
 CAB_KEYS[3]="ymir";CAB.title[3]="Iglú de Ymir";
 (function(){ /* if the cabin loader already ran, fetch the new sprites too */
   if(CAB.loading)["ymir","ymir_cast"].forEach(function(k){var tries=0;function go(){var im=new Image();im.onload=function(){CAB.spr[k]=im;};im.onerror=function(){if(++tries<4)setTimeout(go,1500*tries);};im.src=CAB_META[k].file+"?v=22.1"+(tries?"&r="+tries:"");}go();});
@@ -135,7 +135,7 @@ function ymSprH(){return cabSprH(CAB_BOSS.ymir.H);}
   var _bs=cabBossStart;
   cabBossStart=function(i){
     if(i!==3)return _bs.apply(this,arguments);
-    var D=CAB_DATA[3],z=cabSpawnBoss(3,D.boss.x,D.boss.y-14),p=game.player;
+    var D=CAB_DATA[3],z=cabSpawnBoss(3,D.boss.x,D.boss.y+32),p=game.player;
     game.graceT=1e9;game.spawnQueue=[];
     z.face=1;z.ph=1;z.cd=1.8;z.st="idle";z.ymInv=0;z.raiseCd=6;z.beamCd=4;z.avaCd=6;z.fallCd=2;z.frz=0;
     game.zombies.push(z);game.boss=z;game.bossSpawned=1;game.bossFight=0;
@@ -159,7 +159,7 @@ function ymCineUpdate(dt){
   C.t+=dt;var t=C.t;
   var zoom=t<1.2?0.82-0.1*smooth01(t/1.2):t<3.0?0.72:t<3.6?0.72+0.1*smooth01((t-3)/0.6):t<6.6?0.82:0.82+0.18*smooth01((t-6.6)/0.9);
   hellSetView(base*zoom);
-  cabCam(t<0.6?p.x+(z.x-p.x)*smooth01(t/0.6):z.x,(t<0.6?p.y+(z.y-p.y)*smooth01(t/0.6):z.y)-50,1-Math.exp(-5*dt));
+  var cy0=z.y-ymSprH()/(CFG.YSCALE*layout.scale)*0.5;cabCam(t<0.6?p.x+(z.x-p.x)*smooth01(t/0.6):z.x,t<0.6?p.y+(cy0-p.y)*smooth01(t/0.6):cy0,1-Math.exp(-5*dt));
   p.anim=0;p.vx=p.vy=0;p.aimAng=p.facing=Math.atan2(z.y-p.y,z.x-p.x);z.face=p.x<z.x?-1:1;z.anim=(z.anim||0)+dt*2;
   if(C.bub)C.bubT+=dt;
   if(t>1.2&&!C.c1){C.c1=1;cabSfx("cab_crack",0.9);shake(3);}
@@ -416,8 +416,10 @@ function ymBossUpdate(z,dt){
   else if(z.st==="beam"){if(z.stT<=0||!YM.beam){YM.beam=null;z.st="rec";z.stT=0.6;}}
   else if(z.st==="ava_w"){if(z.stT<=0){ymAvalanche(z);z.st="rec";z.stT=1.0;}}
   else if(z.st==="rec"){if(z.stT<=0){z.st="idle";z.cd=rand(0.7,1.4);}}
+  if(z.y<YM_MINY)z.y+=(YM_MINY-z.y)*Math.min(1,dt*6);
   if(z.touchCd<=0&&d<z.r+p.r+2){hurtPlayer(p,Math.round(z.damage*0.8));z.touchCd=0.9;}
 }
+var YM_MINY=180;
 function ymPhase(z,n){
   var p=game.player;z.ph=n;z.st="phase";z.stT=1.5;z.ymInv=1.5;YM.beam=null;
   ymSfx("ym_roar",1);shake(16);cabRing(z.x,z.y,380,220,Math.round(z.damage*0.6),"#e1f5fe",1);
@@ -443,6 +445,24 @@ function ymAvalanche(z){
   for(k=0;k<3;k++){var gap=Math.random()*6.283;for(i=0;i<10;i++){var a=i*6.283/10;if(Math.abs(Math.atan2(Math.sin(a-gap),Math.cos(a-gap)))<0.5)continue;var rr=36+k*34,x=p.x+Math.cos(a)*rr,y=p.y+Math.sin(a)*rr*0.75;if(sampleSDF(x,y)<4)continue;cabIcicle(x,y,Math.round(z.damage*1.1),1.0+k*0.55);}}
   cabIcicle(p.x,p.y,Math.round(z.damage*1.1),1.0);
 }
+/* camera: in the Ymir fight the view opens 10% and leans up (max 34% of the view) so the giant's crown stays on screen */
+(function(){
+  var _uc=updateCam;
+  updateCam=function(dt){
+    var b=ymBoss();
+    if(!(b&&!b.dying&&ymIn()&&game.state==="playing"))return _uc.apply(this,arguments);
+    var p=game.player,k=1-Math.exp(-CFG.CAM_LERP*dt),base=layout.baseViewW||380,want=Math.round(base*1.1);
+    if(layout.viewW!==want){layout.viewW=want;layout.scale=layout.gameDrawW/layout.viewW;layout.viewH=layout.gameDrawH/(layout.scale*CFG.YSCALE);W=layout.viewW;H=layout.viewH;}
+    var vw=worldW(),vh=worldH(),headH=ymSprH()/(CFG.YSCALE*layout.scale),headY=b.y-headH*1.02,tx=p.x,ty=p.y,lim=vh*0.34,hi=headY+vh*0.5-vh*0.12;
+    if(ty>hi)ty=Math.max(hi,p.y-lim);
+    tx+=clamp((b.x-p.x)*0.2,-vw*0.08,vw*0.08);
+    game.camX+=(tx-game.camX)*k;game.camY+=(ty-game.camY)*k;
+    var hw=vw*0.5,hh=vh*0.5;
+    game.camX=CFG.MAP_W>2*hw+16?clamp(game.camX,hw+8,CFG.MAP_W-hw-8):CFG.MAP_W/2;
+    game.camY=CFG.MAP_H>2*hh+16?clamp(game.camY,hh+8,CFG.MAP_H-hh-8):CFG.MAP_H/2;
+    if(game.shake>0){game.camX+=(Math.random()-0.5)*game.shake;game.camY+=(Math.random()-0.5)*game.shake;}
+  };
+})();
 /* ---------- death -> victory cinematic ---------- */
 (function(){
   var _kz=killZombie;
@@ -451,6 +471,7 @@ function ymAvalanche(z){
     var r=_kz.apply(this,arguments);
     if(was){
       z.deathT=99;YM.beam=null;YM.fx=[];game.message=null;game.messageTimer=0;
+      game.zombies=game.zombies.filter(function(o){return o===z;});game.projectiles.length=0;CAB.zones=[];CAB.cracks=[];
       var p=game.player;p.vx=p.vy=0;
       CAB.cine={ywin:1,t:0,x:z.x,y:z.y,face:z.face||1,bub:"",bubT:0,flash:0,pcs:null};game.state="cab_cine";
       try{stopMusic();}catch(e){}
@@ -470,7 +491,7 @@ function ymGrantReward(){
 function ymWinUpdate(dt){
   var C=CAB.cine,p=game.player,base=cabBase();C.t+=dt;var t=C.t;
   hellSetView(base*(t<0.8?1-0.3*smooth01(t/0.8):t<4.0?0.7:0.7+0.3*smooth01((t-4.0)/1.2)));
-  cabCam(C.x,C.y-50,1-Math.exp(-4*dt));
+  cabCam(C.x,C.y-ymSprH()/(CFG.YSCALE*layout.scale)*0.45,1-Math.exp(-4*dt));
   p.vx=p.vy=0;p.aimAng=p.facing=Math.atan2(C.y-p.y,C.x-p.x);
   if(C.bub)C.bubT+=dt;
   if(t>0.3&&!C.k1){C.k1=1;cabSfx("cab_crack",1);shake(5);}
