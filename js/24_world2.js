@@ -7,7 +7,7 @@
 var WORLD={sel:1,cur:1,img:null,imgLoading:0,w1:null,w1Img:null,snow:null,warm:null};
 function w2LoadImg(){
   if(WORLD.img||WORLD.imgLoading)return;WORLD.imgLoading=1;
-  try{var im=new Image();im.onload=function(){WORLD.img=im;WORLD.imgLoading=0;};im.onerror=function(){WORLD.imgLoading=0;};im.src="assets/env/ice.webp?v=22.0";}catch(e){WORLD.imgLoading=0;}
+  try{var im=new Image();im.onload=function(){WORLD.img=im;WORLD.imgLoading=0;};im.onerror=function(){WORLD.imgLoading=0;};im.src="assets/env/ice.webp?v=22.1";}catch(e){WORLD.imgLoading=0;}
 }
 /* ---------- save: profile v4 (world progress), versioned with a backup ---------- */
 PROF_DEF.v=4;PROF_DEF.worlds={w1done:0,w2:{runs:0,wins:0,best:0,heroWins:{}}};
