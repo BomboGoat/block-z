@@ -351,3 +351,118 @@ function cabAdd(type,x,y,flag){
   if(typeof placeOnGround==="function")placeOnGround(z);game.zombies.push(z);return z;
 }
 function cabAlive(flag){var n=0,i,z;for(i=0;i<game.zombies.length;i++){z=game.zombies[i];if(z[flag]&&!z.dead&&!z.dying)n++;}return n;}
+/* ---------- boss AI ---------- */
+function cabMove(z,ax,ay,spd,dt){moveWithSlide(z,ax*spd*dt,ay*spd*dt);}
+function cabChase(z,spd,dt,dx,dy,d){var c=chaseDir(z,dx,dy,d);cabMove(z,c.x,c.y,spd,dt);}
+function cabFace(z,a){z.aimAng=a;var c=Math.cos(a);if(c>0.15)z.face=1;else if(c<-0.15)z.face=-1;}
+function cabBossUpdate(z,dt){
+  var p=game.player,dx=p.x-z.x,dy=p.y-z.y,d=Math.sqrt(dx*dx+dy*dy)||1;
+  z.anim=(z.anim||0)+dt*6;z.touchCd-=dt;z.stT-=dt;
+  if(z.stun>0){z.anim-=dt*5;return;}
+  var p2=z.hp<z.maxHp*0.5;
+  if(p2&&!z.p2){z.p2=1;shake(8);cabSfx(z.cab==="sugar"?"cab_howl":z.cab==="mamut"?"cab_trumpet":"cab_roar",0.8);floatText(z.x,z.y-z.h,"¡FURIA!","#4fc3f7");}
+  if(z.cab==="sugar")cabAiSugar(z,dt,p,dx,dy,d,p2);
+  else if(z.cab==="reina")cabAiReina(z,dt,p,dx,dy,d,p2);
+  else if(z.cab==="mamut")cabAiMamut(z,dt,p,dx,dy,d,p2);
+  else cabAiRey(z,dt,p,dx,dy,d,p2);
+  if(z.st!=="jump"&&z.touchCd<=0&&dist(z.x,z.y,p.x,p.y)<z.r+p.r+2){hurtPlayer(p,Math.round(z.damage*0.8));z.touchCd=0.9;}
+}
+function cabPickSpot(z,tx,ty){return (sampleSDF(tx,ty)>=z.r+2)?{x:tx,y:ty}:cabSpotNear(tx,ty,0,60,z.r+2);}
+function cabAiSugar(z,dt,p,dx,dy,d,p2){
+  var sp=z.speed*(p2?1.2:1);
+  if(z.st==="idle"){
+    cabFace(z,Math.atan2(dy,dx));if(d>36)cabChase(z,sp,dt,dx,dy,d);
+    z.cd-=dt*(p2?1.35:1);z.pupCd-=dt;
+    if(z.cd<=0){
+      var r=Math.random();
+      if(z.hp<z.maxHp*0.72&&z.pupCd<=0&&cabAlive("cabPup")<3){z.st="howl";z.stT=0.9;cabSfx("cab_howl",0.9);}
+      else if(d>150?r<0.55:r<0.38){z.st="lunge_w";z.stT=0.5;z.la=Math.atan2(dy,dx);}
+      else if(r<0.7||d>150){z.st="jump_w";z.stT=0.38;}
+      else{z.st="bark_w";z.stT=0.55;}
+    }
+  }else if(z.st==="lunge_w"){z.la=Math.atan2(dy,dx)*0.25+z.la*0.75;cabFace(z,z.la);if(z.stT<=0){z.st="lunge";z.stT=0.4;z.bit=0;cabSfx("cab_bark",0.7);}}
+  else if(z.st==="lunge"){var ox=z.x,oy=z.y;cabMove(z,Math.cos(z.la),Math.sin(z.la),440*CFG.SPD,dt);
+    if(Math.random()<0.6)addParticle(z.x,z.y,"#e1f5fe",0.35,rand(-20,20),rand(-30,-5),rand(3,5),3);
+    if(!z.bit&&dist(z.x,z.y,p.x,p.y)<z.r+p.r+6){z.bit=1;hurtPlayer(p,Math.round(z.damage*1.3));shake(5);sfx("bite",0.8);}
+    if(z.stT<=0||dist(ox,oy,z.x,z.y)<440*CFG.SPD*dt*0.3){z.st="rec";z.stT=0.45;}}
+  else if(z.st==="jump_w"){z.lift=Math.max(0,(0.38-z.stT))*-6;if(z.stT<=0){var s=cabPickSpot(z,p.x,p.y)||{x:z.x,y:z.y};z.st="jump";z.jT=0;z.jx0=z.x;z.jy0=z.y;z.jx1=s.x;z.jy1=s.y;cabTele(s.x,s.y,62,0.6,"#4fc3f7");cabSfx("cab_bark2",0.6);}}
+  else if(z.st==="jump"){z.jT+=dt;var u=Math.min(1,z.jT/0.6);z.x=z.jx0+(z.jx1-z.jx0)*u;z.y=z.jy0+(z.jy1-z.jy0)*u;z.lift=Math.sin(u*Math.PI)*55;cabFace(z,Math.atan2(z.jy1-z.jy0,z.jx1-z.jx0));
+    if(u>=1){z.lift=0;resolveCircleSafe(z);cabRing(z.x,z.y,280,p2?135:115,z.damage,"#81d4fa");shake(10);sfx("stomp",0.9);
+      for(var k=0;k<12;k++)addParticle(z.x,z.y,k%2?"#e1f5fe":"#b3e5fc",0.6,rand(-140,140),rand(-80,10),rand(4,8),3);
+      if(dist(z.x,z.y,p.x,p.y)<z.r+p.r+16)hurtPlayer(p,Math.round(z.damage*1.2));z.st="rec";z.stT=0.55;}}
+  else if(z.st==="bark_w"){cabFace(z,Math.atan2(dy,dx));if(z.stT<=0){cabSfx("cab_bark2",1);cabRing(z.x,z.y,300,150,z.damage,"#e1f5fe",1);if(p2)z.bark2=0.32;shake(6);z.st="rec";z.stT=0.5;}}
+  else if(z.st==="howl"){if(z.stT<=0){var n=p2?3:2,j;for(j=0;j<n;j++){var s2=cabSpotNear(z.x,z.y,40,110,12);if(s2){var pz=cabAdd("fast",s2.x,s2.y,"cabPup");pz.hp=pz.maxHp=Math.round(pz.maxHp*0.8);}}z.pupCd=12;z.st="rec";z.stT=0.3;}}
+  else if(z.st==="rec"){if(z.stT<=0){z.st="idle";z.cd=rand(0.8,1.5);}}
+  if(z.bark2>0){z.bark2-=dt;if(z.bark2<=0){cabSfx("cab_bark",0.8);cabRing(z.x,z.y,300,150,z.damage,"#e1f5fe",1);}}
+}
+function resolveCircleSafe(z){try{if(typeof resolveCircle==="function")resolveCircle(z);}catch(e){}if(sampleSDF(z.x,z.y)<z.r*0.5){var s=cabSpotNear(z.x,z.y,0,80,z.r+2);if(s){z.x=s.x;z.y=s.y;}}}
+function cabAiReina(z,dt,p,dx,dy,d,p2){
+  var sp=z.speed*(p2?1.2:1);z.cloneCd-=dt;z.blinkCd-=dt;
+  if(z.st==="idle"){
+    cabFace(z,Math.atan2(dy,dx));
+    if(d<120)cabMove(z,-dx/d,-dy/d,sp,dt);else if(d>210)cabChase(z,sp,dt,dx,dy,d);
+    else{var sa=Math.atan2(dy,dx)+Math.PI/2*(z.orb||1);cabMove(z,Math.cos(sa),Math.sin(sa),sp*0.6,dt);if(Math.random()<0.01)z.orb=-(z.orb||1);}
+    z.cd-=dt*(p2?1.35:1);
+    if(z.cd<=0){var r=Math.random();
+      if(z.cloneCd<=0&&cabAlive("cabClone")<(p2?3:2)){z.st="clone_w";z.stT=0.8;cabSfx("cab_shatter",0.5);}
+      else if(d<110&&z.blinkCd<=0){z.st="blink_w";z.stT=0.35;}
+      else if(r<0.45){z.st="fan_w";z.stT=0.55;}
+      else if(r<0.75){z.st="bliz_w";z.stT=0.7;cabSfx("cab_bliz",0.7);}
+      else{z.st="rain_w";z.stT=0.5;}
+    }
+  }else if(z.st==="fan_w"){cabFace(z,Math.atan2(dy,dx));if(z.stT<=0){var n=p2?7:5,a0=Math.atan2(dy,dx),j;for(j=0;j<n;j++)cabShard(z.x,z.y-12,a0+(j-(n-1)/2)*0.2,185,z.damage);cabSfx("cab_shatter",0.5);z.st="rec";z.stT=0.4;z.fan2=p2?0.35:0;}}
+  else if(z.st==="bliz_w"){if(z.stT<=0){var nz=p2?3:2,j2;CAB.zones.push({x:p.x,y:p.y,r:46,t:0,grow:0.6,life:5.5,dmg:Math.max(4,Math.round(z.damage*0.55))});
+      for(j2=1;j2<nz;j2++){var s=cabSpotNear(p.x,p.y,70,170,20);if(s)CAB.zones.push({x:s.x,y:s.y,r:42,t:0,grow:0.6,life:5.5,dmg:Math.max(4,Math.round(z.damage*0.55))});}z.st="rec";z.stT=0.4;}}
+  else if(z.st==="rain_w"){if(z.stT<=0){var nn=p2?5:3;cabIcicle(p.x,p.y,z.damage,1.0);for(var i2=1;i2<nn;i2++){var s3=cabSpotNear(p.x,p.y,30,110,10);if(s3)cabIcicle(s3.x,s3.y,z.damage,0.95+i2*0.12);}z.st="rec";z.stT=0.4;}}
+  else if(z.st==="clone_w"){if(z.stT<=0){var nc=p2?2:2,c;for(c=0;c<nc;c++){var s4=cabSpotNear(z.x,z.y,70,160,14);if(s4){var cz=cabAdd("normal",s4.x,s4.y,"cabClone");cz.hp=cz.maxHp=Math.round(60*(1+game.wave*0.12));cz.speed*=0.7;CAB.fx.push({k:"blink",x:s4.x,y:s4.y,t:0,max:0.5});}}z.cloneCd=p2?8:11;z.st="rec";z.stT=0.4;}}
+  else if(z.st==="blink_w"){if(z.stT<=0){var s5=cabSpotNear(p.x,p.y,140,220,z.r+4);if(s5){CAB.fx.push({k:"blink",x:z.x,y:z.y,t:0,max:0.5});z.x=s5.x;z.y=s5.y;CAB.fx.push({k:"blink",x:z.x,y:z.y,t:0,max:0.5});sfx("whoosh",0.6);}z.blinkCd=5;z.st="rec";z.stT=0.3;}}
+  else if(z.st==="rec"){if(z.stT<=0){z.st="idle";z.cd=rand(1,1.7);}}
+  if(z.fan2>0){z.fan2-=dt;if(z.fan2<=0){var a1=Math.atan2(p.y-z.y,p.x-z.x);for(var m=0;m<6;m++)cabShard(z.x,z.y-12,a1+(m-2.5)*0.22,170,z.damage);}}
+}
+function cabAiMamut(z,dt,p,dx,dy,d,p2){
+  var sp=z.speed*(p2?1.2:1);
+  if(z.st==="idle"){
+    cabFace(z,Math.atan2(dy,dx));if(d>50)cabChase(z,sp,dt,dx,dy,d);
+    z._fs=(z._fs||0)+sp*dt;if(z._fs>26){z._fs=0;sfx("foot_heavy",0.5);shake(1.5);}
+    z.cd-=dt*(p2?1.3:1);
+    if(z.cd<=0){var r=Math.random();
+      if(d>90&&r<0.5){z.st="charge_w";z.stT=0.9;z.la=Math.atan2(dy,dx);cabSfx("cab_trumpet",0.8);}
+      else if(d<130||r<0.75){z.st="stomp_w";z.stT=0.7;}
+      else{z.st="rain_w";z.stT=0.6;cabSfx("cab_trumpet",0.6);}
+    }
+  }else if(z.st==="charge_w"){z.la=Math.atan2(dy,dx)*0.15+z.la*0.85;cabFace(z,z.la);if(z.stT<=0){z.st="charge";z.stT=1.5;z.bit=0;}}
+  else if(z.st==="charge"){var spd=300*CFG.SPD*(p2?1.12:1),ox=z.x,oy=z.y;cabMove(z,Math.cos(z.la),Math.sin(z.la),spd,dt);var moved=dist(ox,oy,z.x,z.y);
+    z._fs=(z._fs||0)+spd*dt;if(z._fs>30){z._fs=0;sfx("foot_heavy",0.6);shake(3);}
+    if(Math.random()<0.7)addParticle(z.x,z.y,"#e1f5fe",0.4,rand(-30,30),rand(-40,-5),rand(3,6),3);
+    if(!z.bit&&dist(z.x,z.y,p.x,p.y)<z.r+p.r+4){z.bit=1;hurtPlayer(p,Math.round(z.damage*1.6));shake(8);var pa=Math.atan2(p.y-z.y,p.x-z.x);moveWithSlide(p,Math.cos(pa)*24,Math.sin(pa)*24);}
+    var ahead=sampleSDF(z.x+Math.cos(z.la)*(z.r+8),z.y+Math.sin(z.la)*(z.r+8))<3;
+    if(moved<spd*dt*0.35||ahead||z.stT<=0){
+      var wall=moved<spd*dt*0.35||ahead;z.st="rec";z.stT=wall?0.5:0.6;
+      if(wall){z.stun=Math.max(z.stun||0,1.1);shake(12);cabSfx("cab_crack",0.9);sfx("stomp",0.8);floatText(z.x,z.y-z.h,"¡Aturdido!","#90caf9");
+        for(var k=0;k<(p2?4:3);k++)cabCrack(z.x,z.y,z.la+Math.PI+rand(-1.1,1.1),rand(80,140),z.damage,0.5);}}}
+  else if(z.st==="stomp_w"){if(z.stT<=0){cabRing(z.x,z.y,250,110,z.damage,"#b3e5fc");sfx("stomp",1);shake(10);cabSfx("cab_crack",0.7);
+      var nk=p2?7:5,a0=Math.random()*6.283;for(var j=0;j<nk;j++)cabCrack(z.x,z.y,a0+j*6.283/nk,rand(110,170),z.damage,0.65);z.st="rec";z.stT=0.6;}}
+  else if(z.st==="rain_w"){if(z.stT<=0){var nn=p2?6:4;cabIcicle(p.x,p.y,z.damage,1.0);for(var i2=1;i2<nn;i2++){var s3=cabSpotNear(p.x,p.y,30,120,10);if(s3)cabIcicle(s3.x,s3.y,z.damage,0.95+i2*0.1);}z.st="rec";z.stT=0.4;}}
+  else if(z.st==="rec"){if(z.stT<=0){z.st="idle";z.cd=rand(1,1.8);}}
+}
+function cabAiRey(z,dt,p,dx,dy,d,p2){
+  z.sumCd-=dt;
+  if(z.st==="idle"){
+    cabFace(z,Math.atan2(dy,dx));if(d>70)cabChase(z,z.speed*(p2?1.15:1),dt,dx,dy,d);
+    z._fs=(z._fs||0)+z.speed*dt;if(z._fs>28){z._fs=0;sfx("foot_heavy",0.5);}
+    z.cd-=dt*(p2?1.3:1);
+    if(z.cd<=0){var r=Math.random();
+      if(d<95&&r<0.45){z.st="slash_w";z.stT=0.6;z.la=Math.atan2(dy,dx);}
+      else if(z.sumCd<=0&&cabAlive("cabAdd")<4){z.st="sum_w";z.stT=0.9;}
+      else if(r<0.6){z.st="nova_w";z.stT=0.8;}
+      else if(p2&&r<0.8){z.st="bliz_w";z.stT=0.6;cabSfx("cab_bliz",0.7);}
+      else{z.st="rain_w";z.stT=0.5;}
+    }
+  }else if(z.st==="slash_w"){z.la=Math.atan2(dy,dx)*0.2+z.la*0.8;cabFace(z,z.la);if(z.stT<=0){CAB.fx.push({k:"slash",x:z.x,y:z.y,a:z.la,r:92,w:0.95,dmg:Math.round(z.damage*1.5),t:0});sfx("slash",0.9);shake(7);z.st="rec";z.stT=0.5;}}
+  else if(z.st==="nova_w"){if(z.stT<=0){var n=p2?16:12,a0=Math.random(),j;for(j=0;j<n;j++)cabShard(z.x,z.y-10,a0+j*6.283/n,160,z.damage);if(p2)z.nova2=0.45;cabSfx("cab_shatter",0.8);shake(6);z.st="rec";z.stT=0.5;}}
+  else if(z.st==="rain_w"){if(z.stT<=0){var nn=p2?7:5;cabIcicle(p.x,p.y,Math.round(z.damage*1.2),1.0);for(var i2=1;i2<nn;i2++){var s=cabSpotNear(p.x,p.y,30,120,10);if(s)cabIcicle(s.x,s.y,Math.round(z.damage*1.2),0.95+i2*0.1);}z.st="rec";z.stT=0.4;}}
+  else if(z.st==="bliz_w"){if(z.stT<=0){CAB.zones.push({x:p.x,y:p.y,r:48,t:0,grow:0.6,life:5,dmg:Math.max(4,Math.round(z.damage*0.5))});var s3=cabSpotNear(p.x,p.y,80,160,20);if(s3)CAB.zones.push({x:s3.x,y:s3.y,r:44,t:0,grow:0.6,life:5,dmg:Math.max(4,Math.round(z.damage*0.5))});z.st="rec";z.stT=0.4;}}
+  else if(z.st==="sum_w"){if(z.stT<=0){var types=["normal","fast","tank"],k;for(k=0;k<3;k++){var s4=cabSpotNear(z.x,z.y,60,170,14);if(s4)cabAdd(types[k],s4.x,s4.y,"cabMinion");}sfx("growl",0.8);z.sumCd=15;z.st="rec";z.stT=0.4;}}
+  else if(z.st==="rec"){if(z.stT<=0){z.st="idle";z.cd=rand(0.9,1.7);}}
+  if(z.nova2>0){z.nova2-=dt;if(z.nova2<=0){for(var m=0;m<16;m++)cabShard(z.x,z.y-10,0.2+m*6.283/16,150,z.damage);cabSfx("cab_shatter",0.6);}}
+}
