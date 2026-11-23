@@ -22,8 +22,8 @@ var CAB_META={
 var CAB_BOSS={
   sugar:{name:"SUGAR",tag:"La perrita de la cabaña… ya no es tan buena.",hp:1150,r:17,h:60,speed:74,dmg:12,mus:"colo",H:2.15,spr:"sugar_mut",quad:1},
   reina:{name:"REINA DE ESCARCHA",tag:"Sus espejos mienten.",hp:1350,r:14,h:66,speed:58,dmg:11,mus:"home",H:2.35,spr:"reina"},
-  mamut:{name:"MAMUT ZOMBI",tag:"El suelo se resquebraja.",hp:1700,r:28,h:72,speed:42,dmg:14,mus:"gorgon",H:2.7,spr:"mamut",quad:1},
-  rey:{name:"REY DE ESCARCHA",tag:"El invierno eterno.",hp:2300,r:22,h:76,speed:50,dmg:15,mus:"final",H:2.8,spr:"rey"}
+  mamut:{name:"MAMUT ZOMBI",tag:"El suelo se resquebraja.",hp:2200,r:28,h:72,speed:42,dmg:14,mus:"gorgon",H:2.7,spr:"mamut",quad:1},
+  rey:{name:"REY DE ESCARCHA",tag:"El invierno eterno.",hp:3000,r:22,h:76,speed:50,dmg:15,mus:"final",H:2.8,spr:"rey"}
 };
 var CAB_KEYS=["sugar","reina","mamut","rey"];
 function cabLoad(){
