@@ -15,8 +15,8 @@ function skinImg(file){
   var o=SKIN_IMG[file];if(o)return o.ok?o.im:null;
   o=SKIN_IMG[file]={im:new Image(),ok:0,tries:0};
   o.im.onload=function(){if(o.im.width){o.ok=1;SKIN_LOADED++;if(typeof menuDirty!=="undefined")menuDirty=1;}};
-  o.im.onerror=function(){if(++o.tries<4)setTimeout(function(){o.im.src="assets/spr/skins/"+file+".webp?v=21.5&r="+o.tries;},1500*o.tries);};
-  o.im.src="assets/spr/skins/"+file+".webp?v=21.5";return null;
+  o.im.onerror=function(){if(++o.tries<4)setTimeout(function(){o.im.src="assets/spr/skins/"+file+".webp?v=22.0&r="+o.tries;},1500*o.tries);};
+  o.im.src="assets/spr/skins/"+file+".webp?v=22.0";return null;
 }
 function skinIsReal(id){return !!REAL_SKINS[id];}
 /* warm every normal-size sprite of one skin (menu preview, countdown) */
@@ -98,7 +98,7 @@ var CHEST={
   asombroso:{n:"Asombroso",c:"rainbow",c2:"#004d40",img:"chest_a",p:4,coins:[420,650],pxp:400,skin:100,pcs:[8,10],pcsP:100}
 };
 var CHEST_IMG={};
-function chestImg(k,open){var key=CHEST[k].img+(open?"_open":"");var o=CHEST_IMG[key];if(o)return o.width?o:null;o=CHEST_IMG[key]=new Image();o.onload=function(){if(typeof menuDirty!=="undefined")menuDirty=1;};o.src="assets/ui/"+key+".webp?v=21.5";return null;}
+function chestImg(k,open){var key=CHEST[k].img+(open?"_open":"");var o=CHEST_IMG[key];if(o)return o.width?o:null;o=CHEST_IMG[key]=new Image();o.onload=function(){if(typeof menuDirty!=="undefined")menuDirty=1;};o.src="assets/ui/"+key+".webp?v=22.0";return null;}
 var CHEST_TH={};
 function chestThumb(k,w){var key=k+"|"+Math.round(w),c=CHEST_TH[key];if(c)return c;var im=chestImg(k,0);if(!im)return null;var K=Math.min(2,dpr||1);c=document.createElement("canvas");c.width=Math.ceil(w*K);c.height=Math.ceil(w*im.height/im.width*K);c.getContext("2d").drawImage(im,0,0,c.width,c.height);c._w=w;c._h=w*im.height/im.width;return (CHEST_TH[key]=c);}
 function chestRoll(min){var r=Math.random()*100;var k=r<CHEST.asombroso.p?"asombroso":r<CHEST.asombroso.p+CHEST.epico.p?"epico":"poco";if(min==="epico"&&k==="poco")k="epico";return k;}
