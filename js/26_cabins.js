@@ -28,8 +28,8 @@ var CAB_BOSS={
 var CAB_KEYS=["sugar","reina","mamut","rey"];
 function cabLoad(){
   if(CAB.loading)return;CAB.loading=1;
-  CAB.imgs.forEach(function(n,i){var tries=0;function go(){var im=new Image();im.onload=function(){CAB.img[i]=im;};im.onerror=function(){if(++tries<4)setTimeout(go,1500*tries);};im.src="assets/env/"+n+".webp?v=22.0"+(tries?"&r="+tries:"");}go();});
-  Object.keys(CAB_META).forEach(function(k){var tries=0;function go(){var im=new Image();im.onload=function(){CAB.spr[k]=im;};im.onerror=function(){if(++tries<4)setTimeout(go,1500*tries);};im.src=CAB_META[k].file+"?v=22.0"+(tries?"&r="+tries:"");}go();});
+  CAB.imgs.forEach(function(n,i){var tries=0;function go(){var im=new Image();im.onload=function(){CAB.img[i]=im;};im.onerror=function(){if(++tries<4)setTimeout(go,1500*tries);};im.src="assets/env/"+n+".webp?v=22.1"+(tries?"&r="+tries:"");}go();});
+  Object.keys(CAB_META).forEach(function(k){var tries=0;function go(){var im=new Image();im.onload=function(){CAB.spr[k]=im;};im.onerror=function(){if(++tries<4)setTimeout(go,1500*tries);};im.src=CAB_META[k].file+"?v=22.1"+(tries?"&r="+tries:"");}go();});
 }
 function cabReady(){var n=0,i;for(i=0;i<4;i++)if(CAB.img[i])n++;return n===4&&Object.keys(CAB.spr).length===Object.keys(CAB_META).length&&typeof CAB_DATA!=="undefined";}
 (function(){var _l=w2LoadImg;w2LoadImg=function(){cabLoad();return _l.apply(this,arguments);};})();
