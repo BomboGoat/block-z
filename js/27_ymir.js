@@ -491,7 +491,7 @@ function ymGrantReward(){
 function ymWinUpdate(dt){
   var C=CAB.cine,p=game.player,base=cabBase();C.t+=dt;var t=C.t;
   hellSetView(base*(t<0.8?1-0.3*smooth01(t/0.8):t<4.0?0.7:0.7+0.3*smooth01((t-4.0)/1.2)));
-  cabCam(C.x,C.y-ymSprH()/(CFG.YSCALE*layout.scale)*0.45,1-Math.exp(-4*dt));
+  var wy=C.y-ymSprH()/(CFG.YSCALE*layout.scale)*0.45,pu=smooth01(clamp((t-3.3)/1.2,0,1));cabCam(C.x+(p.x-C.x)*0.5*pu,wy+((C.y+p.y)*0.5-wy)*pu,1-Math.exp(-4*dt));
   p.vx=p.vy=0;p.aimAng=p.facing=Math.atan2(C.y-p.y,C.x-p.x);
   if(C.bub)C.bubT+=dt;
   if(t>0.3&&!C.k1){C.k1=1;cabSfx("cab_crack",1);shake(5);}
@@ -502,10 +502,10 @@ function ymWinUpdate(dt){
   if(t>=2.4&&!C.sh){C.sh=1;C.flash=1;shake(24);cabSfx("cab_shatter",1);ymSfx("ym_slam",1);
     var M=CAB_META.ymir,h=ymSprH()/layout.scale,w=h*M.w/M.h,cols=4,rows=5,i,j;C.pcs=[];
     for(j=0;j<rows;j++)for(i=0;i<cols;i++){var cx=(i+0.5)/cols,cy=(j+0.5)/rows,ox=(cx-M.fx)*w*C.face,oy=-(M.fy-cy)*h;
-      C.pcs.push({i:i,j:j,x:ox,y:oy,vx:ox*2.6+rand(-60,60),vy:-rand(120,320)+oy*0.6,r:0,vr:rand(-6,6),a:1});}
+      C.pcs.push({i:i,j:j,x:ox,y:oy,vx:ox*3.4+rand(-90,90),vy:-rand(40,190),r:0,vr:rand(-5,5),a:1});}
     for(i=0;i<46;i++)addParticle(C.x+rand(-30,30),C.y-rand(0,110),i%3?"#b3e5fc":"#ffffff",1.2,rand(-300,300),rand(-320,40),rand(4,10),3);
     cabRing(C.x,C.y,420,300,0,"#e1f5fe",0);}
-  if(C.pcs){for(var q=0;q<C.pcs.length;q++){var P=C.pcs[q];P.vy+=520*dt;P.x+=P.vx*dt;P.y+=P.vy*dt;P.r+=P.vr*dt;if(P.y>0){P.y=0;P.vy*=-0.25;P.vx*=0.6;P.vr*=0.5;}if(t>3.4)P.a=Math.max(0,P.a-dt*0.8);}}
+  if(C.pcs){for(var q=0;q<C.pcs.length;q++){var P=C.pcs[q];P.vy+=520*dt;P.x+=P.vx*dt;P.y+=P.vy*dt;P.r+=P.vr*dt;if(P.y>0){P.y=0;P.vy*=-0.25;P.vx*=0.6;P.vr*=0.5;}if(t>4.4)P.a=Math.max(0,P.a-dt*0.9);}}
   if(t>=2.9&&!C.fan){C.fan=1;ymSfx("ym_win",1);}
   if(C.flash>0)C.flash-=dt*1.4;
   if(t>3.0){p.lift=Math.abs(Math.sin((t-3.0)*7))*6*(t<5?1:0);}
