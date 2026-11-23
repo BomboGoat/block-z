@@ -687,7 +687,7 @@ function cabDrawCine(){
   var a=clamp(t/0.5,0,1)*(t>5.9?clamp((6.25-t)/0.35,0,1):1),hb=hellLetterbox(a);
   var bsc=Math.min(1.5,Math.max(0.9,sc*0.9));
   if(C.bub){var s=toScreen(z.x,z.y),pop=C.bubT<0.15?0.6+0.4*(C.bubT/0.15):1;cabBubble(s.x+8*sc,s.y-cabSprH(0.95)-8*sc,C.bub,bsc,pop);}
-  if(t>2.95&&t<4.1){var ps=toScreen(game.player.x,game.player.y),po=clamp((t-2.95)/0.15,0,1);cabBubble(ps.x,ps.y-cabSprH(1.05)-6*sc,"¿Sugar…?",bsc*0.85,po,"#1565c0");}
+  if(t>2.95&&t<4.1){var ps=toScreen(game.player.x,game.player.y),po=clamp((t-2.95)/0.15,0,1);cabBubble(clamp(ps.x,60,SW-60),Math.min(ps.y-cabSprH(1.05)-6*sc,SH-hb-6),"¿Sugar…?",bsc*0.85,po,"#1565c0");}
   if(C.flash>0){ctx.fillStyle="rgba(235,250,255,"+clamp(C.flash,0,1)+")";ctx.fillRect(0,0,SW,SH);}
   if(t>5.5){ctx.save();var na=clamp((t-5.5)/0.25,0,1);ctx.globalAlpha=na;ctx.textAlign="center";ctx.font="900 "+Math.round(Math.min(44,SH*0.11))+"px system-ui";ctx.lineJoin="round";var py=hb*0.75+SH*0.06;
     ctx.strokeStyle="rgba(0,0,0,0.9)";ctx.lineWidth=8;ctx.strokeText("SUGAR",SW/2,py);var g=ctx.createLinearGradient(0,py-36,0,py);g.addColorStop(0,"#ffffff");g.addColorStop(1,"#4fc3f7");ctx.fillStyle=g;ctx.fillText("SUGAR",SW/2,py);ctx.restore();}
