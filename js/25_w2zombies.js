@@ -21,7 +21,7 @@ var W2Z={
 function w2zReady(){return W2Z.n>=5;}
 function w2zLoad(){
   if(W2Z.loading)return;W2Z.loading=1;
-  Object.keys(W2Z.meta).forEach(function(k){var im=new Image();im.onload=function(){W2Z.imgs[k]=im;W2Z.n++;};im.onerror=function(){W2Z.loading=0;};im.src=W2Z.meta[k].file+"?v=21.5";});
+  Object.keys(W2Z.meta).forEach(function(k){var im=new Image();im.onload=function(){W2Z.imgs[k]=im;W2Z.n++;};im.onerror=function(){W2Z.loading=0;};im.src=W2Z.meta[k].file+"?v=22.0";});
 }
 function w2zOn(){return typeof WORLD!=="undefined"&&WORLD.cur===2&&!(typeof HELL!=="undefined"&&HELL.active);}
 (function(){var _l=w2LoadImg;w2LoadImg=function(){w2zLoad();return _l.apply(this,arguments);};if(w2Unlocked())setTimeout(w2zLoad,2600);})();

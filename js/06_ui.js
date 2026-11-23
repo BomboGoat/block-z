@@ -537,7 +537,7 @@ function drawBossIntroUI(){
   ctx.fillStyle="#ff1744";ctx.fillText((b&&b.bName)||"JEFE",0,0);
   ctx.restore();
   var line=(b&&(b.bubbleFull||b.bubbleText))||"";
-  var tag=b&&b.isGorgon?"Viene del otro lado.":b&&b.isHome?"No hay escapatoria.":b&&b.isColossus?"El suelo tiembla.":b&&b.isBoss?"Este es el final.":"";
+  var tag=b&&b.bTag?b.bTag:b&&b.isGorgon?"Viene del otro lado.":b&&b.isHome?"No hay escapatoria.":b&&b.isColossus?"El suelo tiembla.":b&&b.isBoss?"Este es el final.":"";
   ctx.fillStyle="#ffe082";ctx.font="16px system-ui";
   ctx.strokeStyle="rgba(0,0,0,0.7)";ctx.lineWidth=4;
   if(line){ctx.strokeText(line,SW/2,nameY+28);ctx.fillText(line,SW/2,nameY+28);}
