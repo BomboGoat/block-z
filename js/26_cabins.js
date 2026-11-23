@@ -242,3 +242,112 @@ function cabWin(){
   if(game.bossFight){startMusic("play");game.bossFight=0;}
   sfx("clear",0.9);cabSfx("cab_shatter",0.8);
 }
+/* ---------- bosses ---------- */
+function cabSpawnBoss(i,x,y){
+  var key=CAB_KEYS[i],S=CAB_BOSS[key],wd=typeof waveDifficulty==="function"?waveDifficulty(game.wave):null,bs=wd?wd.bossHp:1.2;
+  var z=spawnZombie("boss",x,y,game.wave);
+  z.isBoss=1;z.cab=key;z.cabI=i;z.spawnT=0;z.phase="fight";z.introT=0;z.elite=0;
+  z.hp=z.maxHp=Math.round(S.hp*bs);z.r=S.r;z.h=S.h;z.speed=S.speed*CFG.SPD;z.damage=Math.round(S.dmg*(wd&&wd.dmg?wd.dmg:1));
+  z.bName=S.name;z.bTag=S.tag;z.score=3000+i*1000;z.xp=400+i*150;
+  z.st="idle";z.stT=0;z.cd=1.6;z.rings=[];z.throws=[];z.atkCd=99;z.face=-1;z.touchCd=0;z.pupCd=6;z.cloneCd=4;z.sumCd=8;z.blinkCd=3;z.lift=0;z.anim=0;
+  z.look={kind:"cab",type:"boss",cab:key};
+  return z;
+}
+function cabBossStart(i){
+  var D=CAB_DATA[i],z=cabSpawnBoss(i,D.boss.x,D.boss.y),p=game.player;
+  game.graceT=1e9;game.spawnQueue=[];
+  if(i===0){
+    z.cute=1;z.mutP=0;z.aimAng=Math.atan2(p.y-z.y,p.x-z.x);z.face=p.x<z.x?-1:1;
+    game.zombies.push(z);game.boss=z;game.bossSpawned=1;game.bossFight=0;
+    CAB.cine={t:0,skip:!!(PROF.cine&&PROF.cine.sugar),bub:"",bubT:0,flash:0};game.state="cab_cine";
+    try{stopMusic();}catch(e){}
+    return;
+  }
+  var lines=[null,"Mírate en mis espejos…","¡HRRRUUUUMMM!","¡El hielo os tragará!"],bab=[null,"Mírate en mis espejos","Hrrruuum","El hielo os tragará"];
+  startBoss(z,lines[i],bab[i],[0,120,60,70][i]);
+  startMusic(CAB_BOSS[z.cab].mus);
+  if(i===2)cabSfx("cab_trumpet",0.9);
+  if(i===3)cabSfx("cab_roar",0.8);
+}
+/* Sugar's intro: cute Sugar barks at you, then mutates into the frost dog (6.25 s, skippable after the first view) */
+function cabCineUpdate(dt){
+  var C=CAB.cine,z=game.boss,p=game.player,base=cabBase();
+  if(!z){game.state="playing";CAB.cine=null;return;}
+  C.t+=dt;var t=C.t;
+  hellSetView(base*(t<3.0?0.8-0.06*smooth01(t/3):0.74+0.2*smooth01((t-3.0)/2.4)));
+  cabCam(z.x,z.y-(t<3?16:30),1-Math.exp(-4*dt));
+  z.anim+=dt*(t<3?5:12);z.aimAng=Math.atan2(p.y-z.y,p.x-z.x);z.face=p.x<z.x?-1:1;
+  p.anim=0;p.vx=p.vy=0;p.aimAng=p.facing=Math.atan2(z.y-p.y,z.x-p.x);
+  if(C.bub)C.bubT+=dt;
+  if(t>0.9&&!C.b1){C.b1=1;cabSfx("cab_bark",1);C.bub="¡Guau!";C.bubT=0;}
+  if(t>1.5&&!C.b2){C.b2=1;cabSfx("cab_bark",1);C.bub="¡Guau! ¡GUAU!";C.bubT=0.15;}
+  if(t>2.1&&!C.b3){C.b3=1;cabSfx("cab_bark2",1);shake(3);}
+  z.lift=(t>0.9&&t<2.6)?Math.abs(Math.sin((t-0.9)*11))*4:0;
+  if(t>2.8&&C.bub)C.bub="";
+  if(t>3.0&&!C.m){C.m=1;cabSfx("cab_mutate",1);}
+  if(t>3.0&&t<4.9){var u=(t-3.0)/1.9;z.mutP=u;z.shk=1+5*u;if(Math.random()<0.35)shake(2+5*u);
+    if(Math.random()<0.5+u){var a=Math.random()*6.283,r=20+30*u;addParticle(z.x+Math.cos(a)*r,z.y+Math.sin(a)*r*0.6-10,Math.random()<0.5?"#e1f5fe":"#4fc3f7",0.5,-Math.cos(a)*60,-Math.sin(a)*40-30,rand(2,5),3);}}
+  if(t>=4.9&&!C.f){C.f=1;z.cute=0;z.mutP=1;z.shk=0;C.flash=1;cabSfx("cab_roar",1);shake(16);
+    for(var i=0;i<30;i++)addParticle(z.x+rand(-10,10),z.y-rand(0,30),i%2?"#e1f5fe":"#4fc3f7",0.9,rand(-220,220),rand(-200,40),rand(4,9),3);}
+  if(C.flash>0)C.flash-=dt*2.2;
+  if(t>5.5&&!C.n){C.n=1;sfx("sting",0.8);}
+  if(typeof updateFX==="function")updateFX(dt);
+  if(t>=6.25)cabCineEnd();
+}
+function cabCineSkip(){var C=CAB.cine;if(!C||!C.skip||C.t<0.4||C.t>=4.85)return;C.t=4.85;C.b1=C.b2=C.b3=C.m=1;C.bub="";}
+function cabCineEnd(){
+  var z=game.boss,p=game.player;CAB.cine=null;
+  if(z){z.cute=0;z.mutP=1;z.shk=0;z.lift=0;z.st="idle";z.cd=1.2;z.phase="fight";}
+  game.state="playing";game.bossFight=1;hellSetView(cabBase());startMusic(CAB_BOSS.sugar.mus);p.invuln=Math.max(p.invuln,1.2);
+  try{PROF.cine.sugar=(PROF.cine.sugar|0)+1;profSave();}catch(e){}
+}
+/* per-frame cabin logic while playing in World 2 (doors, exit, attack fx, zones, cracks) */
+function cabTick(dt){
+  var p=game.player,i,o,k;p.cabSlow=0;CAB.msgT-=dt;
+  if(CAB.inside<0){
+    CAB.openT=(CAB.openT||0)+dt;
+    if(CAB.open>=0){var d=CAB.doors[CAB.open];if(dist(p.x,p.y,d.x,d.y)<18&&cabReady()&&CAB.openT>0.5){cabStartTrans("in");return;}}
+    for(i=0;i<4;i++){if(i===CAB.open)continue;var dd=CAB.doors[i];
+      if(dist(p.x,p.y,dd.x,dd.y)<17&&CAB.msgT<=0){game.message=CAB.beat[i]?"Ya has vencido aquí":"Cerrada… aún no te toca";game.messageTimer=1.6;CAB.msgT=3;sfx("click",0.5);}}
+    return;
+  }
+  var D=CAB_DATA[CAB.inside],boss=game.boss;
+  if(CAB.won){CAB.wonT+=dt;if(dist(p.x,p.y,D.exit.x,D.exit.y)<20&&CAB.wonT>0.6){cabStartTrans("out");return;}}
+  else if(dist(p.x,p.y,D.exit.x,D.exit.y)<18&&CAB.msgT<=0){game.message="¡Cerrado! Derrota al jefe para salir";game.messageTimer=1.6;CAB.msgT=2.5;sfx("click",0.5);}
+  for(i=CAB.fx.length-1;i>=0;i--){o=CAB.fx[i];o.t+=dt;
+    if(o.k==="ring"){var pr=o.r;o.r+=o.vr*dt;var dp=dist(p.x,p.y,o.x,o.y);
+      if(!o.hit&&!CAB.won&&dp>pr-p.r-6&&dp<o.r+p.r){o.hit=1;hurtPlayer(p,o.dmg);if(o.push&&dp>1){var pa=Math.atan2(p.y-o.y,p.x-o.x);moveWithSlide(p,Math.cos(pa)*18,Math.sin(pa)*18);}}
+      if(o.r>=o.maxR)CAB.fx.splice(i,1);}
+    else if(o.k==="tele"||o.k==="blink"){if(o.t>=o.max)CAB.fx.splice(i,1);}
+    else if(o.k==="icicle"){
+      if(!o.done&&o.t>=o.max){o.done=1;o.t2=0;if(!CAB.won&&dist(p.x,p.y,o.x,o.y)<o.r+p.r*0.5)hurtPlayer(p,o.dmg);cabSfx("cab_shatter",0.35);shake(2);
+        for(k=0;k<8;k++)addParticle(o.x,o.y,k%2?"#e1f5fe":"#81d4fa",0.5,rand(-90,90),rand(-120,-20),rand(3,6),3);}
+      if(o.done){o.t2+=dt;if(o.t2>0.3)CAB.fx.splice(i,1);}}
+    else if(o.k==="slash"){if(!o.hit){o.hit=1;var sd=dist(p.x,p.y,o.x,o.y),sa=Math.atan2(p.y-o.y,p.x-o.x),df=Math.abs(Math.atan2(Math.sin(sa-o.a),Math.cos(sa-o.a)));if(sd<o.r+p.r&&df<o.w)hurtPlayer(p,o.dmg);}if(o.t>=0.35)CAB.fx.splice(i,1);}
+    else if(o.t>=(o.max||0.6))CAB.fx.splice(i,1);
+  }
+  for(i=CAB.zones.length-1;i>=0;i--){o=CAB.zones[i];o.t+=dt;var rr=o.r*Math.min(1,o.t/o.grow);
+    if(o.t>o.grow&&dist(p.x,p.y,o.x,o.y)<rr){p.cabSlow=1;o.tick=(o.tick||0)-dt;if(o.tick<=0){o.tick=0.8;hurtPlayer(p,o.dmg);}}
+    if(Math.random()<0.35)addParticle(o.x+rand(-rr,rr),o.y+rand(-rr,rr)*0.6,"#e1f5fe",0.6,rand(-40,40),rand(-30,0),rand(2,4),3);
+    if(o.t>=o.life)CAB.zones.splice(i,1);}
+  for(i=CAB.cracks.length-1;i>=0;i--){o=CAB.cracks[i];o.t+=dt;
+    if(o.t>=o.erupt&&!o.hit){o.hit=1;if(!CAB.won&&segDist(p.x,p.y,o.x0,o.y0,o.x1,o.y1)<p.r+9)hurtPlayer(p,o.dmg);cabSfx("cab_crack",0.55);shake(3);
+      for(var q=0;q<5;q++){var u=Math.random();addParticle(o.x0+(o.x1-o.x0)*u,o.y0+(o.y1-o.y0)*u,"#b3e5fc",0.55,rand(-30,30),rand(-110,-40),rand(3,6),3);}}
+    if(o.t>=o.life)CAB.cracks.splice(i,1);}
+  /* mirror clones shoot */
+  for(i=0;i<game.zombies.length;i++){o=game.zombies[i];if(!o.cabClone||o.dead||o.dying)continue;o.shotCd=(o.shotCd==null?rand(1,2):o.shotCd)-dt;
+    if(o.shotCd<=0&&dist(o.x,o.y,p.x,p.y)<320){o.shotCd=rand(2.2,3);cabShard(o.x,o.y,Math.atan2(p.y-o.y,p.x-o.x),170,Math.round((boss&&boss.damage||10)*0.7));}}
+}
+function segDist(px,py,x0,y0,x1,y1){var vx=x1-x0,vy=y1-y0,l=vx*vx+vy*vy||1,u=clamp(((px-x0)*vx+(py-y0)*vy)/l,0,1);return dist(px,py,x0+vx*u,y0+vy*u);}
+function cabShard(x,y,a,spd,dmg){game.projectiles.push({x:x,y:y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,life:2.2,r:6,dmg:dmg,col:"#81d4fa",ice:1});}
+function cabRing(x,y,vr,maxR,dmg,col,push){CAB.fx.push({k:"ring",x:x,y:y,r:10,vr:vr,maxR:maxR,dmg:dmg,col:col||"#81d4fa",t:0,push:push||0});}
+function cabTele(x,y,r,max,col){CAB.fx.push({k:"tele",x:x,y:y,r:r,t:0,max:max,col:col||"#ff5252"});}
+function cabIcicle(x,y,dmg,delay){CAB.fx.push({k:"icicle",x:x,y:y,r:22,t:0,max:delay||1.0,dmg:dmg});}
+function cabCrack(x,y,a,len,dmg,delay){var x1=x+Math.cos(a)*len,y1=y+Math.sin(a)*len,n=0;while(n++<12&&sampleSDF(x1,y1)<4){len*=0.85;x1=x+Math.cos(a)*len;y1=y+Math.sin(a)*len;}
+  CAB.cracks.push({x0:x,y0:y,x1:x1,y1:y1,t:0,erupt:delay||0.75,life:(delay||0.75)+1.2,dmg:dmg,seed:Math.random()*99});}
+function cabSpotNear(x,y,rmin,rmax,rad){return (typeof hellSpot==="function"&&hellSpot(x,y,rmin,rmax,rad))||null;}
+function cabAdd(type,x,y,flag){
+  var s=cabSpotNear(x,y,10,60,14)||{x:x,y:y},z=spawnZombie(type,s.x,s.y,game.wave);z[flag]=1;z.cabAdd=1;z.spawnT=0.35;
+  if(typeof placeOnGround==="function")placeOnGround(z);game.zombies.push(z);return z;
+}
+function cabAlive(flag){var n=0,i,z;for(i=0;i<game.zombies.length;i++){z=game.zombies[i];if(z[flag]&&!z.dead&&!z.dying)n++;}return n;}
