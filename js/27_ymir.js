@@ -16,7 +16,7 @@ var YM={fx:[],beam:null,pick:null,reward:null,art:{},faces:{},bakeQ:null,lastUlt
 CAB_META.ymir={file:"assets/spr/ymir_f.webp",w:394,h:526,fx:0.551,fy:0.992,ex:0.519,ey:0.289};
 CAB_META.ymir_cast={file:"assets/spr/ymir_cast_f.webp",w:404,h:526,fx:0.504,fy:0.992,ex:0.497,ey:0.212};
 delete CAB_META.rey;
-CAB_BOSS.ymir={name:"YMIR",tag:"El Rey del Invierno Eterno",hp:5200,r:30,h:100,speed:44,dmg:16,mus:"final",H:3.6,spr:"ymir"};
+CAB_BOSS.ymir={name:"YMIR",tag:"El Rey del Invierno Eterno",hp:7200,r:30,h:100,speed:44,dmg:16,mus:"final",H:3.6,spr:"ymir"};
 CAB_KEYS[3]="ymir";CAB.title[3]="Iglú de Ymir";
 (function(){ /* if the cabin loader already ran, fetch the new sprites too */
   if(CAB.loading)["ymir","ymir_cast"].forEach(function(k){var tries=0;function go(){var im=new Image();im.onload=function(){CAB.spr[k]=im;};im.onerror=function(){if(++tries<4)setTimeout(go,1500*tries);};im.src=CAB_META[k].file+"?v=22.1"+(tries?"&r="+tries:"");}go();});
@@ -128,7 +128,7 @@ function ymSfx(name,vol){
 function ymIsBoss(z){return z&&z.cab==="ymir";}
 function ymBoss(){var b=game&&game.boss;return ymIsBoss(b)?b:null;}
 function ymIn(){return cabW2()&&CAB.inside===3;}
-function ymDmgMul(){var p=game.player;return (p&&p.damageMul||1)*(typeof atkMul==="function"&&p?atkMul(p):1);}
+function ymDmgMul(){var p=game.player,m=(p&&p.damageMul||1)*(typeof atkMul==="function"&&p?atkMul(p):1);return Math.sqrt(Math.max(1,m));} /* ultras grow with your cards, but softly */
 function ymSprH(){return cabSprH(CAB_BOSS.ymir.H);}
 /* ---------- flow: entry cinematic -> ultra picker -> fight ---------- */
 (function(){
@@ -335,7 +335,7 @@ function ymAoe(x,y,r,dmg,frz){
 var YM_NID=0;
 function ymUltraFire(id){
   var p=game.player,z=ymBoss(),U=YM_ULTRA[id],mul=ymDmgMul(),i;
-  YM.lastUlt=game.time||0;floatText(p.x,p.y-34,"¡"+U.u+"!",U.c2);
+  YM.lastUlt=game.time||0;
   if(id==="ventisca"){ymSfx("ym_nova",1);shake(9);YM.fx.push({k:"nova",x:p.x,y:p.y,t:0,r:0,maxR:190,dmg:150*mul,id:++YM_NID,hitSet:{}});
     for(i=0;i<26;i++){var a=i*6.283/26;addParticle(p.x+Math.cos(a)*20,p.y+Math.sin(a)*14,i%2?"#ffffff":"#81d4fa",0.7,Math.cos(a)*320,Math.sin(a)*220,rand(3,6),3);}}
   else if(id==="boreal"){var tg=[],nb;if(z&&!z.dying)tg.push(z);
