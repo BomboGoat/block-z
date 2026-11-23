@@ -400,12 +400,12 @@ function cabAiReina(z,dt,p,dx,dy,d,p2){
   var sp=z.speed*(p2?1.2:1);z.cloneCd-=dt;z.blinkCd-=dt;
   if(z.st==="idle"){
     cabFace(z,Math.atan2(dy,dx));
-    if(d<120)cabMove(z,-dx/d,-dy/d,sp,dt);else if(d>210)cabChase(z,sp,dt,dx,dy,d);
+    if(d<90)cabMove(z,-dx/d,-dy/d,sp*0.8,dt);else if(d>190)cabChase(z,sp,dt,dx,dy,d);
     else{var sa=Math.atan2(dy,dx)+Math.PI/2*(z.orb||1);cabMove(z,Math.cos(sa),Math.sin(sa),sp*0.6,dt);if(Math.random()<0.01)z.orb=-(z.orb||1);}
     z.cd-=dt*(p2?1.35:1);
     if(z.cd<=0){var r=Math.random();
       if(z.cloneCd<=0&&cabAlive("cabClone")<(p2?3:2)){z.st="clone_w";z.stT=0.8;cabSfx("cab_shatter",0.5);}
-      else if(d<110&&z.blinkCd<=0){z.st="blink_w";z.stT=0.35;}
+      else if(d<70&&z.blinkCd<=0){z.st="blink_w";z.stT=0.35;}
       else if(r<0.45){z.st="fan_w";z.stT=0.55;}
       else if(r<0.75){z.st="bliz_w";z.stT=0.7;cabSfx("cab_bliz",0.7);}
       else{z.st="rain_w";z.stT=0.5;}
@@ -415,7 +415,7 @@ function cabAiReina(z,dt,p,dx,dy,d,p2){
       for(j2=1;j2<nz;j2++){var s=cabSpotNear(p.x,p.y,70,170,20);if(s)CAB.zones.push({x:s.x,y:s.y,r:42,t:0,grow:0.6,life:5.5,dmg:Math.max(4,Math.round(z.damage*0.55))});}z.st="rec";z.stT=0.4;}}
   else if(z.st==="rain_w"){if(z.stT<=0){var nn=p2?5:3;cabIcicle(p.x,p.y,z.damage,1.0);for(var i2=1;i2<nn;i2++){var s3=cabSpotNear(p.x,p.y,30,110,10);if(s3)cabIcicle(s3.x,s3.y,z.damage,0.95+i2*0.12);}z.st="rec";z.stT=0.4;}}
   else if(z.st==="clone_w"){if(z.stT<=0){var nc=p2?2:2,c;for(c=0;c<nc;c++){var s4=cabSpotNear(z.x,z.y,70,160,14);if(s4){var cz=cabAdd("normal",s4.x,s4.y,"cabClone");cz.hp=cz.maxHp=Math.round(60*(1+game.wave*0.12));cz.speed*=0.7;CAB.fx.push({k:"blink",x:s4.x,y:s4.y,t:0,max:0.5});}}z.cloneCd=p2?8:11;z.st="rec";z.stT=0.4;}}
-  else if(z.st==="blink_w"){if(z.stT<=0){var s5=cabSpotNear(p.x,p.y,140,220,z.r+4);if(s5){CAB.fx.push({k:"blink",x:z.x,y:z.y,t:0,max:0.5});z.x=s5.x;z.y=s5.y;CAB.fx.push({k:"blink",x:z.x,y:z.y,t:0,max:0.5});sfx("whoosh",0.6);}z.blinkCd=5;z.st="rec";z.stT=0.3;}}
+  else if(z.st==="blink_w"){if(z.stT<=0){var s5=cabSpotNear(p.x,p.y,110,170,z.r+4);if(s5){CAB.fx.push({k:"blink",x:z.x,y:z.y,t:0,max:0.5});z.x=s5.x;z.y=s5.y;CAB.fx.push({k:"blink",x:z.x,y:z.y,t:0,max:0.5});sfx("whoosh",0.6);}z.blinkCd=5;z.st="rec";z.stT=0.3;}}
   else if(z.st==="rec"){if(z.stT<=0){z.st="idle";z.cd=rand(1,1.7);}}
   if(z.fan2>0){z.fan2-=dt;if(z.fan2<=0){var a1=Math.atan2(p.y-z.y,p.x-z.x);for(var m=0;m<6;m++)cabShard(z.x,z.y-12,a1+(m-2.5)*0.22,170,z.damage);}}
 }
